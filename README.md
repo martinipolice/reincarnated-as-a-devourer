@@ -108,8 +108,8 @@ Current targets (12 runs, seeds 1-4):
 | Bot | Result |
 |---|---|
 | `afk` | dies in 20-40 s |
-| `kite` (never Devours) | reaches Day 20 most runs; beats the boss some of the time, in 60-100 s |
-| `devour` (Devours when safe) | beats the boss most runs, in 30-60 s |
+| `kite` (never Devours) | reaches Day 20 and usually beats the boss, in 50-70 s |
+| `devour` (Devours when safe) | beats the boss most runs, in 45-60 s; occasionally over-devours and dies |
 | `greedy` (Devours everything) | hits the 10 max-HP floor and dies |
 
 Devour should pay off when used carefully and kill you when used greedily. A full run

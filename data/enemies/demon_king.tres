@@ -6,7 +6,7 @@
 [resource]
 script = ExtResource("1")
 display_name = "Demon King"
-max_hp = 3500.0
+max_hp = 4500.0
 atk = 75.0
 defense = 75.0
 move_speed = 60.0
