@@ -50,8 +50,8 @@ func _process(_delta: float) -> bool:
 	if main._over:
 		var result := "WON" if not is_instance_valid(main.boss) and boss_at >= 0 and p.hp > 0 else "DIED"
 		var fight := "boss fight %ds" % (t - boss_at) if boss_at >= 0 else "no boss"
-		print("END %s %s: day %d t=%ds lv %d kills %d devoured %d max_hp %d, %s, first level %.1fs" % [
-			mode, result, main.day(), t, p.level, main.kills, p.devour_count(),
+		print("END %s %s: day %d t=%ds lv %d kills %d gold %d devoured %d max_hp %d, %s, first level %.1fs" % [
+			mode, result, main.day(), t, p.level, main.kills, main.gold, p.devour_count(),
 			p.stat("max_hp"), fight, first_level_at])
 		return true
 	return false

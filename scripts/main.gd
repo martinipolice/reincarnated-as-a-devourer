@@ -1,6 +1,7 @@
 extends Node2D
 ## Run controller: the day clock, the spawn director, elites and the boss,
-## level-ups, the HUD and the end of the run.
+## level-ups, the HUD and the end of the run (which banks gold for the
+## Goddess's Sanctuary).
 
 const SECONDS_PER_DAY := 30.0  # MVP: 20 days in 10 minutes
 const FINAL_DAY := 20
@@ -10,8 +11,13 @@ const GRACE_PERIOD := 2.0  # seconds before the first spawn
 const ELITE_INTERVAL := 30.0
 ## Normal spawns slow down this much while the Demon King is alive.
 const BOSS_SPAWN_SLOWDOWN := 2.0
-const GRID_SIZE := 64
-const GRID_EXTENT := 4096
+## Floor texture tile size on screen (16 px art at 2x). The floor sprite
+## snaps to this grid as it follows the player, so it looks endless.
+const FLOOR_TILE := 32.0
+const SANCTUARY_SCENE := "res://scenes/ui/sanctuary.tscn"
+const SANCTUARY := preload("res://scripts/ui/sanctuary.gd")
+## Ignore end-screen input briefly so a held key doesn't skip it.
+const END_MENU_DELAY := 0.8
 
 const ENEMY_SCENE := preload("res://scenes/enemy.tscn")
 const BOSS_SCENE := preload("res://scenes/boss.tscn")
@@ -56,7 +62,11 @@ var _banner_tween: Tween
 @onready var boss_label: Label = $HUD/BossLabel
 @onready var boss_bar: ProgressBar = $HUD/BossBar
 @onready var banner: Label = $HUD/Banner
-@onready var center_label: Label = $HUD/Center
+@onready var end_menu: Control = $HUD/EndMenu
+@onready var end_text: Label = %EndText
+@onready var again_button: Button = %Again
+@onready var sanctuary_button: Button = %ToSanctuary
+@onready var floor_sprite: Sprite2D = $Floor
 
 
 func _ready() -> void:
@@ -66,8 +76,11 @@ func _ready() -> void:
 	player.devoured.connect(_on_player_devoured)
 	player.weapon_evolved.connect(_on_weapon_evolved)
 	level_up.chosen.connect(_on_upgrade_chosen)
+	again_button.pressed.connect(_play_again)
+	sanctuary_button.pressed.connect(_go_to_sanctuary)
+	_apply_training()
 	player.apply_upgrade(STARTING_WEAPON)
-	center_label.hide()
+	end_menu.hide()
 	banner.hide()
 	boss_label.hide()
 	boss_bar.hide()
@@ -78,9 +91,10 @@ func day() -> int:
 
 
 func _process(delta: float) -> void:
+	floor_sprite.position = (player.position / FLOOR_TILE).floor() * FLOOR_TILE
 	if _over:
-		if Input.is_action_just_pressed("restart"):
-			get_tree().reload_current_scene()
+		if Input.is_action_just_pressed("restart") and not again_button.disabled:
+			_play_again()
 		return
 
 	elapsed += delta
@@ -196,9 +210,9 @@ func _spawn_boss() -> void:
 
 func _on_enemy_killed(enemy: Enemy) -> void:
 	kills += 1
-	gold += enemy.data.gold
+	gold += enemy.data.gold * (5 if enemy.elite else 1)
 	if enemy.data.boss:
-		_end_run("VICTORY\n\nThe Demon King falls to his knees...\n\"Finally... Tell her... I waited.\"")
+		_end_run("VICTORY\n\nThe Demon King falls to his knees...\n\"Finally... Tell her... I waited.\"", true)
 		return
 	var gem := GEM_SCENE.instantiate() as XPGem
 	gem.setup(enemy.data.xp * (5 if enemy.elite else 1), player)
@@ -220,6 +234,8 @@ func _on_player_devoured(essence: EssenceData) -> void:
 
 
 func _on_weapon_evolved(weapon: Weapon) -> void:
+	Game.sfx("evolve", 0.0)
+	Game.shake(0.5)
 	show_banner("%s EVOLVED\n%s" % [weapon.data.display_name.to_upper(), weapon.data.evolved_name], 3.0)
 
 
@@ -251,18 +267,39 @@ func _on_player_died() -> void:
 	_end_run("You have fallen in battle...\nThe cycle remains unbroken.")
 
 
-func _end_run(message: String) -> void:
+# Sanctuary training ranks become modifiers, like any other bonus.
+func _apply_training() -> void:
+	for training: TrainingData in SANCTUARY.TRAININGS:
+		for rank in Save.training_rank(training):
+			for mod: Dictionary in training.per_rank:
+				player.modifiers.append(mod.duplicate())
+	player.hp = player.stat("max_hp")
+
+
+func _end_run(message: String, won := false) -> void:
 	_over = true
+	Game.sfx("victory" if won else "defeat", 0.0)
+	Save.add_gold(gold)
+	Save.record_run(day(), won)
+	Save.save_game()
 	_update_hud()
 	enemies.process_mode = Node.PROCESS_MODE_DISABLED
 	banner.hide()
-	center_label.text = "%s\n\nDay %d  -  Level %d  -  %d kills  -  %d devoured\n\nPress R to play again" % [
-		message, day(), player.level, kills, player.devour_count()]
-	center_label.show()
+	end_text.text = "%s\n\nDay %d  ·  Level %d  ·  %d kills  ·  %d devoured\n+%d gold  (%d banked)" % [
+		message, day(), player.level, kills, player.devour_count(), gold, Save.gold()]
+	end_menu.show()
+	again_button.disabled = true
+	sanctuary_button.disabled = true
+	await get_tree().create_timer(END_MENU_DELAY).timeout
+	again_button.disabled = false
+	sanctuary_button.disabled = false
+	sanctuary_button.grab_focus()
 
 
-func _draw() -> void:
-	var color := Color(1, 1, 1, 0.04)
-	for i in range(-GRID_EXTENT, GRID_EXTENT + 1, GRID_SIZE):
-		draw_line(Vector2(i, -GRID_EXTENT), Vector2(i, GRID_EXTENT), color)
-		draw_line(Vector2(-GRID_EXTENT, i), Vector2(GRID_EXTENT, i), color)
+func _play_again() -> void:
+	get_tree().reload_current_scene()
+
+
+func _go_to_sanctuary() -> void:
+	Game.sfx("click", 0.0)
+	get_tree().change_scene_to_file(SANCTUARY_SCENE)

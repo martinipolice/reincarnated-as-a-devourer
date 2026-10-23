@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="TrainingData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/training_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "strength"
+display_name = "Strength Training"
+description = "+6% weapon damage"
+per_rank = [{"stat": "might", "add": 0.06}]
+max_rank = 5
+base_cost = 700

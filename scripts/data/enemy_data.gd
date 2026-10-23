@@ -21,6 +21,7 @@ extends Resource
 @export_group("Visuals")
 @export var radius := 10.0
 @export var color := Color.WHITE
-## Leave empty to draw a placeholder circle. Assign a free asset pack's
-## SpriteFrames here later; no code changes needed.
+## Leave empty to draw a placeholder circle. Needs a "run" animation.
 @export var sprite_frames: SpriteFrames
+## The 16x16 pack sprites are tiny at 1280x720; this scales them up.
+@export var sprite_scale := 2.0

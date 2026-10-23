@@ -42,7 +42,10 @@ func _physics_process(delta: float) -> void:
 func _swing() -> void:
 	_flash = FLASH_TIME
 	var amount: float = EVOLVED_DAMAGE if evolved else per_level(DAMAGE)
-	for enemy in enemies_in(_hitbox):
+	var targets := enemies_in(_hitbox)
+	if not targets.is_empty():
+		Game.sfx("blade")
+	for enemy in targets:
 		var push := global_position.direction_to(enemy.global_position) * KNOCKBACK
 		enemy.take_damage(damage(amount), push)
 	queue_redraw()

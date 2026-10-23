@@ -43,6 +43,7 @@ var _devour_progress := 0.0
 
 @onready var hurtbox: Area2D = $Hurtbox
 @onready var weapons: Node2D = $Weapons
+@onready var sprite: AnimatedSprite2D = $AnimatedSprite2D
 
 
 func _ready() -> void:
@@ -69,6 +70,7 @@ func _physics_process(delta: float) -> void:
 	var input := Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	velocity = Vector2.ZERO if is_devouring() else input * stat("move_speed")
 	move_and_slide()
+	_animate(input)
 
 	_invuln = maxf(0.0, _invuln - delta)
 	if _invuln == 0.0:
@@ -84,6 +86,10 @@ func take_damage(atk: float) -> void:
 		return
 	hp -= Game.damage(atk, stat("defense"))
 	_invuln = HIT_INVULN
+	Game.sfx("player_hurt")
+	Game.shake(0.35)
+	Game.hit_stop(0.06)
+	sprite.play("hit")
 	if hp <= 0.0:
 		hp = 0.0
 		set_physics_process(false)
@@ -167,6 +173,8 @@ func devour(essence: EssenceData) -> void:
 	modifiers.append({"stat": essence.stat, "add": essence.add, "mult": essence.mult})
 	modifiers.append({"stat": "max_hp", "add": -essence.max_hp_cost})
 	hp = minf(hp, stat("max_hp"))
+	Game.sfx("devour")
+	Game.shake(0.3)
 	devoured.emit(essence)
 	_check_evolutions()
 
@@ -211,9 +219,20 @@ func _check_evolutions() -> void:
 			weapon_evolved.emit(weapon)
 
 
+func _animate(input: Vector2) -> void:
+	if input.x != 0.0:
+		sprite.flip_h = input.x < 0.0
+	# Blink while invulnerable after a hit.
+	sprite.visible = _invuln == 0.0 or fmod(_invuln, 0.1) > 0.05
+	if sprite.animation == &"hit" and sprite.is_playing():
+		return
+	sprite.play(&"run" if velocity != Vector2.ZERO else &"idle")
+
+
 func _draw() -> void:
-	var body := BODY_COLOR if _invuln == 0.0 else Color(1, 0.4, 0.4)
-	draw_circle(Vector2.ZERO, BODY_RADIUS, body)
+	if sprite.sprite_frames == null:
+		var body := BODY_COLOR if _invuln == 0.0 else Color(1, 0.4, 0.4)
+		draw_circle(Vector2.ZERO, BODY_RADIUS, body)
 	if is_devouring():
 		var start := -PI / 2.0
 		draw_arc(Vector2.ZERO, 22.0, start, start + TAU * devour_progress(), 32, DEVOUR_COLOR, 4.0)

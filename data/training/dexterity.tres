@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="TrainingData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/training_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "dexterity"
+display_name = "Dexterity Training"
+description = "+4% move speed"
+per_rank = [{"stat": "move_speed", "mult": 0.04}]
+max_rank = 5
+base_cost = 500

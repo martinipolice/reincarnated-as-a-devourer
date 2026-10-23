@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" path="res://scripts/data/enemy_data.gd" id="1"]
 [ext_resource type="Resource" path="res://data/essences/dreadling_essence.tres" id="2"]
+[ext_resource type="SpriteFrames" path="res://assets/enemies/dreadling/sprite_frames.tres" id="3"]
 
 [resource]
 script = ExtResource("1")
@@ -10,8 +11,10 @@ max_hp = 30.0
 atk = 10.0
 defense = 8.0
 move_speed = 70.0
-gold = 10
+gold = 1
 xp = 1
 radius = 10.0
 color = Color(0.55, 0.4, 0.75, 1)
 essence = ExtResource("2")
+sprite_frames = ExtResource("3")
+sprite_scale = 1.75

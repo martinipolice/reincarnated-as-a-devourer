@@ -23,6 +23,7 @@ func open(offers: Array, player: Player) -> void:
 		button.pressed.connect(_pick.bind(i))
 		options.add_child(button)
 	title.text = "LEVEL %d" % player.level
+	Game.sfx("level_up", 0.0)
 	show()
 	get_tree().paused = true
 	(options.get_child(0) as Button).grab_focus()
@@ -38,6 +39,7 @@ func _input(event: InputEvent) -> void:
 
 
 func _pick(index: int) -> void:
+	Game.sfx("pick", 0.0)
 	hide()
 	get_tree().paused = false
 	chosen.emit(_offers[index])

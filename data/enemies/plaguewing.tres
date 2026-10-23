@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" path="res://scripts/data/enemy_data.gd" id="1"]
 [ext_resource type="Resource" path="res://data/essences/plaguewing_essence.tres" id="2"]
+[ext_resource type="SpriteFrames" path="res://assets/enemies/plaguewing/sprite_frames.tres" id="3"]
 
 [resource]
 script = ExtResource("1")
@@ -10,8 +11,10 @@ max_hp = 176.0
 atk = 45.0
 defense = 40.0
 move_speed = 120.0
-gold = 220
+gold = 15
 xp = 10
 radius = 17.0
 color = Color(0.45, 0.8, 0.35, 1)
 essence = ExtResource("2")
+sprite_frames = ExtResource("3")
+sprite_scale = 2.25

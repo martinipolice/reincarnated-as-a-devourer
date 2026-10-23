@@ -28,6 +28,7 @@ func _physics_process(delta: float) -> void:
 		return
 	_speed = minf(_speed + ACCEL * delta, MAX_SPEED)
 	if distance < COLLECT_DISTANCE or distance < _speed * delta:
+		Game.sfx("gem", 0.15)
 		player.gain_xp(value)
 		queue_free()
 		return

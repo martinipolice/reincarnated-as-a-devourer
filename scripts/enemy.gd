@@ -11,6 +11,8 @@ const ELITE_ATK_MULT := 1.5
 const ELITE_SIZE_MULT := 1.5
 const ELITE_KNOCKBACK_MULT := 0.5
 const ELITE_RING := Color(1, 0.85, 0.3)
+const ELITE_TINT := Color(1.35, 1.15, 0.7)
+const HIT_FLASH := Color(2.5, 2.5, 2.5)
 
 var data: EnemyData
 var target: Node2D
@@ -43,8 +45,10 @@ func _ready() -> void:
 	$CollisionShape2D.shape = shape
 	if data.sprite_frames:
 		sprite.sprite_frames = data.sprite_frames
-		sprite.scale = Vector2.ONE * radius / data.radius
-		sprite.play()
+		sprite.scale = Vector2.ONE * data.sprite_scale * radius / data.radius
+		sprite.play("run")
+		if elite:
+			sprite.self_modulate = ELITE_TINT
 
 
 func _physics_process(delta: float) -> void:
@@ -66,16 +70,30 @@ func take_damage(amount: float, knockback := Vector2.ZERO) -> void:
 		return
 	hp -= Game.damage(amount, data.defense)
 	_knockback += knockback * data.knockback_scale * (ELITE_KNOCKBACK_MULT if elite else 1.0)
-	# self_modulate so the flash doesn't tint children (e.g. the boss telegraph)
-	self_modulate = Color(2.5, 2.5, 2.5)
-	create_tween().tween_property(self, "self_modulate", Color.WHITE, 0.1)
+	# Flash the sprite (or our own drawing), never `modulate`, which would also
+	# tint children like the boss telegraph.
+	var flash_target: CanvasItem = sprite if data.sprite_frames else self
+	var flash_property := "modulate" if data.sprite_frames else "self_modulate"
+	flash_target.set(flash_property, HIT_FLASH)
+	create_tween().tween_property(flash_target, flash_property, Color.WHITE, 0.1)
+	Game.sfx("enemy_hit")
 	if not alive():
-		Game.enemy_killed.emit(self)
-		queue_free()
+		_die()
+
+
+func _die() -> void:
+	Game.sfx("elite_die" if elite else "enemy_die")
+	Game.burst(global_position, data.color.lightened(0.2), 18 if elite else 8)
+	if elite:
+		Game.shake(0.25)
+	Game.enemy_killed.emit(self)
+	queue_free()
 
 
 func _draw() -> void:
 	if data.sprite_frames == null:
 		draw_circle(Vector2.ZERO, radius, data.color)
 	if elite:
-		draw_arc(Vector2.ZERO, radius + 3.0, 0.0, TAU, 32, ELITE_RING, 2.5)
+		# Drawn under the sprite: a gold aura on the ground.
+		draw_circle(Vector2(0, radius * 0.6), radius * 0.9, Color(ELITE_RING, 0.25))
+		draw_arc(Vector2(0, radius * 0.6), radius * 0.9, 0.0, TAU, 32, ELITE_RING, 2.0)

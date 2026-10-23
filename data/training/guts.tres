@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="TrainingData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/training_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "guts"
+display_name = "Guts Training"
+description = "A little of everything"
+per_rank = [{"stat": "max_hp", "add": 5.0}, {"stat": "might", "add": 0.03}, {"stat": "defense", "add": 2.0}, {"stat": "move_speed", "mult": 0.02}]
+max_rank = 3
+base_cost = 2000

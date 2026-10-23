@@ -46,6 +46,7 @@ func _physics_process(delta: float) -> void:
 			_slam_timer = SLAM_INTERVAL
 			windup = SLAM_WINDUP
 			slam_at = target.global_position
+			Game.sfx("boss_warn", 0.0)
 			slam_started.emit()
 	_flash = maxf(0.0, _flash - delta)
 	_telegraph.queue_redraw()
@@ -53,15 +54,24 @@ func _physics_process(delta: float) -> void:
 
 func _slam() -> void:
 	_flash = SLAM_FLASH
+	Game.sfx("boss_slam")
+	Game.shake(0.7)
 	var player := target as Player
 	if player and player.global_position.distance_to(slam_at) <= SLAM_RADIUS:
 		player.take_damage(atk * SLAM_DAMAGE_MULT)
 
 
+func _die() -> void:
+	Game.burst(global_position, Color(1, 0.35, 0.3), 60, 320.0)
+	Game.shake(1.0)
+	super()
+
+
 func _draw() -> void:
 	super()
-	# Outline keeps him readable on top of his own red telegraph.
-	draw_arc(Vector2.ZERO, radius + 2.0, 0.0, TAU, 48, OUTLINE_COLOR, 3.0)
+	# Placeholder only: the outline keeps the circle readable on his red telegraph.
+	if data.sprite_frames == null:
+		draw_arc(Vector2.ZERO, radius + 2.0, 0.0, TAU, 48, OUTLINE_COLOR, 3.0)
 
 
 func _draw_telegraph() -> void:

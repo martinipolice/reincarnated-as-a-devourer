@@ -1,23 +1,126 @@
 extends Node
-## Global signals and helpers, available everywhere as `Game`.
+## Global signals and helpers, available everywhere as `Game`: damage math,
+## input setup, and "juice" (sound, screen shake, hit stop, particle bursts).
 
 ## Emitted just before the enemy frees itself; read what you need right away.
 signal enemy_killed(enemy: Enemy)
 
+const SFX_VOICES := 16
+## Same sound can't restart faster than this, so a 50-enemy Blade swing
+## doesn't stack 50 copies.
+const SFX_COOLDOWN := 0.05
+const AUDIO := "res://assets/audio/"
+## name -> [variations, volume dB]. A random variation plays each time.
+const SFX := {
+	"blade": [["kenney_rpg/knifeSlice.ogg", "kenney_rpg/knifeSlice2.ogg"], -12.0],
+	"enemy_hit": [["kenney_impact/impactPunch_medium_000.ogg", "kenney_impact/impactPunch_medium_001.ogg",
+		"kenney_impact/impactPunch_medium_002.ogg"], -16.0],
+	"enemy_die": [["kenney_impact/impactSoft_heavy_000.ogg", "kenney_impact/impactSoft_heavy_001.ogg",
+		"kenney_impact/impactSoft_heavy_002.ogg"], -10.0],
+	"elite_die": [["kenney_impact/impactBell_heavy_000.ogg"], -6.0],
+	"player_hurt": [["kenney_impact/impactPlate_heavy_000.ogg", "kenney_impact/impactPlate_heavy_001.ogg"], -4.0],
+	"gem": [["kenney_interface/glass_001.ogg", "kenney_interface/glass_002.ogg",
+		"kenney_interface/glass_003.ogg"], -14.0],
+	"level_up": [["kenney_digital/powerUp2.ogg"], -8.0],
+	"pick": [["kenney_interface/confirmation_001.ogg"], -6.0],
+	"click": [["kenney_interface/select_001.ogg"], -6.0],
+	"denied": [["kenney_interface/error_006.ogg"], -6.0],
+	"coins": [["kenney_rpg/handleCoins.ogg"], -4.0],
+	"devour": [["kenney_digital/phaserDown2.ogg"], -6.0],
+	"evolve": [["kenney_digital/powerUp10.ogg"], -4.0],
+	"boss_warn": [["kenney_digital/lowThreeTone.ogg"], -6.0],
+	"boss_slam": [["kenney_impact/impactPunch_heavy_000.ogg", "kenney_impact/impactMining_000.ogg"], -2.0],
+	"victory": [["kenney_digital/threeTone2.ogg"], -4.0],
+	"defeat": [["kenney_digital/lowDown.ogg"], -4.0],
+}
+
+var _streams := {}
+var _voices: Array[AudioStreamPlayer] = []
+var _next_voice := 0
+var _last_played := {}
+var _hit_stop_active := false
+
 
 func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS  # UI sounds play while paused
 	_bind("move_left", [KEY_A, KEY_LEFT])
 	_bind("move_right", [KEY_D, KEY_RIGHT])
 	_bind("move_up", [KEY_W, KEY_UP])
 	_bind("move_down", [KEY_S, KEY_DOWN])
 	_bind("devour", [KEY_E, KEY_SPACE])
 	_bind("restart", [KEY_R])
+	for sfx_name in SFX:
+		_streams[sfx_name] = SFX[sfx_name][0].map(func(file: String) -> AudioStream:
+			return load(AUDIO + file))
+	for i in SFX_VOICES:
+		var voice := AudioStreamPlayer.new()
+		add_child(voice)
+		_voices.append(voice)
 
 
 ## Ratio mitigation. The terminal game used max(0, ATK - DEF), which drops to
 ## zero once DEF >= ATK; that breaks when hits land many times per second.
 static func damage(atk: float, defense: float) -> float:
 	return atk * 100.0 / (100.0 + defense)
+
+
+func sfx(sfx_name: String, pitch_variance := 0.08) -> void:
+	var now := Time.get_ticks_msec() / 1000.0
+	if now - _last_played.get(sfx_name, -1.0) < SFX_COOLDOWN:
+		return
+	_last_played[sfx_name] = now
+	var voice := _voices[_next_voice]
+	_next_voice = (_next_voice + 1) % _voices.size()
+	voice.stream = _streams[sfx_name].pick_random()
+	voice.volume_db = SFX[sfx_name][1]
+	voice.pitch_scale = randf_range(1.0 - pitch_variance, 1.0 + pitch_variance)
+	voice.play()
+
+
+## Trauma-based screen shake on the player's camera; 0..1, adds up.
+func shake(amount: float) -> void:
+	var camera := get_tree().get_first_node_in_group("camera")
+	if camera:
+		camera.add_trauma(amount)
+
+
+## Nearly freezes gameplay for a moment so big hits land. Uses a real-time
+## timer, so it still ends while time_scale is near zero.
+func hit_stop(duration: float) -> void:
+	if _hit_stop_active:
+		return
+	_hit_stop_active = true
+	Engine.time_scale = 0.05
+	await get_tree().create_timer(duration, true, false, true).timeout
+	Engine.time_scale = 1.0
+	_hit_stop_active = false
+
+
+## One-shot particle burst, freed when done. Goes in the run's "effects"
+## node so it never mixes with enemies or pickups.
+func burst(at: Vector2, color: Color, amount := 10, speed := 140.0) -> void:
+	var parent := get_tree().get_first_node_in_group("effects")
+	if parent == null:
+		return
+	var particles := CPUParticles2D.new()
+	particles.position = at
+	particles.emitting = false
+	particles.one_shot = true
+	particles.explosiveness = 1.0
+	particles.amount = amount
+	particles.lifetime = 0.45
+	particles.spread = 180.0
+	particles.gravity = Vector2.ZERO
+	particles.initial_velocity_min = speed * 0.4
+	particles.initial_velocity_max = speed
+	particles.damping_min = speed * 1.5
+	particles.damping_max = speed * 2.0
+	particles.scale_amount_min = 2.0
+	particles.scale_amount_max = 4.0
+	particles.color = color
+	particles.finished.connect(particles.queue_free)
+	parent.add_child(particles)
+	particles.emitting = true
 
 
 # Actions are registered in code so they can be rebound later without
