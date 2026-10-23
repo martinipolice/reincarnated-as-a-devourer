@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="ItemData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/item_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Guard"
+description = "Wooden Guard -> Steel Shield -> Aegis Guard. Take less damage."
+stat = "defense"
+add_per_level = 10.0
+max_level = 3

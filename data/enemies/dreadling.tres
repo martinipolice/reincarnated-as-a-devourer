@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="EnemyData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/enemy_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Dreadling"
+max_hp = 44.0
+atk = 10.0
+defense = 8.0
+move_speed = 70.0
+gold = 10
+radius = 10.0
+color = Color(0.55, 0.4, 0.75, 1)
