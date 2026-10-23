@@ -7,6 +7,8 @@ extends Node2D
 var data: WeaponData
 var player: Player
 var level := 1
+## Set by evolve() once the weapon is maxed and enough essences are Devoured.
+var evolved := false
 
 
 func set_level(value: int) -> void:
@@ -14,7 +16,12 @@ func set_level(value: int) -> void:
 	_on_level_changed()
 
 
-## Override to rebuild hitboxes, counts, etc. when the level changes.
+func evolve() -> void:
+	evolved = true
+	_on_level_changed()
+
+
+## Override to rebuild hitboxes, counts, etc. when the level or evolution changes.
 func _on_level_changed() -> void:
 	pass
 

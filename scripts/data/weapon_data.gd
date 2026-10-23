@@ -10,3 +10,9 @@ extends Resource
 ## Optional name for each level, e.g. the old shop tiers for the Blade.
 @export var tier_names: PackedStringArray
 @export var icon: Texture2D
+
+@export_group("Evolution")
+## Devour this many of this essence with the weapon maxed to evolve it.
+@export var evolve_with: EssenceData
+@export var evolve_count := 3
+@export var evolved_name := ""

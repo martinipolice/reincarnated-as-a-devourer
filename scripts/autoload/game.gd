@@ -1,7 +1,8 @@
 extends Node
 ## Global signals and helpers, available everywhere as `Game`.
 
-signal enemy_killed(data: EnemyData, at: Vector2)
+## Emitted just before the enemy frees itself; read what you need right away.
+signal enemy_killed(enemy: Enemy)
 
 
 func _ready() -> void:
@@ -9,6 +10,7 @@ func _ready() -> void:
 	_bind("move_right", [KEY_D, KEY_RIGHT])
 	_bind("move_up", [KEY_W, KEY_UP])
 	_bind("move_down", [KEY_S, KEY_DOWN])
+	_bind("devour", [KEY_E, KEY_SPACE])
 	_bind("restart", [KEY_R])
 
 

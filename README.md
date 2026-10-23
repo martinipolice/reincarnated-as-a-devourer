@@ -7,7 +7,7 @@ cost of your own life.
 It started as a turn-based terminal RPG I wrote in Python for CMSC 12, and is being rebuilt
 as a real-time game.
 
-> **Status:** early prototype (Milestone 3 of 6 done). Placeholder shapes, no art yet.
+> **Status:** early prototype (Milestone 4 of 6 done). Placeholder shapes, no art yet.
 
 ## Play / run
 
@@ -18,12 +18,22 @@ as a real-time game.
 | Action | Keys |
 |---|---|
 | Move | WASD / arrow keys |
+| Devour (hold on an essence) | E / Space |
 | Pick a level-up | Click, 1-3, or arrows + Enter |
 | Restart after a run | R |
 
 Weapons attack automatically. Collect XP gems to level up and choose from three upgrades:
 the **Blade**, **Goddess Light** and **Aegis** weapons, or the **Guard**, **Treads** and
 **Stamina** passives. Their tier names come from the original game's shop.
+
+Every 30 seconds a gold-ringed **elite** appears. Kill it and it leaves an essence: stand
+on it and hold **E** to Devour. You're rooted while you channel. Each essence boosts a stat
+(Dreadling: speed, Vexclaw: might, Plaguewing: defense) and permanently costs max HP for
+the run, using the original game's formula. Devour 3 Vexclaw essences with a maxed Blade
+and it evolves into **Vexclaw Rend**.
+
+On **Day 20** the Demon King descends. Every few seconds he marks the ground under you in
+red and slams it for double damage, so keep moving. Kill him to win the run.
 
 ## Design in one paragraph
 
@@ -39,7 +49,7 @@ decides the ending. Full pitch: [docs/DESIGN.md](docs/DESIGN.md).
 - [x] **M1** Project setup, data-driven enemies and items
 - [x] **M2** Movement and threat: player, chasing enemies, contact damage, death, day-based spawn director
 - [x] **M3** Fun check: XP gems, level-up with 3 choices, Goddess Light and Aegis, early balance pass
-- [ ] **M4** Devour (elites, Essences, evolution) and the Demon King boss
+- [x] **M4** Devour (elites, Essences, evolution) and the Demon King boss
 - [ ] **M5** Meta progression (Goddess's Sanctuary), save file, juice, free-asset art pass
 - [ ] **M6** Lore beats, Day 20 dialogue, endings, itch.io web release
 
@@ -61,15 +71,24 @@ the balance.
 
 ## Balance testing
 
-`tools/balance_sim.gd` plays a whole run headlessly with a bot, either standing still
-(`afk`) or dodging and collecting gems (`kite`), and prints progress every other day:
+`tools/balance_sim.gd` plays a whole run headlessly with a bot, standing still (`afk`),
+dodging and collecting gems (`kite`), or also Devouring every elite (`devour`). It prints
+progress every other day and the boss fight's result:
 
 ```
 godot --headless --fixed-fps 60 --path . -s res://tools/balance_sim.gd -- kite 1
 ```
 
-Current targets: first level-up around 15 s, all upgrades maxed around Day 13-15, an
-active bot dying between Day 12 and Day 20, and standing still lasting 20-40 s.
+Current targets (12 runs, seeds 1-4):
+
+| Bot | Result |
+|---|---|
+| `afk` | dies in 20-40 s |
+| `kite` (never Devours) | usually dies Day 17-20; beats the boss about 1 in 4, in ~100 s |
+| `devour` (Devours when safe) | beats the boss most runs, in 30-60 s |
+| `greedy` (Devours everything) | hits the 10 max-HP floor and dies |
+
+Devour should pay off when used carefully and kill you when used greedily.
 
 ## Credits
 

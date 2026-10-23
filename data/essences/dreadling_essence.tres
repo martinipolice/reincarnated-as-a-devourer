@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="EssenceData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/essence_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Dreadling Essence"
+description = "+10% move speed"
+stat = "move_speed"
+add = 0.0
+mult = 0.1
+max_hp_cost = 7.0
+color = Color(0.55, 0.4, 0.75, 1)

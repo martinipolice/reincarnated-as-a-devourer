@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="EnemyData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/enemy_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Demon King"
+max_hp = 3500.0
+atk = 75.0
+defense = 75.0
+move_speed = 60.0
+gold = 0
+xp = 0
+boss = true
+knockback_scale = 0.0
+radius = 34.0
+color = Color(0.16, 0.07, 0.2, 1)

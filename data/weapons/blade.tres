@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" path="res://scripts/data/weapon_data.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/weapons/blade.tscn" id="2"]
+[ext_resource type="Resource" path="res://data/essences/vexclaw_essence.tres" id="3"]
 
 [resource]
 script = ExtResource("1")
@@ -10,3 +11,6 @@ description = "Strikes every enemy around you."
 scene = ExtResource("2")
 max_level = 3
 tier_names = PackedStringArray("Dull Blade", "Standard Greatsword", "Mithril Warblade")
+evolve_with = ExtResource("3")
+evolve_count = 3
+evolved_name = "Vexclaw Rend"

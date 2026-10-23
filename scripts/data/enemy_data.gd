@@ -11,6 +11,12 @@ extends Resource
 @export var gold := 10
 ## Value of the XP gem it drops.
 @export var xp := 1
+## Granted when an elite of this type is Devoured. Empty = can't be Devoured.
+@export var essence: EssenceData
+## Bosses end the run when killed and are never Devoured.
+@export var boss := false
+## 1 = full knockback from hits, 0 = immovable.
+@export var knockback_scale := 1.0
 
 @export_group("Visuals")
 @export var radius := 10.0
