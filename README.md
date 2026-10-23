@@ -47,7 +47,7 @@ red and slams it for double damage, so keep moving. Kill him to win the run.
 Gold you earn is banked when a run ends. Spend it at the **Goddess's Sanctuary** on
 permanent training (Stamina, Strength, Resilience, Dexterity and Guts, from the original
 game's Train menu) that applies to every future run. Progress is saved automatically to
-`user://save.json` (on Windows: `%APPDATA%\Godotpp_userdata\Reincarnated as a Devourer`).
+`user://save.json` (on Windows: `%APPDATA%/Godot/app_userdata/Reincarnated as a Devourer`).
 
 ## Design in one paragraph
 
