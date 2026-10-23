@@ -2,6 +2,8 @@ class_name LightBolt
 extends Area2D
 ## One Goddess Light projectile. Flies straight and expires after LIFETIME.
 
+const ARROW_TEXTURE := preload("res://assets/weapons/weapon_arrow.png")
+const ARROW_TINT := Color(1.0, 0.92, 0.55)  # goddess gold
 const SPEED := 420.0
 const LIFETIME := 1.5
 const RADIUS := 6.0
@@ -26,6 +28,12 @@ func _ready() -> void:
 	circle.radius = RADIUS
 	shape.shape = circle
 	add_child(shape)
+	var arrow := Sprite2D.new()
+	arrow.texture = ARROW_TEXTURE
+	arrow.rotation = PI / 2.0  # the art points up; we fly along +x
+	arrow.scale = Vector2(2, 2)
+	arrow.modulate = ARROW_TINT
+	add_child(arrow)
 	rotation = _dir.angle()
 	area_entered.connect(_on_area_entered)
 
@@ -46,6 +54,6 @@ func _on_area_entered(area: Area2D) -> void:
 		queue_free()
 
 
+# A soft trail of light behind the arrow sprite.
 func _draw() -> void:
-	draw_line(Vector2(-10, 0), Vector2(4, 0), Color(1, 0.9, 0.5, 0.7), 4.0)
-	draw_circle(Vector2(4, 0), 4.0, Color(1, 1, 0.85))
+	draw_line(Vector2(-34, 0), Vector2(-8, 0), Color(1, 0.9, 0.5, 0.35), 6.0)

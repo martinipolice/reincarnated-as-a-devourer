@@ -6,7 +6,7 @@
 [resource]
 script = ExtResource("1")
 display_name = "Aegis"
-description = "Shields orbit you, striking and shoving enemies away."
+description = "Golden blades orbit you, striking and shoving enemies away."
 scene = ExtResource("2")
 max_level = 3
 tier_names = PackedStringArray()

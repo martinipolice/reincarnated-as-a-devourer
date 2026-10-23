@@ -33,6 +33,10 @@ ROLES = {
     "demon_king": ("enemies/demon_king", {"run": ("big_demon_run_anim", 8)}),
     "goddess": ("characters/goddess", {"idle": ("angel_idle_anim", 6)}),
 }
+# assets subfolder -> single-frame sprites copied as-is
+STATIC = {
+    "weapons": ["weapon_golden_sword", "weapon_arrow"],  # Aegis blades, Goddess Light bolts
+}
 FLOOR_VARIANTS = [f"floor_{i}" for i in range(1, 9)]
 # floor_1 is the plain tile; the rest are cracks and details, so use them sparingly.
 FLOOR_WEIGHTS = [88] + [12 / 7] * 7
@@ -93,6 +97,12 @@ def main() -> None:
             resolved[anim] = (frames, fps)
         write_sprite_frames(folder, folder_name, resolved)
         print(f"assets/{folder_name}: {sum(len(f) for f, _ in resolved.values())} frames")
+    for folder_name, names in STATIC.items():
+        folder = PROJECT / "assets" / folder_name
+        folder.mkdir(parents=True, exist_ok=True)
+        for name in names:
+            shutil.copy2(src / f"{name}.png", folder / f"{name}.png")
+        print(f"assets/{folder_name}: {len(names)} sprites")
     make_floor(src)
     print("assets/environment/floor.png")
 

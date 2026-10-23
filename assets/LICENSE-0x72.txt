@@ -1,5 +1,5 @@
-Sprites in assets/characters (player, goddess), assets/enemies and
-assets/environment come from
+Sprites in assets/characters (player, goddess), assets/enemies, assets/weapons
+and assets/environment come from
 "16x16 DungeonTileset II" v1.7 by 0x72 (Robert).
 https://0x72.itch.io/dungeontileset-ii
 

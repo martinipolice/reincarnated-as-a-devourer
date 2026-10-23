@@ -11,9 +11,6 @@ const GRACE_PERIOD := 2.0  # seconds before the first spawn
 const ELITE_INTERVAL := 30.0
 ## Normal spawns slow down this much while the Demon King is alive.
 const BOSS_SPAWN_SLOWDOWN := 2.0
-## Floor texture tile size on screen (16 px art at 2x). The floor sprite
-## snaps to this grid as it follows the player, so it looks endless.
-const FLOOR_TILE := 32.0
 const SANCTUARY_SCENE := "res://scenes/ui/sanctuary.tscn"
 const SANCTUARY := preload("res://scripts/ui/sanctuary.gd")
 ## Ignore end-screen input briefly so a held key doesn't skip it.
@@ -91,7 +88,7 @@ func day() -> int:
 
 
 func _process(delta: float) -> void:
-	floor_sprite.position = (player.position / FLOOR_TILE).floor() * FLOOR_TILE
+	_follow_floor()
 	if _over:
 		if Input.is_action_just_pressed("restart") and not again_button.disabled:
 			_play_again()
@@ -116,6 +113,13 @@ func _process(delta: float) -> void:
 		_spawn_enemy(true)
 
 	_update_hud()
+
+
+# The floor sprite follows the player so it looks endless, but only in jumps
+# of one full texture repeat; any smaller step would slide the pattern.
+func _follow_floor() -> void:
+	var period := Vector2(floor_sprite.texture.get_size()) * floor_sprite.scale
+	floor_sprite.position = (player.position / period).floor() * period
 
 
 func _update_hud() -> void:
