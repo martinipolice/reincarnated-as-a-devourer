@@ -13,6 +13,8 @@ const TABLE := [
 		"icon": "flask_big_blue", "weight": 14},
 	{"id": "blessing", "name": "Goddess's Blessing", "text": "Level up!",
 		"icon": "flask_big_green", "weight": 8},
+	{"id": "fervor", "name": "Goddess's Fervor", "text": "Weapons 50% faster for 15 s",
+		"icon": "flask_yellow", "weight": 12},
 	{"id": "gold", "name": "Gold Pouch", "text": "+%d gold",
 		"icon": "coin_anim_f0", "weight": 20},
 	{"id": "bomb", "name": "Bomb", "text": "Everything nearby is blasted",
@@ -22,9 +24,10 @@ const TABLE := [
 const HEALS := ["common_potion", "high_potion", "rejuvenation"]
 
 
-static func roll(hurt: bool) -> Dictionary:
+## `exclude`: an id not to roll again (a golden chest's second reward).
+static func roll(hurt: bool, exclude := "") -> Dictionary:
 	var options := TABLE.filter(func(entry: Dictionary) -> bool:
-		return hurt or not entry.id in HEALS)
+		return (hurt or not entry.id in HEALS) and entry.id != exclude)
 	var total := 0
 	for entry: Dictionary in options:
 		total += entry.weight

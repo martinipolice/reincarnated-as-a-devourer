@@ -15,6 +15,8 @@ extends Resource
 @export var essence: EssenceData
 ## Bosses end the run when killed and are never Devoured.
 @export var boss := false
+## Leaves a golden treasure chest when killed (the Mimic).
+@export var drops_golden_chest := false
 ## 1 = full knockback from hits, 0 = immovable.
 @export var knockback_scale := 1.0
 

@@ -9,10 +9,19 @@ const SPAWN_RADIUS := 700.0
 const BOSS_SPAWN_DISTANCE := 450.0
 const GRACE_PERIOD := 2.0  # seconds before the first spawn
 const ELITE_INTERVAL := 30.0
+## Enemies get this much tougher each day after the first (HP fully, damage
+## at 70%; see Enemy.setup). Day 20 is 1 + 19 * this.
+const TOUGHNESS_PER_DAY := 0.135
 ## Treasure chests: one appears every CHEST_INTERVAL s (up to MAX_CHESTS at
-## once) somewhere just off-screen; a HUD arrow points the way.
-const CHEST_FIRST := 15.0
-const CHEST_INTERVAL := 20.0
+## once) somewhere just off-screen; a HUD arrow points the way. Some are
+## golden (two rewards); from MIMIC_FROM_DAY some are Mimics that fight back.
+const CHEST_FIRST := 20.0
+const CHEST_INTERVAL := 30.0
+const GOLDEN_CHANCE := 0.15
+const MIMIC_CHANCE := 0.15
+const MIMIC_FROM_DAY := 3
+const FERVOR_DURATION := 15.0
+const FERVOR_HASTE := 0.5
 const MAX_CHESTS := 3
 const CHEST_DISTANCE := Vector2(450.0, 850.0)
 const BOMB_RADIUS := 450.0
@@ -33,6 +42,7 @@ const CHEST_SCENE := preload("res://scenes/loot_chest.tscn")
 const DREADLING := preload("res://data/enemies/dreadling.tres")
 const VEXCLAW := preload("res://data/enemies/vexclaw.tres")
 const PLAGUEWING := preload("res://data/enemies/plaguewing.tres")
+const MIMIC := preload("res://data/enemies/mimic.tres")
 const DEMON_KING := preload("res://data/enemies/demon_king.tres")
 
 const STARTING_WEAPON := preload("res://data/weapons/blade.tres")
@@ -59,6 +69,7 @@ var boss: Boss
 var _spawn_timer := GRACE_PERIOD
 var _elite_timer := ELITE_INTERVAL
 var _chest_timer := CHEST_FIRST
+var _fervor_until := 0.0
 var _boss_spawned := false
 var _devour_hint_shown := false
 var _over := false
@@ -99,6 +110,10 @@ func _ready() -> void:
 
 func day() -> int:
 	return mini(int(elapsed / SECONDS_PER_DAY) + 1, FINAL_DAY)
+
+
+func toughness() -> float:
+	return 1.0 + TOUGHNESS_PER_DAY * (day() - 1)
 
 
 func _process(delta: float) -> void:
@@ -146,6 +161,8 @@ func _follow_floor() -> void:
 func _update_hud() -> void:
 	var text := "DAY %d / %d     Lv %d\nHP %d / %d\nKills %d   Gold %d" % [
 		day(), FINAL_DAY, player.level, ceili(player.hp), player.stat("max_hp"), kills, gold]
+	if elapsed < _fervor_until:
+		text += "\nGoddess's Fervor: %ds" % ceili(_fervor_until - elapsed)
 	if player.devour_count() > 0:
 		var parts := []
 		for essence: EssenceData in player.essences:
@@ -193,7 +210,7 @@ func _pick_enemy(elite := false) -> EnemyData:
 
 func _spawn_enemy(elite := false, distance := SPAWN_RADIUS) -> void:
 	var enemy := ENEMY_SCENE.instantiate() as Enemy
-	enemy.setup(_pick_enemy(elite), player, elite)
+	enemy.setup(_pick_enemy(elite), player, elite, toughness())
 	enemy.position = player.position + Vector2.RIGHT.rotated(randf() * TAU) * distance
 	enemies.add_child(enemy)
 
@@ -238,17 +255,55 @@ func _spawn_boss() -> void:
 func _spawn_chest() -> void:
 	if get_tree().get_nodes_in_group("chests").size() >= MAX_CHESTS:
 		return
-	var chest := CHEST_SCENE.instantiate() as LootChest
 	var distance := randf_range(CHEST_DISTANCE.x, CHEST_DISTANCE.y)
-	chest.position = player.position + Vector2.RIGHT.rotated(randf() * TAU) * distance
+	var roll := randf()
+	var kind := LootChest.Kind.NORMAL
+	if roll < GOLDEN_CHANCE:
+		kind = LootChest.Kind.GOLDEN
+	elif roll < GOLDEN_CHANCE + MIMIC_CHANCE and day() >= MIMIC_FROM_DAY:
+		kind = LootChest.Kind.MIMIC
+	_place_chest(player.position + Vector2.RIGHT.rotated(randf() * TAU) * distance, kind)
+
+
+func _place_chest(at: Vector2, kind: LootChest.Kind) -> void:
+	var chest := CHEST_SCENE.instantiate() as LootChest
+	chest.kind = kind
+	chest.position = at
 	chest.opened.connect(_on_chest_opened)
 	pickups.add_child(chest)
 
 
 func _on_chest_opened(chest: LootChest) -> void:
-	var entry := Loot.roll(player.hp < player.stat("max_hp") * 0.9)
-	var text: String = entry.text
+	if chest.kind == LootChest.Kind.MIMIC:
+		_spring_mimic(chest.global_position)
+		return
+	var golden := chest.kind == LootChest.Kind.GOLDEN
 	Game.sfx("chest_open", 0.0)
+	Game.shake(0.35 if golden else 0.2)
+	Game.burst(chest.global_position, Color(1, 0.85, 0.35), 50 if golden else 25, 260.0)
+	var hurt := player.hp < player.stat("max_hp") * 0.9
+	var first := Loot.roll(hurt)
+	var lines := [_grant_loot(first, chest.global_position)]
+	if golden:
+		var second := Loot.roll(hurt, first.id)
+		lines.append(_grant_loot(second, chest.global_position + Vector2(24, 0)))
+	var title := "GOLDEN CHEST\n" if golden else ""
+	show_banner(title + "\n".join(lines), 2.5 if golden else 2.0)
+
+
+func _spring_mimic(at: Vector2) -> void:
+	var mimic := ENEMY_SCENE.instantiate() as Enemy
+	mimic.setup(MIMIC, player, false, toughness())
+	mimic.position = at
+	enemies.add_child.call_deferred(mimic)
+	Game.sfx("boss_warn", 0.0)
+	Game.shake(0.4)
+	show_banner("It was a Mimic!\nKill it for its treasure.", 2.0)
+
+
+# Applies one reward and returns its banner line.
+func _grant_loot(entry: Dictionary, at: Vector2) -> String:
+	var text: String = entry.text
 	match entry.id:
 		"common_potion":
 			player.hp = minf(player.stat("max_hp"), player.hp + player.stat("max_hp") * 0.3)
@@ -267,6 +322,9 @@ func _on_chest_opened(chest: LootChest) -> void:
 			gold += amount
 			text = text % amount
 			Game.sfx("coins", 0.0)
+		"fervor":
+			_fervor_until = elapsed + FERVOR_DURATION
+			player.add_timed_modifier({"stat": "haste", "add": FERVOR_HASTE}, FERVOR_DURATION)
 		"bomb":
 			Game.sfx("bomb", 0.0)
 			Game.shake(0.6)
@@ -278,8 +336,8 @@ func _on_chest_opened(chest: LootChest) -> void:
 					enemy.take_damage(BOMB_DAMAGE, push)
 	if entry.id != "gold" and entry.id != "bomb":
 		Game.sfx("loot", 0.0)
-	_pop_loot_icon(chest.global_position, Loot.icon(entry))
-	show_banner("%s\n%s" % [entry.name, text], 2.0)
+	_pop_loot_icon(at, Loot.icon(entry))
+	return "%s: %s" % [entry.name, text]
 
 
 # The reward's sprite floats up out of the chest and fades.
@@ -309,7 +367,7 @@ func _on_boss_summon(at: Vector2, count: int, phase_two: bool) -> void:
 	var start := randf() * TAU
 	for i in count:
 		var minion := ENEMY_SCENE.instantiate() as Enemy
-		minion.setup(VEXCLAW if phase_two else DREADLING, player)
+		minion.setup(VEXCLAW if phase_two else DREADLING, player, false, toughness())
 		minion.position = at + Vector2.RIGHT.rotated(start + TAU * i / count) * SUMMON_RING
 		enemies.add_child(minion)
 	Game.burst(at, Color(0.75, 0.35, 1.0), 16, 220.0)
@@ -318,6 +376,8 @@ func _on_boss_summon(at: Vector2, count: int, phase_two: bool) -> void:
 func _on_enemy_killed(enemy: Enemy) -> void:
 	kills += 1
 	gold += enemy.data.gold * (5 if enemy.elite else 1)
+	if enemy.data.drops_golden_chest:
+		_place_chest.call_deferred(enemy.global_position, LootChest.Kind.GOLDEN)
 	if enemy.data.boss:
 		_end_run("VICTORY\n\nThe Demon King falls to his knees...\n\"Finally... Tell her... I waited.\"", true)
 		return

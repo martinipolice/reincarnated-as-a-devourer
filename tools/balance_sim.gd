@@ -3,12 +3,12 @@ extends SceneTree
 # other day. Not part of the game. From the project folder:
 #   godot --headless --fixed-fps 60 -s res://tools/balance_sim.gd -- <mode> <seed>
 # Modes: afk (stands still), kite (dodges, collects gems, never Devours),
-#        devour (kite, plus Devours when above half HP and the area is clear),
+#        devour (kite, plus Devours nearby corpses above 60% HP when the area is clear),
 #        greedy (kite, plus Devours every corpse it can reach, no matter what).
 # Untyped on purpose: -s compiles this before autoloads exist.
 
 const DODGE_RADIUS := 60.0
-const CORPSE_SEEK_RANGE := 400.0
+const CORPSE_SEEK_RANGE := 250.0
 
 var main: Node
 var frame := 0
@@ -129,7 +129,7 @@ func _wants_corpse(corpse) -> bool:
 	if mode != "devour":
 		return false
 	var p = main.player
-	if p.hp < p.stat("max_hp") * 0.5:
+	if p.hp < p.stat("max_hp") * 0.6:
 		return false
 	for e in main.enemies.get_children():
 		if e.global_position.distance_to(corpse.global_position) < 120.0:

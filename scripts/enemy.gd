@@ -27,14 +27,15 @@ var _knockback := Vector2.ZERO
 @onready var sprite: AnimatedSprite2D = $AnimatedSprite2D
 
 
-## Call before add_child().
-func setup(enemy_data: EnemyData, chase_target: Node2D, is_elite := false) -> void:
+## Call before add_child(). `toughness` scales HP fully and damage at 70%
+## of that rate (main.gd raises it as the days pass).
+func setup(enemy_data: EnemyData, chase_target: Node2D, is_elite := false, toughness := 1.0) -> void:
 	data = enemy_data
 	target = chase_target
 	elite = is_elite
-	max_hp = data.max_hp * (ELITE_HP_MULT if elite else 1.0)
+	max_hp = data.max_hp * (ELITE_HP_MULT if elite else 1.0) * toughness
 	hp = max_hp
-	atk = data.atk * (ELITE_ATK_MULT if elite else 1.0)
+	atk = data.atk * (ELITE_ATK_MULT if elite else 1.0) * (1.0 + (toughness - 1.0) * 0.7)
 	radius = data.radius * (ELITE_SIZE_MULT if elite else 1.0)
 
 

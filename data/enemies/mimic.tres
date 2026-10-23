@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="EnemyData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/enemy_data.gd" id="1"]
+[ext_resource type="SpriteFrames" path="res://assets/enemies/mimic/sprite_frames.tres" id="2"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Mimic"
+max_hp = 260.0
+atk = 28.0
+defense = 15.0
+move_speed = 105.0
+gold = 30
+xp = 20
+drops_golden_chest = true
+knockback_scale = 0.5
+radius = 15.0
+color = Color(0.6, 0.35, 0.2, 1)
+sprite_frames = ExtResource("2")
+sprite_scale = 2.25

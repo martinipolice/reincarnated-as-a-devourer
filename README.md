@@ -37,10 +37,15 @@ weapons, or the **Guard**, **Treads**, **Stamina**, **Fury** (attack speed), **M
 Charm** (pickup range) and **Vigor** (HP regen) passives. Tier names come from the original
 game's shop.
 
-Every 20 seconds a **treasure chest** appears nearby; a gold arrow at the screen edge points
+Every 30 seconds a **treasure chest** appears nearby; a gold arrow at the screen edge points
 to it. Walk into it for a random reward: the original game's Common and High Potions or
 Flask of Rejuvenation, a gold pouch, a bomb that blasts everything nearby, a Flask of
-Attraction that pulls in all XP, or a rare Goddess's Blessing (free level-up).
+Attraction that pulls in all XP, Goddess's Fervor (weapons 50% faster for 15 s), or a rare
+Goddess's Blessing (free level-up). Brighter **golden chests** hold two rewards. From Day 3
+some chests are **Mimics**: they bite back, and killing one drops a golden chest.
+
+Monsters grow tougher every day, so you need to keep growing too. Devouring an essence
+also heals 25% of your max HP.
 
 Every 30 seconds a gold-ringed **elite** appears. Kill it and it leaves an essence: stand
 on it and hold **E** to Devour. You're rooted while you channel. Each essence boosts a stat
@@ -117,9 +122,9 @@ Current targets (12 runs, seeds 1-4):
 | Bot | Result |
 |---|---|
 | `afk` | dies in 20-40 s |
-| `kite` (never Devours) | reaches Day 20 and usually beats the boss, in 60-80 s |
-| `devour` (Devours when safe) | beats the boss most runs, in 60-80 s |
-| `greedy` (Devours everything) | about half die before Day 20; the rest hit the 10 max-HP floor |
+| `kite` (never Devours) | wins about 40-50% of runs; boss fights 55-75 s |
+| `devour` (Devours nearby corpses when safe) | wins about 60% of runs; boss fights 45-70 s |
+| `greedy` (Devours everything) | usually dies before Day 20, at or near the 10 max-HP floor |
 
 Devour should pay off when used carefully and kill you when used greedily. A full run
 earns about 13-15k gold (dying on Day 10: about 1.3k); mastering every Sanctuary training

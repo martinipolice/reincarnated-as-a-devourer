@@ -16,6 +16,8 @@ const MIN_MAX_HP := 10.0
 ## Holding Devour this long next to a corpse takes its essence.
 const DEVOUR_TIME := 1.0
 const DEVOUR_RANGE := 40.0
+## Fraction of (the new) max HP healed by each successful Devour.
+const DEVOUR_HEAL := 0.25
 const DEVOUR_COLOR := Color(0.8, 0.45, 1.0)
 
 var base := {
@@ -157,6 +159,13 @@ func _level_weapon(data: WeaponData, new_level: int) -> void:
 	weapons.add_child(weapon)
 
 
+## A modifier that removes itself after `duration` seconds of gameplay.
+func add_timed_modifier(mod: Dictionary, duration: float) -> void:
+	modifiers.append(mod)
+	await get_tree().create_timer(duration, false).timeout
+	modifiers.erase(mod)
+
+
 func is_devouring() -> bool:
 	return _devour_target != null
 
@@ -177,7 +186,8 @@ func devour(essence: EssenceData) -> void:
 	essences[essence] = essences.get(essence, 0) + 1
 	modifiers.append({"stat": essence.stat, "add": essence.add, "mult": essence.mult})
 	modifiers.append({"stat": "max_hp", "add": -essence.max_hp_cost})
-	hp = minf(hp, stat("max_hp"))
+	# Feeding restores you, which pays for standing still to channel.
+	hp = minf(stat("max_hp"), hp + stat("max_hp") * DEVOUR_HEAL)
 	Game.sfx("devour")
 	Game.shake(0.3)
 	devoured.emit(essence)
