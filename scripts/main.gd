@@ -50,6 +50,10 @@ func _process(delta: float) -> void:
 		_spawn_timer = maxf(0.25, 1.2 - day() * 0.05)
 		_spawn_enemy()
 
+	_update_hud()
+
+
+func _update_hud() -> void:
 	info_label.text = "DAY %d / %d\nHP %d / %d\nKills %d   Gold %d" % [
 		day(), FINAL_DAY, ceili(player.hp), player.stat("max_hp"), kills, gold]
 
@@ -91,6 +95,7 @@ func _on_player_died() -> void:
 
 func _end_run(message: String) -> void:
 	_over = true
+	_update_hud()
 	enemies.process_mode = Node.PROCESS_MODE_DISABLED
 	center_label.text = "%s\n\nSurvived to Day %d  -  %d kills\n\nPress R to try again" % [
 		message, day(), kills]
