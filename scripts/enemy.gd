@@ -4,9 +4,13 @@ extends Area2D
 ## EnemyData resource, so new monsters need a .tres file, not new code.
 ## Enemies don't push each other: cheap enough for hundreds on screen.
 
+const KNOCKBACK_DECAY := 900.0
+
 var data: EnemyData
 var target: Node2D
 var hp: float
+
+var _knockback := Vector2.ZERO
 
 @onready var sprite: AnimatedSprite2D = $AnimatedSprite2D
 
@@ -32,16 +36,24 @@ func _physics_process(delta: float) -> void:
 	if not is_instance_valid(target):
 		return
 	var dir := global_position.direction_to(target.global_position)
-	position += dir * data.move_speed * delta
+	position += (dir * data.move_speed + _knockback) * delta
+	_knockback = _knockback.move_toward(Vector2.ZERO, KNOCKBACK_DECAY * delta)
 	if data.sprite_frames:
 		sprite.flip_h = dir.x < 0.0
 
 
-func take_damage(atk: float) -> void:
+func alive() -> bool:
+	return hp > 0.0
+
+
+func take_damage(atk: float, knockback := Vector2.ZERO) -> void:
+	if not alive():
+		return
 	hp -= Game.damage(atk, data.defense)
+	_knockback += knockback
 	modulate = Color(2.5, 2.5, 2.5)
 	create_tween().tween_property(self, "modulate", Color.WHITE, 0.1)
-	if hp <= 0.0:
+	if not alive():
 		Game.enemy_killed.emit(data, global_position)
 		queue_free()
 

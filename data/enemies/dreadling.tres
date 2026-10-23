@@ -5,10 +5,11 @@
 [resource]
 script = ExtResource("1")
 display_name = "Dreadling"
-max_hp = 44.0
+max_hp = 30.0
 atk = 10.0
 defense = 8.0
 move_speed = 70.0
 gold = 10
+xp = 1
 radius = 10.0
 color = Color(0.55, 0.4, 0.75, 1)

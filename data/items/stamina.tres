@@ -4,8 +4,8 @@
 
 [resource]
 script = ExtResource("1")
-display_name = "Blade"
-description = "Dull Blade -> Standard Greatsword -> Mithril Warblade. More blade damage."
-stat = "atk"
-add_per_level = 10.0
+display_name = "Stamina Training"
+description = "+25 max HP, and heal that much."
+stat = "max_hp"
+add_per_level = 25.0
 max_level = 3

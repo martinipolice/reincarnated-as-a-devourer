@@ -9,6 +9,8 @@ extends Resource
 @export var defense := 8.0
 @export var move_speed := 80.0
 @export var gold := 10
+## Value of the XP gem it drops.
+@export var xp := 1
 
 @export_group("Visuals")
 @export var radius := 10.0

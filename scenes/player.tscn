@@ -8,9 +8,6 @@ radius = 12.0
 [sub_resource type="CircleShape2D" id="hurt_shape"]
 radius = 14.0
 
-[sub_resource type="CircleShape2D" id="blade_shape"]
-radius = 70.0
-
 [node name="Player" type="CharacterBody2D"]
 collision_mask = 0
 motion_mode = 1
@@ -27,13 +24,7 @@ monitorable = false
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Hurtbox"]
 shape = SubResource("hurt_shape")
 
-[node name="BladeRange" type="Area2D" parent="."]
-collision_layer = 0
-collision_mask = 2
-monitorable = false
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="BladeRange"]
-shape = SubResource("blade_shape")
+[node name="Weapons" type="Node2D" parent="."]
 
 [node name="Camera2D" type="Camera2D" parent="."]
 position_smoothing_enabled = true

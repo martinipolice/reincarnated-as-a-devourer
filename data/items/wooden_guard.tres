@@ -5,7 +5,8 @@
 [resource]
 script = ExtResource("1")
 display_name = "Guard"
-description = "Wooden Guard -> Steel Shield -> Aegis Guard. Take less damage."
+description = "Take less damage from every hit."
 stat = "defense"
 add_per_level = 10.0
 max_level = 3
+tier_names = PackedStringArray("Wooden Guard", "Steel Shield", "Aegis Guard")

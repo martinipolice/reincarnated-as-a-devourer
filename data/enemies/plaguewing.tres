@@ -10,5 +10,6 @@ atk = 45.0
 defense = 40.0
 move_speed = 120.0
 gold = 220
+xp = 10
 radius = 17.0
 color = Color(0.45, 0.8, 0.35, 1)
