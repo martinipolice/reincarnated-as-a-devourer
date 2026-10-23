@@ -8,7 +8,7 @@ signal slam_started
 
 const FIRST_SLAM := 5.0
 const SLAM_INTERVAL := 8.0
-const SLAM_WINDUP := 1.5
+const SLAM_WINDUP := 2.25  # 1.5 felt too fast in playtesting
 const SLAM_RADIUS := 150.0
 const SLAM_DAMAGE_MULT := 2.0
 const SLAM_FLASH := 0.25
