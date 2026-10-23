@@ -3,9 +3,9 @@ extends Weapon
 ## shop's weapon tiers: Dull Blade -> Standard Greatsword -> Mithril Warblade.
 ## Evolves into Vexclaw Rend after Devouring 3 Vexclaw essences at Lv 3.
 
-const DAMAGE := [34.0, 46.0, 60.0]
-const RADIUS := [75.0, 85.0, 100.0]
-const COOLDOWN := [0.9, 0.8, 0.7]
+const DAMAGE := [34.0, 50.0, 70.0]
+const RADIUS := [75.0, 90.0, 110.0]
+const COOLDOWN := [0.9, 0.8, 0.65]  # divided by the player's haste
 const EVOLVED_DAMAGE := 90.0
 const EVOLVED_RADIUS := 120.0
 const EVOLVED_COOLDOWN := 0.6
@@ -32,7 +32,8 @@ func _radius() -> float:
 func _physics_process(delta: float) -> void:
 	_timer -= delta
 	if _timer <= 0.0:
-		_timer = EVOLVED_COOLDOWN if evolved else per_level(COOLDOWN)
+		var cooldown: float = EVOLVED_COOLDOWN if evolved else per_level(COOLDOWN)
+		_timer = cooldown / player.stat("haste")
 		_swing()
 	if _flash > 0.0:
 		_flash -= delta

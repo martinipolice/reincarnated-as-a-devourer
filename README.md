@@ -31,9 +31,16 @@ as a real-time game.
 | F3 | Skip to Day 20 (the Demon King) |
 | F4 | Full heal |
 
-Weapons attack automatically. Collect XP gems to level up and choose from three upgrades:
-the **Blade**, **Goddess Light** and **Aegis** weapons, or the **Guard**, **Treads** and
-**Stamina** passives. Their tier names come from the original game's shop.
+Weapons attack automatically. Collect XP gems to level up and choose from three upgrades,
+each showing exactly what it changes: the **Blade**, **Goddess Light** and **Aegis**
+weapons, or the **Guard**, **Treads**, **Stamina**, **Fury** (attack speed), **Magnet
+Charm** (pickup range) and **Vigor** (HP regen) passives. Tier names come from the original
+game's shop.
+
+Every 20 seconds a **treasure chest** appears nearby; a gold arrow at the screen edge points
+to it. Walk into it for a random reward: the original game's Common and High Potions or
+Flask of Rejuvenation, a gold pouch, a bomb that blasts everything nearby, a Flask of
+Attraction that pulls in all XP, or a rare Goddess's Blessing (free level-up).
 
 Every 30 seconds a gold-ringed **elite** appears. Kill it and it leaves an essence: stand
 on it and hold **E** to Devour. You're rooted while you channel. Each essence boosts a stat
@@ -41,8 +48,10 @@ on it and hold **E** to Devour. You're rooted while you channel. Each essence bo
 the run, using the original game's formula. Devour 3 Vexclaw essences with a maxed Blade
 and it evolves into **Vexclaw Rend**.
 
-On **Day 20** the Demon King descends. Every few seconds he marks the ground under you in
-red and slams it for double damage, so keep moving. Kill him to win the run.
+On **Day 20** the horde scatters and the Demon King descends for a duel. He alternates a
+red slam marked on the ground under you with a ring of dark orbs (watch for the purple
+glow), and summons a few minions now and then. Below half HP he enrages: faster, wider
+slams and double rings. Kill him to win the run.
 
 Gold you earn is banked when a run ends. Spend it at the **Goddess's Sanctuary** on
 permanent training (Stamina, Strength, Resilience, Dexterity and Guts, from the original
@@ -108,9 +117,9 @@ Current targets (12 runs, seeds 1-4):
 | Bot | Result |
 |---|---|
 | `afk` | dies in 20-40 s |
-| `kite` (never Devours) | reaches Day 20 and usually beats the boss, in 50-70 s |
-| `devour` (Devours when safe) | beats the boss most runs, in 45-60 s; occasionally over-devours and dies |
-| `greedy` (Devours everything) | hits the 10 max-HP floor and dies |
+| `kite` (never Devours) | reaches Day 20 and usually beats the boss, in 60-80 s |
+| `devour` (Devours when safe) | beats the boss most runs, in 60-80 s |
+| `greedy` (Devours everything) | about half die before Day 20; the rest hit the 10 max-HP floor |
 
 Devour should pay off when used carefully and kill you when used greedily. A full run
 earns about 13-15k gold (dying on Day 10: about 1.3k); mastering every Sanctuary training

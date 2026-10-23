@@ -5,7 +5,7 @@
 [resource]
 script = ExtResource("1")
 display_name = "Stamina Training"
-description = "+25 max HP, and heal that much."
+description = "+30 max HP, and heal that much."
 stat = "max_hp"
-add_per_level = 25.0
+add_per_level = 30.0
 max_level = 3

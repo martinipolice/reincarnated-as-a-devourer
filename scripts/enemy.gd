@@ -55,17 +55,21 @@ func _physics_process(delta: float) -> void:
 	if not is_instance_valid(target):
 		return
 	var dir := global_position.direction_to(target.global_position)
-	position += (dir * data.move_speed + _knockback) * delta
+	position += (dir * move_speed() + _knockback) * delta
 	_knockback = _knockback.move_toward(Vector2.ZERO, KNOCKBACK_DECAY * delta)
 	if data.sprite_frames:
 		sprite.flip_h = dir.x < 0.0
+
+
+func move_speed() -> float:
+	return data.move_speed
 
 
 func alive() -> bool:
 	return hp > 0.0
 
 
-func take_damage(amount: float, knockback := Vector2.ZERO) -> void:
+func take_damage(amount: float, knockback := Vector2.ZERO, hit_sfx := "enemy_hit") -> void:
 	if not alive():
 		return
 	hp -= Game.damage(amount, data.defense)
@@ -76,7 +80,7 @@ func take_damage(amount: float, knockback := Vector2.ZERO) -> void:
 	var flash_property := "modulate" if data.sprite_frames else "self_modulate"
 	flash_target.set(flash_property, HIT_FLASH)
 	create_tween().tween_property(flash_target, flash_property, Color.WHITE, 0.1)
-	Game.sfx("enemy_hit")
+	Game.sfx(hit_sfx)
 	if not alive():
 		_die()
 

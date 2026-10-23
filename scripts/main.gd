@@ -9,8 +9,17 @@ const SPAWN_RADIUS := 700.0
 const BOSS_SPAWN_DISTANCE := 450.0
 const GRACE_PERIOD := 2.0  # seconds before the first spawn
 const ELITE_INTERVAL := 30.0
-## Normal spawns slow down this much while the Demon King is alive.
-const BOSS_SPAWN_SLOWDOWN := 2.0
+## Treasure chests: one appears every CHEST_INTERVAL s (up to MAX_CHESTS at
+## once) somewhere just off-screen; a HUD arrow points the way.
+const CHEST_FIRST := 15.0
+const CHEST_INTERVAL := 20.0
+const MAX_CHESTS := 3
+const CHEST_DISTANCE := Vector2(450.0, 850.0)
+const BOMB_RADIUS := 450.0
+const BOMB_DAMAGE := 150.0
+const GOLD_POUCH_PER_DAY := 20
+## How far from the Demon King his summoned minions appear.
+const SUMMON_RING := 80.0
 const SANCTUARY_SCENE := "res://scenes/ui/sanctuary.tscn"
 const SANCTUARY := preload("res://scripts/ui/sanctuary.gd")
 ## Ignore end-screen input briefly so a held key doesn't skip it.
@@ -20,6 +29,7 @@ const ENEMY_SCENE := preload("res://scenes/enemy.tscn")
 const BOSS_SCENE := preload("res://scenes/boss.tscn")
 const GEM_SCENE := preload("res://scenes/xp_gem.tscn")
 const CORPSE_SCENE := preload("res://scenes/devour_corpse.tscn")
+const CHEST_SCENE := preload("res://scenes/loot_chest.tscn")
 const DREADLING := preload("res://data/enemies/dreadling.tres")
 const VEXCLAW := preload("res://data/enemies/vexclaw.tres")
 const PLAGUEWING := preload("res://data/enemies/plaguewing.tres")
@@ -36,6 +46,9 @@ const UPGRADE_POOL := [
 	preload("res://data/items/wooden_guard.tres"),
 	preload("res://data/items/leather_treads.tres"),
 	preload("res://data/items/stamina.tres"),
+	preload("res://data/items/fury.tres"),
+	preload("res://data/items/magnet_charm.tres"),
+	preload("res://data/items/vigor.tres"),
 ]
 const OFFERS_PER_LEVEL := 3
 
@@ -45,6 +58,7 @@ var gold := 0
 var boss: Boss
 var _spawn_timer := GRACE_PERIOD
 var _elite_timer := ELITE_INTERVAL
+var _chest_timer := CHEST_FIRST
 var _boss_spawned := false
 var _devour_hint_shown := false
 var _over := false
@@ -98,21 +112,28 @@ func _process(delta: float) -> void:
 	if day() >= FINAL_DAY and not _boss_spawned:
 		_spawn_boss()
 
+	# The waves stop once the Demon King arrives: Day 20 is a duel.
+	if not _boss_spawned:
+		_spawn_waves(delta)
+	_chest_timer -= delta
+	if _chest_timer <= 0.0:
+		_chest_timer = CHEST_INTERVAL
+		_spawn_chest()
+
+	_update_hud()
+
+
+func _spawn_waves(delta: float) -> void:
 	_spawn_timer -= delta
 	if _spawn_timer <= 0.0:
 		_spawn_timer = maxf(0.45, 1.3 - day() * 0.05)
-		if is_instance_valid(boss):
-			_spawn_timer *= BOSS_SPAWN_SLOWDOWN
 		# Bigger packs as the days pass: 1 per spawn on Days 1-4, 2 on 5-9, ...
 		for i in 1 + day() / 5:
 			_spawn_enemy()
-
 	_elite_timer -= delta
 	if _elite_timer <= 0.0:
 		_elite_timer = ELITE_INTERVAL
 		_spawn_enemy(true)
-
-	_update_hud()
 
 
 # The floor sprite follows the player so it looks endless, but only in jumps
@@ -204,12 +225,94 @@ func _spawn_boss() -> void:
 	boss = BOSS_SCENE.instantiate() as Boss
 	boss.setup(DEMON_KING, player)
 	boss.position = player.position + Vector2.RIGHT.rotated(randf() * TAU) * BOSS_SPAWN_DISTANCE
-	boss.slam_started.connect(func() -> void: show_banner("He gathers dark power...", 1.2))
+	boss.summon.connect(_on_boss_summon)
+	boss.enraged.connect(func() -> void: show_banner("The Demon King is enraged!", 2.0))
+	_clear_swarm()
 	enemies.add_child(boss)
 	boss_label.text = DEMON_KING.display_name.to_upper()
 	boss_label.show()
 	boss_bar.show()
 	show_banner("DAY 20\nThe sky darkens... The Demon King descends.", 3.5)
+
+
+func _spawn_chest() -> void:
+	if get_tree().get_nodes_in_group("chests").size() >= MAX_CHESTS:
+		return
+	var chest := CHEST_SCENE.instantiate() as LootChest
+	var distance := randf_range(CHEST_DISTANCE.x, CHEST_DISTANCE.y)
+	chest.position = player.position + Vector2.RIGHT.rotated(randf() * TAU) * distance
+	chest.opened.connect(_on_chest_opened)
+	pickups.add_child(chest)
+
+
+func _on_chest_opened(chest: LootChest) -> void:
+	var entry := Loot.roll(player.hp < player.stat("max_hp") * 0.9)
+	var text: String = entry.text
+	Game.sfx("chest_open", 0.0)
+	match entry.id:
+		"common_potion":
+			player.hp = minf(player.stat("max_hp"), player.hp + player.stat("max_hp") * 0.3)
+		"high_potion":
+			player.hp = minf(player.stat("max_hp"), player.hp + player.stat("max_hp") * 0.6)
+		"rejuvenation":
+			player.hp = player.stat("max_hp")
+		"attraction":
+			for node in pickups.get_children():
+				if node is XPGem:
+					(node as XPGem).magnetize()
+		"blessing":
+			player.gain_xp(player.xp_to_next() - player.xp)
+		"gold":
+			var amount := GOLD_POUCH_PER_DAY * day()
+			gold += amount
+			text = text % amount
+			Game.sfx("coins", 0.0)
+		"bomb":
+			Game.sfx("bomb", 0.0)
+			Game.shake(0.6)
+			Game.burst(player.global_position, Color(1, 0.6, 0.2), 60, 450.0)
+			for node in enemies.get_children():
+				var enemy := node as Enemy
+				if enemy and player.global_position.distance_to(enemy.global_position) <= BOMB_RADIUS:
+					var push := player.global_position.direction_to(enemy.global_position) * 300.0
+					enemy.take_damage(BOMB_DAMAGE, push)
+	if entry.id != "gold" and entry.id != "bomb":
+		Game.sfx("loot", 0.0)
+	_pop_loot_icon(chest.global_position, Loot.icon(entry))
+	show_banner("%s\n%s" % [entry.name, text], 2.0)
+
+
+# The reward's sprite floats up out of the chest and fades.
+func _pop_loot_icon(at: Vector2, texture: Texture2D) -> void:
+	var icon := Sprite2D.new()
+	icon.texture = texture
+	icon.scale = Vector2(2.5, 2.5)
+	icon.position = at + Vector2(0, -10)
+	get_tree().get_first_node_in_group("effects").add_child(icon)
+	var tween := icon.create_tween().set_parallel()
+	tween.tween_property(icon, "position:y", at.y - 60.0, 1.2).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	tween.tween_property(icon, "modulate:a", 0.0, 0.5).set_delay(0.8)
+	tween.chain().tween_callback(icon.queue_free)
+
+
+# His arrival scatters the horde: no kills, no drops, just a puff of smoke.
+func _clear_swarm() -> void:
+	for node in enemies.get_children():
+		var enemy := node as Enemy
+		if enemy and enemy.alive():
+			Game.burst(enemy.global_position, Color(0.4, 0.3, 0.5), 6)
+			enemy.queue_free()
+	Game.shake(0.5)
+
+
+func _on_boss_summon(at: Vector2, count: int, phase_two: bool) -> void:
+	var start := randf() * TAU
+	for i in count:
+		var minion := ENEMY_SCENE.instantiate() as Enemy
+		minion.setup(VEXCLAW if phase_two else DREADLING, player)
+		minion.position = at + Vector2.RIGHT.rotated(start + TAU * i / count) * SUMMON_RING
+		enemies.add_child(minion)
+	Game.burst(at, Color(0.75, 0.35, 1.0), 16, 220.0)
 
 
 func _on_enemy_killed(enemy: Enemy) -> void:
@@ -250,6 +353,15 @@ func _on_player_leveled_up() -> void:
 
 func _on_upgrade_chosen(upgrade: Resource) -> void:
 	player.apply_upgrade(upgrade)
+	# Make the pick land: a golden burst, a nudge, and its name on screen.
+	var level := player.upgrade_level(upgrade)
+	var tiers: PackedStringArray = upgrade.tier_names
+	var title: String = tiers[level - 1] if level <= tiers.size() else upgrade.display_name
+	if upgrade.max_level < 100:
+		title += "  ·  Lv %d" % level
+	show_banner(title, 1.2)
+	Game.burst(player.global_position, Color(1, 0.85, 0.35), 24, 220.0)
+	Game.shake(0.15)
 	_offer_next_level_up()
 
 

@@ -6,7 +6,8 @@
 [resource]
 script = ExtResource("1")
 display_name = "Goddess Light"
-description = "Bolts of light seek the nearest enemies. More bolts and pierce per level."
+description = "Fires bolts of light at the nearest enemies."
 scene = ExtResource("2")
 max_level = 3
 tier_names = PackedStringArray()
+level_descriptions = PackedStringArray("Fires a bolt of light at the nearest enemy.", "2 bolts, damage 22 → 30, each pierces 1 enemy", "4 bolts, damage 30 → 40, pierce 3, fires faster")

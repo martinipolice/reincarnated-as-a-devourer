@@ -84,9 +84,13 @@ func _steer() -> void:
 	var boss = main.boss
 	if is_instance_valid(boss) and boss.windup > 0.0:
 		var away: Vector2 = p.global_position - boss.slam_at
-		if away.length() < boss.SLAM_RADIUS + 30.0:
+		if away.length() < boss.slam_radius + 30.0:
 			push += away.normalized() * 6.0
 
+	for orb in main.get_tree().get_nodes_in_group("boss_orbs"):
+		var d: Vector2 = p.global_position - orb.global_position
+		if d.length() < 90.0 and d.length() > 0.1:
+			push += d.normalized() * (90.0 - d.length()) / 90.0 * 5.0
 	var pull := Vector2.ZERO
 	var best := 1e9
 	var corpse_target = null

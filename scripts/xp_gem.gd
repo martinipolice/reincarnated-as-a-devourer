@@ -19,6 +19,11 @@ func setup(xp: int, collector: Player) -> void:
 	player = collector
 
 
+## Fly to the player no matter how far (Flask of Attraction).
+func magnetize() -> void:
+	_magnet = true
+
+
 func _physics_process(delta: float) -> void:
 	var to_player := player.global_position - global_position
 	var distance := to_player.length()

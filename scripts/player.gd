@@ -24,6 +24,8 @@ var base := {
 	"defense": 10.0,
 	"move_speed": 170.0,
 	"pickup_radius": 90.0,
+	"haste": 1.0,  # weapon attack speed multiplier
+	"regen": 0.0,  # HP per second
 }
 ## Each entry: {"stat": "defense", "add": 10.0, "mult": 0.0}
 var modifiers: Array[Dictionary] = []
@@ -72,6 +74,7 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 	_animate(input)
 
+	hp = minf(stat("max_hp"), hp + stat("regen") * delta)
 	_invuln = maxf(0.0, _invuln - delta)
 	if _invuln == 0.0:
 		for area in hurtbox.get_overlapping_areas():
@@ -81,8 +84,10 @@ func _physics_process(delta: float) -> void:
 	queue_redraw()
 
 
-func take_damage(atk: float) -> void:
-	if hp <= 0.0:
+## Respects the brief invulnerability after a hit unless `ignore_invuln`
+## (the boss slam, a big telegraphed attack, always lands).
+func take_damage(atk: float, ignore_invuln := false) -> void:
+	if hp <= 0.0 or (_invuln > 0.0 and not ignore_invuln):
 		return
 	hp -= Game.damage(atk, stat("defense"))
 	_invuln = HIT_INVULN

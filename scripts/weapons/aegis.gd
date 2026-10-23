@@ -6,13 +6,13 @@ extends Weapon
 
 const BLADE_TEXTURE := preload("res://assets/weapons/weapon_golden_sword.png")
 const SHIELDS := [1, 2, 3]
-const DAMAGE := [14.0, 18.0, 24.0]
+const DAMAGE := [14.0, 20.0, 28.0]
 const ORBIT_RADIUS := 60.0
 const SPRITE_SCALE := 2.0
 ## Capsule around the blade art (10x22 px at 2x), slightly narrower than the
 ## sprite so grazing the empty corners doesn't count.
 const BLADE_HALF_WIDTH := 8.0
-const SPIN := 3.0  # radians per second
+const SPIN := 3.0  # radians per second, times the player's haste
 const HIT_COOLDOWN := 0.35  # per enemy
 const KNOCKBACK := 260.0
 
@@ -59,7 +59,7 @@ func _make_blade() -> Area2D:
 
 
 func _physics_process(delta: float) -> void:
-	rotation += SPIN * delta
+	rotation += SPIN * player.stat("haste") * delta
 	_time += delta
 	for shield in _shields:
 		for enemy in enemies_in(shield):
@@ -68,7 +68,7 @@ func _physics_process(delta: float) -> void:
 				continue
 			_next_hit[id] = _time + HIT_COOLDOWN
 			var push := global_position.direction_to(enemy.global_position) * KNOCKBACK
-			enemy.take_damage(damage(per_level(DAMAGE)), push)
+			enemy.take_damage(damage(per_level(DAMAGE)), push, "aegis_hit")
 	if _next_hit.size() > 256:
 		_forget_expired()
 

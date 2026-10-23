@@ -5,8 +5,8 @@
 [resource]
 script = ExtResource("1")
 display_name = "Treads"
-description = "Move 10% faster."
+description = "Move 12% faster."
 stat = "move_speed"
-mult_per_level = 0.1
+mult_per_level = 0.12
 max_level = 3
 tier_names = PackedStringArray("Leather Treads", "Padded Footguards", "Swiftstride Boots")

@@ -32,10 +32,14 @@ ROLES = {
     "plaguewing": ("enemies/plaguewing", {"run": ("swampy_anim", 8)}),
     "demon_king": ("enemies/demon_king", {"run": ("big_demon_run_anim", 8)}),
     "goddess": ("characters/goddess", {"idle": ("angel_idle_anim", 6)}),
+    "chest": ("loot/chest", {"open": ("chest_full_open_anim", 10)}),
 }
 # assets subfolder -> single-frame sprites copied as-is
 STATIC = {
     "weapons": ["weapon_golden_sword", "weapon_arrow"],  # Aegis blades, Goddess Light bolts
+    # Chest rewards: the old shop's potions, plus gold, attraction, blessing and bombs
+    "loot": ["flask_red", "flask_big_red", "flask_big_yellow", "flask_big_blue",
+             "flask_big_green", "coin_anim_f0", "bomb_f0"],
 }
 FLOOR_VARIANTS = [f"floor_{i}" for i in range(1, 9)]
 # floor_1 is the plain tile; the rest are cracks and details, so use them sparingly.
@@ -61,7 +65,7 @@ def write_sprite_frames(folder: Path, res_folder: str, animations: dict) -> None
                 f'[ext_resource type="Texture2D" path="res://assets/{res_folder}/{frame.name}" id="{next_id}"]')
             refs.append(f'{{"duration": 1.0, "texture": ExtResource("{next_id}")}}')
             next_id += 1
-        loop = "false" if name == "hit" else "true"
+        loop = "false" if name in ("hit", "open") else "true"
         anim_blocks.append(
             '{\n"frames": [' + ", ".join(refs) + f'],\n"loop": {loop},\n"name": &"{name}",\n"speed": {float(fps)}\n}}')
     text = ('[gd_resource type="SpriteFrames" format=3]\n\n' + "\n".join(ext_lines)

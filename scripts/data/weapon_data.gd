@@ -9,6 +9,9 @@ extends Resource
 @export var max_level := 3
 ## Optional name for each level, e.g. the old shop tiers for the Blade.
 @export var tier_names: PackedStringArray
+## What each level changes, shown on the level-up screen ("Damage 34 -> 50").
+## Falls back to `description` for levels without an entry.
+@export var level_descriptions: PackedStringArray
 @export var icon: Texture2D
 
 @export_group("Evolution")

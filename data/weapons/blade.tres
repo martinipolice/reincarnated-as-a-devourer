@@ -14,3 +14,4 @@ tier_names = PackedStringArray("Dull Blade", "Standard Greatsword", "Mithril War
 evolve_with = ExtResource("3")
 evolve_count = 3
 evolved_name = "Vexclaw Rend"
+level_descriptions = PackedStringArray("Strikes every enemy around you.", "Damage 34 → 50, reach +20%, swings faster", "Damage 50 → 70, reach +22%, swings faster. Devour 3 Vexclaws to evolve it")

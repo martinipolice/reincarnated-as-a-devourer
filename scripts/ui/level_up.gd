@@ -54,4 +54,8 @@ func _describe(upgrade: Resource, player: Player) -> String:
 	var tag := "NEW" if next_level == 1 else "Lv %d" % next_level
 	if upgrade.max_level > 100:
 		tag = ""
-	return "%s   %s\n      %s" % [name, tag, upgrade.description]
+	var details: String = upgrade.description
+	var per_level: PackedStringArray = upgrade.level_descriptions
+	if next_level <= per_level.size() and per_level[next_level - 1] != "":
+		details = per_level[next_level - 1]
+	return "%s   %s\n      %s" % [name, tag, details]
