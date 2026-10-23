@@ -152,11 +152,33 @@ func _pick_enemy(elite := false) -> EnemyData:
 	return PLAGUEWING
 
 
-func _spawn_enemy(elite := false) -> void:
+func _spawn_enemy(elite := false, distance := SPAWN_RADIUS) -> void:
 	var enemy := ENEMY_SCENE.instantiate() as Enemy
 	enemy.setup(_pick_enemy(elite), player, elite)
-	enemy.position = player.position + Vector2.RIGHT.rotated(randf() * TAU) * SPAWN_RADIUS
+	enemy.position = player.position + Vector2.RIGHT.rotated(randf() * TAU) * distance
 	enemies.add_child(enemy)
+
+
+# Testing shortcuts. Only active in debug builds (running from the editor),
+# never in an exported game.
+func _unhandled_input(event: InputEvent) -> void:
+	if not OS.is_debug_build() or _over or not event is InputEventKey:
+		return
+	var key := event as InputEventKey
+	if not key.pressed or key.echo:
+		return
+	match key.keycode:
+		KEY_F1:
+			_spawn_enemy(true, 250.0)
+			show_banner("[debug] Elite spawned", 1.0)
+		KEY_F2:
+			player.gain_xp(player.xp_to_next() - player.xp)
+		KEY_F3:
+			if not _boss_spawned:
+				elapsed = (FINAL_DAY - 1) * SECONDS_PER_DAY
+		KEY_F4:
+			player.hp = player.stat("max_hp")
+			show_banner("[debug] Healed", 1.0)
 
 
 func _spawn_boss() -> void:

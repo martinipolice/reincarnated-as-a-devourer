@@ -22,6 +22,15 @@ as a real-time game.
 | Pick a level-up | Click, 1-3, or arrows + Enter |
 | Restart after a run | R |
 
+**Testing shortcuts** (only when running from the editor, never in an exported build):
+
+| Key | Does |
+|---|---|
+| F1 | Spawn an elite near you |
+| F2 | Level up now |
+| F3 | Skip to Day 20 (the Demon King) |
+| F4 | Full heal |
+
 Weapons attack automatically. Collect XP gems to level up and choose from three upgrades:
 the **Blade**, **Goddess Light** and **Aegis** weapons, or the **Guard**, **Treads** and
 **Stamina** passives. Their tier names come from the original game's shop.
