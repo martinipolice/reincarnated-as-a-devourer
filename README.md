@@ -191,7 +191,7 @@ gold for its next revive, and revives whenever it can pay):
 | `afk` | dies in 20-40 s |
 | `kite` (never Devours) | wins about 3 in 4 journeys, often with 0-2 revives |
 | `devour` (Devours when safe, keeps max HP above 80) | about the same, 3 in 4 |
-| `greedy` (Devours everything) | dies by Day 7-12 even after paying for revives |
+| `greedy` (Devours everything) | dies by Day 7-14 even after paying for revives |
 
 Each run also prints the damage the bot took by source (e.g. `plague 320, Vexclaw pounce
 45`), which is how the plague puddles were caught being too strong.
