@@ -83,6 +83,20 @@ death fades in **You Died** before the goddess offers a revive, and victory read
 Felled**. Damage numbers pop off enemies (gold for elites and the boss). The UI is built in
 code from `scripts/ui/ui_theme.gd`, which defines the palette, fonts and framed boxes.
 
+### Sound and music
+
+Metal for every stage of a journey: the forest and the ruins each have their own track, a
+faster one takes over the ruins when fights peak, and the Demon King's theme opens with
+his entrance and turns symphonic when he enrages. The goddess's shrine and the title screen
+get calm pieces. Free tracks come as finished mixes, not stems, so the music reacts by
+filtering: lulls muffle it, waves and crowds open it to full blast, and it drops to a dull
+thud when you pause or die (`scripts/autoload/music.gd`).
+
+Sound runs on three buses (Master, Music, SFX, each with a volume slider in Settings) and a
+hard limiter on Master, so hundreds of hits never clip. Each weapon has its own swing or
+cast and hit sounds, footsteps change with the ground, and combat sounds have their own
+voice pool so a swarm can't cut off a level-up or the death toll.
+
 ### Made for first-timers
 
 - **One-time hints** explain each thing the first time it comes up: moving, gems, elites,

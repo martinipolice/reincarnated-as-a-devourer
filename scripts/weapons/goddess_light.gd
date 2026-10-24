@@ -20,6 +20,7 @@ func _physics_process(delta: float) -> void:
 		return  # stay ready; fire as soon as something is in range
 	_timer = per_level(COOLDOWN) / player.stat("haste")
 	for enemy in targets:
+		Game.sfx("light_cast", 0.12)
 		var bolt := BOLT_SCENE.instantiate() as LightBolt
 		bolt.setup(global_position.direction_to(enemy.global_position),
 			damage(per_level(DAMAGE)), per_level(PIERCE))

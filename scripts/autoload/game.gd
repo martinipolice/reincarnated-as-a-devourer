@@ -5,44 +5,68 @@ extends Node
 ## Emitted just before the enemy frees itself; read what you need right away.
 signal enemy_killed(enemy: Enemy)
 
-const SFX_VOICES := 16
+## Two voice pools: combat sounds (hits, swings, gems, steps) can fill
+## theirs completely without ever cutting off a level-up, a toll or a click.
+const COMBAT_VOICES := 14
+const MAIN_VOICES := 10
 ## Same sound can't restart faster than this, so a 50-enemy Blade swing
 ## doesn't stack 50 copies.
 const SFX_COOLDOWN := 0.05
 const AUDIO := "res://assets/audio/"
-## name -> [variations, volume dB]. A random variation plays each time.
+## name -> [variations, volume dB, base pitch, combat?]. A random variation
+## plays each time; "{0-4}" in a name expands to _000.._004 style numbering
+## as the file names use it. All Kenney (CC0).
 const SFX := {
-	"blade": [["kenney_rpg/knifeSlice.ogg", "kenney_rpg/knifeSlice2.ogg"], -12.0],
-	"enemy_hit": [["kenney_impact/impactPunch_medium_000.ogg", "kenney_impact/impactPunch_medium_001.ogg",
-		"kenney_impact/impactPunch_medium_002.ogg"], -16.0],
-	"aegis_hit": [["kenney_impact/impactMetal_light_000.ogg", "kenney_impact/impactMetal_light_001.ogg",
-		"kenney_impact/impactMetal_light_002.ogg"], -12.0],
-	"enemy_die": [["kenney_impact/impactSoft_heavy_000.ogg", "kenney_impact/impactSoft_heavy_001.ogg",
-		"kenney_impact/impactSoft_heavy_002.ogg"], -10.0],
-	"elite_die": [["kenney_impact/impactBell_heavy_000.ogg"], -6.0],
-	"player_hurt": [["kenney_impact/impactPlate_heavy_000.ogg", "kenney_impact/impactPlate_heavy_001.ogg"], -4.0],
-	"gem": [["kenney_interface/glass_001.ogg", "kenney_interface/glass_002.ogg",
-		"kenney_interface/glass_003.ogg"], -14.0],
-	"level_up": [["kenney_digital/powerUp2.ogg"], -8.0],
-	"pick": [["kenney_interface/confirmation_001.ogg"], -6.0],
-	"click": [["kenney_interface/select_001.ogg"], -6.0],
-	"denied": [["kenney_interface/error_006.ogg"], -6.0],
-	"coins": [["kenney_rpg/handleCoins.ogg"], -4.0],
-	"devour": [["kenney_digital/phaserDown2.ogg"], -6.0],
-	"evolve": [["kenney_digital/powerUp10.ogg"], -4.0],
-	"boss_warn": [["kenney_digital/lowThreeTone.ogg"], -6.0],
-	"boss_slam": [["kenney_impact/impactPunch_heavy_000.ogg", "kenney_impact/impactMining_000.ogg"], -2.0],
-	"boss_volley": [["kenney_digital/phaserUp3.ogg"], -8.0],
-	"chest_open": [["kenney_rpg/metalLatch.ogg", "kenney_rpg/creak1.ogg"], -4.0],
-	"loot": [["kenney_digital/powerUp4.ogg"], -6.0],
-	"bomb": [["kenney_impact/impactMining_000.ogg", "kenney_impact/impactPunch_heavy_000.ogg"], 0.0],
-	"victory": [["kenney_digital/threeTone2.ogg"], -4.0],
-	"defeat": [["kenney_digital/lowDown.ogg"], -4.0],
+	# Weapons. The Blade swing layers drawn-steel and slice takes, pitched
+	# down for weight; each weapon has its own hit so fights read by ear.
+	"blade": [["kenney_rpg/drawKnife{1-3}.ogg", "kenney_rpg/knifeSlice.ogg", "kenney_rpg/knifeSlice2.ogg"], -11.0, 0.82, true],
+	"blade_hit": [["kenney_impact/impactPunch_medium_00{0-4}.ogg", "kenney_impact/impactSoft_medium_00{0-4}.ogg"], -15.0, 0.9, true],
+	"light_cast": [["kenney_digital/laser{4-6}.ogg"], -24.0, 1.5, true],
+	"light_hit": [["kenney_impact/impactGlass_light_00{0-4}.ogg"], -17.0, 1.2, true],
+	"aegis_hit": [["kenney_impact/impactMetal_light_00{0-4}.ogg", "kenney_impact/impactMetal_medium_00{0-4}.ogg"], -12.0, 1.0, true],
+	"enemy_hit": [["kenney_impact/impactPunch_medium_00{0-4}.ogg"], -16.0, 1.0, true],
+	"enemy_die": [["kenney_impact/impactSoft_heavy_00{0-4}.ogg"], -11.0, 0.85, true],
+	"gem": [["kenney_interface/glass_00{1-6}.ogg"], -16.0, 1.0, true],
+	"footstep_grass": [["kenney_impact/footstep_grass_00{0-4}.ogg"], -21.0, 1.0, true],
+	"footstep_stone": [["kenney_impact/footstep_concrete_00{0-4}.ogg"], -21.0, 1.0, true],
+	# The hero and the world.
+	"elite_die": [["kenney_impact/impactBell_heavy_00{0-4}.ogg"], -6.0, 0.8, false],
+	"player_hurt": [["kenney_impact/impactPlate_heavy_00{0-4}.ogg"], -5.0, 1.0, false],
+	"flask": [["kenney_interface/drop_00{1-4}.ogg"], -4.0, 0.7, false],
+	"flask_heal": [["kenney_digital/powerUp7.ogg"], -12.0, 1.2, false],
+	"devour": [["kenney_digital/phaserDown{1-3}.ogg"], -6.0, 0.7, false],
+	"level_up": [["kenney_digital/powerUp2.ogg"], -8.0, 1.0, false],
+	"coins": [["kenney_rpg/handleCoins.ogg", "kenney_rpg/handleCoins2.ogg"], -4.0, 1.0, false],
+	"evolve": [["kenney_digital/powerUp10.ogg"], -4.0, 1.0, false],
+	"chest_open": [["kenney_rpg/metalLatch.ogg", "kenney_rpg/creak1.ogg"], -4.0, 1.0, false],
+	"loot": [["kenney_digital/powerUp4.ogg"], -6.0, 1.0, false],
+	"bomb": [["kenney_impact/impactMining_00{0-4}.ogg"], 0.0, 0.7, false],
+	"shrine": [["kenney_interface/bong_001.ogg"], -6.0, 0.6, false],
+	# The Demon King.
+	"boss_warn": [["kenney_digital/lowThreeTone.ogg"], -6.0, 1.0, false],
+	"boss_slam": [["kenney_impact/impactPunch_heavy_00{0-4}.ogg", "kenney_impact/impactMetal_heavy_00{0-4}.ogg"], -2.0, 0.7, false],
+	"boss_volley": [["kenney_digital/phaserUp{1-3}.ogg"], -8.0, 0.8, false],
+	# Stings: a doom hit and a bell toll, pitched far down; layered with
+	# the music's own cues at death, victory and the boss's arrival.
+	"doom": [["kenney_impact/impactMining_00{0-4}.ogg"], -1.0, 0.45, false],
+	"toll": [["kenney_impact/impactBell_heavy_00{0-4}.ogg"], -3.0, 0.5, false],
+	"victory": [["kenney_digital/threeTone2.ogg"], -4.0, 1.0, false],
+	"defeat": [["kenney_digital/lowDown.ogg"], -4.0, 1.0, false],
+	# Menus.
+	"pick": [["kenney_interface/confirmation_00{1-4}.ogg"], -6.0, 1.0, false],
+	"click": [["kenney_interface/select_00{1-3}.ogg"], -8.0, 1.0, false],
+	"back": [["kenney_interface/back_00{1-4}.ogg"], -8.0, 1.0, false],
+	"toggle": [["kenney_interface/switch_00{1-4}.ogg"], -10.0, 1.0, false],
+	"open_menu": [["kenney_interface/maximize_004.ogg"], -8.0, 1.0, false],
+	"close_menu": [["kenney_interface/minimize_004.ogg"], -8.0, 1.0, false],
+	"denied": [["kenney_interface/error_006.ogg"], -6.0, 1.0, false],
 }
 
 var _streams := {}
-var _voices: Array[AudioStreamPlayer] = []
-var _next_voice := 0
+var _pools := {true: [], false: []}  # combat? -> voices
+var _next_voice := {true: 0, false: 0}
+## Which footstep set the ground calls for; main.gd switches it by area.
+var footstep := "footstep_grass"
 var _last_played := {}
 var _hit_stop_active := false
 var _fx_frames := {}
@@ -68,12 +92,16 @@ func _ready() -> void:
 	_bind("restart", [KEY_R])
 	_bind("pause", [KEY_ESCAPE, KEY_P])
 	for sfx_name in SFX:
-		_streams[sfx_name] = SFX[sfx_name][0].map(func(file: String) -> AudioStream:
-			return load(AUDIO + file))
-	for i in SFX_VOICES:
-		var voice := AudioStreamPlayer.new()
-		add_child(voice)
-		_voices.append(voice)
+		var streams := []
+		for file: String in expand(SFX[sfx_name][0]):
+			streams.append(load(AUDIO + file))
+		_streams[sfx_name] = streams
+	for combat in [true, false]:
+		for i in (COMBAT_VOICES if combat else MAIN_VOICES):
+			var voice := AudioStreamPlayer.new()
+			voice.bus = "SFX"
+			add_child(voice)
+			_pools[combat].append(voice)
 
 
 ## Ratio mitigation. The terminal game used max(0, ATK - DEF), which drops to
@@ -87,12 +115,30 @@ func sfx(sfx_name: String, pitch_variance := 0.08) -> void:
 	if now - _last_played.get(sfx_name, -1.0) < SFX_COOLDOWN:
 		return
 	_last_played[sfx_name] = now
-	var voice := _voices[_next_voice]
-	_next_voice = (_next_voice + 1) % _voices.size()
+	var entry: Array = SFX[sfx_name]
+	var pool: Array = _pools[entry[3]]
+	var voice: AudioStreamPlayer = pool[_next_voice[entry[3]]]
+	_next_voice[entry[3]] = (_next_voice[entry[3]] + 1) % pool.size()
 	voice.stream = _streams[sfx_name].pick_random()
-	voice.volume_db = SFX[sfx_name][1]
-	voice.pitch_scale = randf_range(1.0 - pitch_variance, 1.0 + pitch_variance)
+	voice.volume_db = entry[1]
+	voice.pitch_scale = entry[2] * randf_range(1.0 - pitch_variance, 1.0 + pitch_variance)
 	voice.play()
+
+
+## "name{1-3}.ogg" -> name1.ogg, name2.ogg, name3.ogg. Static so tools can
+## list the files the table needs.
+static func expand(files: Array) -> Array[String]:
+	var out: Array[String] = []
+	for file: String in files:
+		var open := file.find("{")
+		if open < 0:
+			out.append(file)
+			continue
+		var close := file.find("}")
+		var bounds := file.substr(open + 1, close - open - 1).split("-")
+		for n in range(int(bounds[0]), int(bounds[1]) + 1):
+			out.append(file.substr(0, open) + str(n) + file.substr(close + 1))
+	return out
 
 
 ## Which way a sprite should face for a movement direction: the pack's

@@ -17,6 +17,9 @@ func _ready() -> void:
 	var name_label: Label = $Center/VBox/Name
 	name_label.add_theme_font_override("font", UITheme.title_font())
 	name_label.add_theme_font_size_override("font_size", 60)
+	Music.muffle(false)
+	Music.set_intensity(1.0)
+	Music.play("title", 2.0)
 	continue_button.pressed.connect(_continue)
 	var help := Button.new()
 	help.text = "How to play  ·  Settings"

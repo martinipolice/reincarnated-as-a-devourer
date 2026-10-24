@@ -62,6 +62,9 @@ func open(day: int, main: Node) -> void:
 	_day = day
 	_blessed = false
 	_main.player.refill_flask()  # the goddess refills her tears
+	Game.sfx("shrine", 0.0)
+	Music.set_intensity(1.0)
+	Music.play("shrine", 1.5)
 	Hints.show_hint("shrine", "Her blessing is free: pick one first. Then spend gold on training, which lasts all journey. Keep enough gold for a revive.")
 	_story.text = "\n".join(STORY.get(day, []))
 	_title.text = "The Goddess  ·  Day %d" % day if day != 19 else "The Goddess's Farewell  ·  Day 19"

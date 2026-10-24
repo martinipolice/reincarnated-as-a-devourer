@@ -39,20 +39,22 @@ func open(main: Node = null) -> void:
 	else:
 		_nav_button("Back", close)
 	show()
+	Music.muffle(true)
 	if _main:
 		get_tree().paused = true
 		_show_build()
 	else:
 		_show_how_to_play()
-	Game.sfx("click", 0.0)
+	Game.sfx("open_menu", 0.0)
 	(_nav.get_child(0) as Button).grab_focus.call_deferred()
 
 
 func close() -> void:
 	hide()
+	Music.muffle(false)
 	if _main:
 		get_tree().paused = false
-	Game.sfx("click", 0.0)
+	Game.sfx("close_menu", 0.0)
 	closed.emit()
 
 
@@ -66,7 +68,9 @@ func _nav_button(text: String, action: Callable) -> Button:
 	var button := Button.new()
 	button.text = text
 	button.custom_minimum_size = Vector2(220, 44)
-	button.pressed.connect(action)
+	button.pressed.connect(func() -> void:
+		Game.sfx("click", 0.0)
+		action.call())
 	_nav.add_child(button)
 	return button
 
@@ -153,7 +157,9 @@ func _show_build() -> void:
 func _show_settings() -> void:
 	_clear_page()
 	_page.add_child(_heading("Settings"))
-	_slider("Volume", "volume")
+	_slider("Master volume", "volume")
+	_slider("Music", "music")
+	_slider("Sound effects", "sfx")
 	_slider("Screen shake", "shake")
 	_toggle("Damage numbers", "damage_numbers")
 	_toggle("Fullscreen", "fullscreen")
@@ -195,7 +201,9 @@ func _toggle(text: String, key: String) -> void:
 	check.text = text
 	check.button_pressed = bool(Settings.data[key])
 	check.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	check.toggled.connect(func(on: bool) -> void: Settings.set_value(key, on))
+	check.toggled.connect(func(on: bool) -> void:
+		Game.sfx("toggle", 0.0)
+		Settings.set_value(key, on))
 	_page.add_child(check)
 
 
@@ -210,6 +218,7 @@ func _quit() -> void:
 		Game.sfx("denied", 0.0)
 		return
 	get_tree().paused = false
+	Music.muffle(false)
 	Hints.clear()
 	get_tree().change_scene_to_file(TITLE_SCENE)
 

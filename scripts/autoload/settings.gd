@@ -10,7 +10,9 @@ var data := defaults()
 
 static func defaults() -> Dictionary:
 	return {
-		"volume": 0.8,  # 0..1, the master bus
+		"volume": 0.8,  # 0..1 each: the Master, Music and SFX buses
+		"music": 0.7,
+		"sfx": 0.8,
 		"shake": 1.0,  # 0..1, scales every screen shake
 		"damage_numbers": true,
 		"fullscreen": false,
@@ -46,10 +48,22 @@ func save() -> void:
 		file.store_string(JSON.stringify(data, "\t"))
 
 
+## A volume setting as decibels (0 -> effectively silent).
+func bus_db(key: String) -> float:
+	return linear_to_db(maxf(float(data[key]), 0.001))
+
+
 func _apply() -> void:
-	var volume := float(data.volume)
-	AudioServer.set_bus_mute(0, volume <= 0.0)
-	AudioServer.set_bus_volume_db(0, linear_to_db(maxf(volume, 0.001)))
+	AudioServer.set_bus_mute(0, float(data.volume) <= 0.0)
+	AudioServer.set_bus_volume_db(0, bus_db("volume"))
+	var sfx := AudioServer.get_bus_index("SFX")
+	if sfx >= 0:
+		AudioServer.set_bus_mute(sfx, float(data.sfx) <= 0.0)
+		AudioServer.set_bus_volume_db(sfx, bus_db("sfx"))
+	var music := AudioServer.get_bus_index("Music")
+	if music >= 0:
+		AudioServer.set_bus_mute(music, float(data.music) <= 0.0)
+	# The Music bus level itself is set by Music, which adds intensity on top.
 	if DisplayServer.get_name() == "headless":
 		return
 	var mode := DisplayServer.WINDOW_MODE_FULLSCREEN if data.fullscreen else DisplayServer.WINDOW_MODE_WINDOWED

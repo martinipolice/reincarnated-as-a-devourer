@@ -47,7 +47,7 @@ func _physics_process(delta: float) -> void:
 func _on_area_entered(area: Area2D) -> void:
 	if _pierce < 0 or not area is Enemy:
 		return
-	(area as Enemy).take_damage(_damage, _dir * KNOCKBACK)
+	(area as Enemy).take_damage(_damage, _dir * KNOCKBACK, "light_hit")
 	_pierce -= 1
 	if _pierce < 0:
 		queue_free()

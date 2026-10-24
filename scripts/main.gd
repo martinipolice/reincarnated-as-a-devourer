@@ -63,6 +63,14 @@ const SHRINE_SCENE := preload("res://scenes/ui/shrine.tscn")
 const PAUSE_MENU := preload("res://scripts/ui/pause_menu.gd")
 ## After a level-up, gems this close fly to you, so none are left behind.
 const LEVEL_UP_MAGNET := 700.0
+## Music intensity: enemies this close count as pressure; this many is full.
+const PRESSURE_RADIUS := 320.0
+const PRESSURE_FULL := 30.0
+## In the ruins, intensity this high brings in the faster track for at least
+## PEAK_HOLD seconds, until things calm below PEAK_RELEASE.
+const PEAK_AT := 0.9
+const PEAK_RELEASE := 0.6
+const PEAK_HOLD := 20.0
 ## Below this HP fraction, the first time, the game suggests the flask.
 const FLASK_HINT_HP := 0.5
 const SHRINE := preload("res://scripts/ui/shrine.gd")
@@ -118,6 +126,9 @@ var pause_menu: CanvasLayer
 var _shrines_done := []
 var _awaiting_revive := false
 var _last_day := 0
+var _pressure := 0.0
+var _pressure_timer := 0.0
+var _peak_hold := 0.0
 var _spawn_timer := GRACE_PERIOD
 var _elite_timer := ELITE_INTERVAL
 var _chest_timer := CHEST_FIRST
@@ -165,6 +176,7 @@ func _ready() -> void:
 	Save.resume = false
 	end_menu.hide()
 	banner.hide()
+	Music.muffle(false)
 	hud.bind(player, self)
 	gold = gold  # announce the starting gold and revive price
 	_last_day = 0
@@ -215,6 +227,7 @@ func _process(delta: float) -> void:
 		_spawn_chest()
 
 	_update_status()
+	_update_music(delta)
 
 
 func _physics_process(_delta: float) -> void:
@@ -300,6 +313,36 @@ func _spawn_at(data: EnemyData, at: Vector2) -> void:
 	enemy.setup(data, player, false, toughness())
 	enemy.position = at
 	enemies.add_child(enemy)
+
+
+# Which track the moment calls for, and how hard it should hit. Waves swell
+# the music, a crowd around you pushes it to full, lulls muffle it.
+func _update_music(delta: float) -> void:
+	if _awaiting_revive:
+		return
+	Game.footstep = "footstep_grass" if world.biome == "forest" and not _boss_spawned else "footstep_stone"
+	if _boss_spawned:
+		Music.set_intensity(1.0)
+		return
+	_pressure_timer -= delta
+	if _pressure_timer <= 0.0:
+		_pressure_timer = 0.5
+		var near := 0
+		for node in enemies.get_children():
+			if (node as Node2D).global_position.distance_squared_to(player.global_position) < PRESSURE_RADIUS * PRESSURE_RADIUS:
+				near += 1
+		_pressure = clampf(near / PRESSURE_FULL, 0.0, 1.0)
+	var wave := clampf((wave_intensity() - WAVE_LULL) / (WAVE_HIGH - WAVE_LULL), 0.0, 1.0)
+	var intensity := maxf(0.3 + 0.7 * wave, _pressure)
+	Music.set_intensity(intensity)
+	if world.biome == "forest":
+		Music.play("forest", 2.5)
+		return
+	if intensity >= PEAK_AT:
+		_peak_hold = PEAK_HOLD
+	elif intensity < PEAK_RELEASE:
+		_peak_hold -= delta
+	Music.play("ruins_peak" if _peak_hold > 0.0 else "ruins", 2.5)
 
 
 ## The next day the goddess will appear, or 0 if she won't again.
@@ -394,7 +437,14 @@ func _spawn_boss() -> void:
 	boss.setup(DEMON_KING, player)
 	boss.position = player.position + Vector2.RIGHT.rotated(randf() * TAU) * BOSS_SPAWN_DISTANCE
 	boss.summon.connect(_on_boss_summon)
-	boss.enraged.connect(func() -> void: show_banner("The Demon King is enraged!", 2.0))
+	boss.enraged.connect(func() -> void:
+		show_banner("The Demon King is enraged!", 2.0)
+		Game.sfx("toll", 0.0)
+		Music.play("boss_enraged", 1.0))
+	# His arrival: a doom hit and a toll under the boss track's own opening.
+	Game.sfx("doom", 0.0)
+	Game.sfx("toll", 0.0)
+	Music.play("boss_opening", 0.4, "boss")
 	_clear_swarm()
 	world.make_arena(player.position, ARENA_RADIUS)
 	# The goddess's last gift: the duel starts at full strength.
@@ -688,6 +738,9 @@ func _on_player_died() -> void:
 	secondary_button.disabled = true
 	get_tree().paused = true
 	Game.sfx("defeat", 0.0)
+	Game.sfx("doom", 0.0)
+	Game.sfx("toll", 0.0)
+	Music.muffle(true)
 	banner.hide()
 	await moments.you_died()
 	if not _awaiting_revive:
@@ -711,6 +764,7 @@ func _revive() -> void:
 	gold -= cost  # after revives changes, so the HUD shows the next price
 	end_menu.hide()
 	moments.clear()
+	Music.muffle(false)
 	get_tree().paused = false
 	player.revive(REVIVE_HP, REVIVE_INVULN)
 	# She clears a little room around you; the Demon King is untouched.
@@ -731,6 +785,9 @@ func _end_run(message: String, won := false) -> void:
 	_awaiting_revive = false
 	get_tree().paused = false
 	Game.sfx("victory" if won else "defeat", 0.0)
+	if won:
+		Game.sfx("toll", 0.0)
+	Music.stop(4.0 if won else 3.0)
 	Save.end_journey(day(), won)
 	enemies.process_mode = Node.PROCESS_MODE_DISABLED
 	banner.hide()

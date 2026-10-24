@@ -4,7 +4,7 @@ Design and programming: Charles Santos
 
 ## Third-party assets
 
-The art and audio are CC0 (public domain): credit isn't required, but it's given here gladly.
+The art, sound effects and music are CC0 (public domain): credit isn't required, but it's given here gladly.
 The fonts are under the SIL Open Font License. The license text for each pack sits next to its files.
 
 | Asset | Author | Source | License | Used for |
@@ -23,3 +23,18 @@ versions used 0x72's 16x16 DungeonTileset II (CC0); it's no longer in the projec
 ## Engine
 
 Made with [Godot Engine](https://godotengine.org) (MIT license).
+
+## Music
+
+All from [OpenGameArt](https://opengameart.org), all CC0. Converted to OGG and renamed in
+`assets/audio/music/`; levels are matched in `scripts/autoload/music.gd`.
+
+| Track | Author | Source | License | Used for |
+|---|---|---|---|---|
+| Evil temple Ambiance loop | Brandon Morris | [OpenGameArt](https://opengameart.org/content/evil-temple-ambiance-loop) | CC0 (also OGA-BY 3.0) | Title screen |
+| Heavy Battle 2 | MintoDog | [OpenGameArt](https://opengameart.org/node/183145) | CC0 | The Whispering Forest (Days 1-9) |
+| Heavy Dungeon | MintoDog | [OpenGameArt](https://opengameart.org/node/181405) | CC0 | The Fallen Ruins (Days 10-19) |
+| Heavy Boss Battle 1 | MintoDog | [OpenGameArt](https://opengameart.org/node/183631) | CC0 | The Fallen Ruins at peak intensity |
+| Boss Battle #9 [Metal] | nene | [OpenGameArt](https://opengameart.org/node/151361) | CC0 | The Demon King: entrance (opening) and duel (loop) |
+| Boss Battle #2 [Symphonic Metal] | nene | [OpenGameArt](https://opengameart.org/node/84428) | CC0 | The Demon King enraged (loop) |
+| Heavenly Loop | isaiah658 | [OpenGameArt](https://opengameart.org/content/heavenly-loop) | CC0 | The goddess's shrine |

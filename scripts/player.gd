@@ -31,6 +31,7 @@ const FLASK_START_HEAL := 0.35  # fraction of max HP per sip
 const DRINK_TIME := 0.6
 const DRINK_SLOW := 0.35  # move speed multiplier while drinking
 const TEARS_COLOR := Color(1, 0.9, 0.55)
+const STEP_TIME := 0.3  # seconds between footsteps at base speed
 
 var base := {
 	"max_hp": 120.0,
@@ -64,6 +65,7 @@ var _invuln := 0.0
 var _facing := "down"
 var _devour_target: DevourCorpse
 var _devour_progress := 0.0
+var _step := 0.0
 
 @onready var hurtbox: Area2D = $Hurtbox
 @onready var weapons: Node2D = $Weapons
@@ -171,13 +173,14 @@ func _update_flask(delta: float) -> void:
 		if _drinking <= 0.0:
 			var healed := minf(stat("max_hp"), hp + stat("max_hp") * flask_heal) - hp
 			hp += healed
+			Game.sfx("flask_heal", 0.0)
 			Game.fx("spark", global_position, 2.5, TEARS_COLOR)
 			Game.float_text(global_position, "+%d HP" % roundi(healed), TEARS_COLOR)
 		return
 	if Input.is_action_just_pressed("flask") and flask_charges > 0 and hp > 0.0:
 		flask_charges -= 1
 		_drinking = DRINK_TIME
-		Game.sfx("pick", 0.0)
+		Game.sfx("flask", 0.05)
 		flask_changed.emit(flask_charges, flask_max)
 
 
@@ -321,6 +324,14 @@ func _animate(input: Vector2) -> void:
 	# Blink while invulnerable after a hit.
 	sprite.visible = _invuln == 0.0 or fmod(_invuln, 0.1) > 0.05
 	sprite.play(("run_" if velocity != Vector2.ZERO else "idle_") + _facing)
+	# Footsteps, faster as you get faster.
+	if velocity == Vector2.ZERO:
+		_step = 0.0
+		return
+	_step -= get_physics_process_delta_time() * velocity.length() / 170.0
+	if _step <= 0.0:
+		_step = STEP_TIME
+		Game.sfx(Game.footstep, 0.1)
 
 
 func _draw() -> void:
