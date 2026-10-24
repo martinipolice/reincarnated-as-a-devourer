@@ -27,7 +27,7 @@ const EVENT_GAP := Vector2(40.0, 55.0)
 const EVENT_WARNING := 1.5
 ## Enemies get this much tougher each day after the first (HP fully, damage
 ## at 70%; see Enemy.setup). Day 20 is 1 + 19 * this.
-const TOUGHNESS_PER_DAY := 0.16
+const TOUGHNESS_PER_DAY := 0.2
 ## Treasure chests: one appears every CHEST_INTERVAL s (up to MAX_CHESTS at
 ## once) somewhere just off-screen; a HUD arrow points the way. Some are
 ## golden (two rewards); from MIMIC_FROM_DAY some are Mimics that fight back.
@@ -42,7 +42,7 @@ const MAX_CHESTS := 3
 const CHEST_DISTANCE := Vector2(450.0, 850.0)
 const BOMB_RADIUS := 450.0
 const BOMB_DAMAGE := 150.0
-const GOLD_POUCH_PER_DAY := 20
+const GOLD_POUCH_PER_DAY := 12
 ## How far from the Demon King his summoned minions appear.
 const SUMMON_RING := 80.0
 ## Biomes by day; the Demon King's temple arena has this radius.

@@ -155,21 +155,21 @@ always starts from a fresh save and never writes yours:
 godot --headless --fixed-fps 60 --path . -s res://tools/balance_sim.gd -- kite 1
 ```
 
-Current targets (12 runs, seeds 1-4):
+Current targets (20 full journeys, seeds 1-8; the bot visits every shrine, keeps enough
+gold for its next revive, and revives whenever it can pay):
 
 | Bot | Result |
 |---|---|
 | `afk` | dies in 20-40 s |
-| `kite` (never Devours) | wins about half or more of runs; boss fights 45-75 s |
-| `devour` (Devours when safe, keeps max HP above 80) | wins about 40%; its lower max HP makes the boss slam dangerous |
-| `greedy` (Devours everything) | usually dies before Day 20, at or near the 10 max-HP floor |
+| `kite` (never Devours) | wins about half of journeys, usually after 1-3 revives |
+| `devour` (Devours when safe, keeps max HP above 80) | wins a little more often |
+| `greedy` (Devours everything) | dies by Day 7-12 even after paying for revives |
 
 Each run also prints the damage the bot took by source (e.g. `plague 320, Vexclaw pounce
 45`), which is how the plague puddles were caught being too strong.
 
-Devour should pay off when used carefully and kill you when used greedily. A full run
-earns about 13-15k gold (dying on Day 10: about 1.3k); mastering every Sanctuary training
-costs about 40k, so roughly three full runs.
+Devour should pay off when used carefully and kill you when used greedily, and gold
+should feel tight: what you spend at a shrine is gold you won't have for a revive.
 
 ## Credits
 
