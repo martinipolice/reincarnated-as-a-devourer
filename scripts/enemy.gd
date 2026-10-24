@@ -8,7 +8,7 @@ extends Area2D
 ## - "spitter": creep in slowly, pausing to lob globs that leave puddles.
 ## Movement is steered (smooth acceleration) and Crowd keeps a little space
 ## between monsters. Elites are tougher, gold-ringed versions that leave a
-## Devour corpse. From Day 3 an elite can carry a trait (TRAITS), named over
+## Devour corpse. From Day 5 an elite can carry a trait (TRAITS), named over
 ## its head and colored in its ring. Weapons can set enemies burning.
 
 ## For health bars that follow one enemy (the boss bar).
@@ -301,6 +301,9 @@ func take_damage(amount: float, knockback := Vector2.ZERO, hit_sfx := "enemy_hit
 
 func _die() -> void:
 	Game.sfx("elite_die" if elite else "enemy_die")
+	if data.sprite_frames:
+		Game.kill_pop(sprite)
+	Game.splat(global_position, data.color, radius * (1.4 if elite else 1.0))
 	Game.fx("smoke", global_position, 2.5 if elite else 1.5)
 	Game.burst(global_position, data.color.lightened(0.2), 18 if elite else 8)
 	if elite:

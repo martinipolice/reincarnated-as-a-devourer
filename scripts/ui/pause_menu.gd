@@ -162,6 +162,7 @@ func _show_settings() -> void:
 	_slider("Sound effects", "sfx")
 	_slider("Screen shake", "shake")
 	_toggle("Damage numbers", "damage_numbers")
+	_toggle("Reduce flashing", "reduce_flashing")
 	_toggle("Fullscreen", "fullscreen")
 	_toggle("Beginner hints", "hints")
 	var reset := Button.new()

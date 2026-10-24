@@ -107,9 +107,19 @@ func _on_hp_changed(hp: float, max_hp: float) -> void:
 
 
 func _on_xp_changed(xp: int, needed: int, level: int) -> void:
+	var leveled := _level.text != "Lv %d" % level and _level.text != ""
 	_xp_bar.max_value = needed
 	_xp_bar.value = xp
 	_level.text = "Lv %d" % level
+	# Every gem makes the bar breathe; a level-up flares it and pops the level.
+	var flare := 2.4 if leveled else 1.5
+	_xp_bar.modulate = Color(flare, flare, flare * 0.8)
+	create_tween().tween_property(_xp_bar, "modulate", Color.WHITE, 0.35 if leveled else 0.15)
+	if leveled:
+		_level.pivot_offset = _level.size / 2.0
+		_level.scale = Vector2(1.6, 1.6)
+		create_tween().tween_property(_level, "scale", Vector2.ONE, 0.3) \
+			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
 func _on_flask_changed(charges: int, max_charges: int) -> void:

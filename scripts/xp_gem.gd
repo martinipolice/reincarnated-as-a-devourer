@@ -2,7 +2,8 @@ class_name XPGem
 extends Node2D
 ## Dropped by enemies. Flies to the player once inside their pickup radius.
 ## Glows like a Minecraft XP orb: a pulsing green-yellow halo and a gentle bob,
-## so it reads against the bright ground.
+## drawn outside the lighting so it shines in the dark. Flying in, it leaves
+## a short streak, and collecting it chimes (Game.gem_chime).
 
 const ACCEL := 1400.0
 const MAX_SPEED := 900.0
@@ -22,6 +23,7 @@ var _speed := 0.0
 var _gem: Sprite2D
 var _glow: Sprite2D
 var _phase := randf() * TAU
+var _streak := Vector2.ZERO
 
 
 ## Call before add_child().
@@ -47,6 +49,7 @@ func _ready() -> void:
 	_glow = Game.make_glow(GLOW_A, 14.0 * size)
 	add_child(_glow)
 	_gem = Sprite2D.new()
+	_gem.material = Game.unshaded
 	_gem.texture = texture
 	_gem.scale = Vector2.ONE * size
 	add_child(_gem)
@@ -69,8 +72,15 @@ func _physics_process(delta: float) -> void:
 		return
 	_speed = minf(_speed + ACCEL * delta, MAX_SPEED)
 	if distance < COLLECT_DISTANCE or distance < _speed * delta:
-		Game.sfx("gem", 0.15)
+		Game.gem_chime()
 		player.gain_xp(value)
 		queue_free()
 		return
 	position += to_player / distance * _speed * delta
+	_streak = -to_player / distance * minf(_speed * 0.035, 22.0)
+	queue_redraw()
+
+
+func _draw() -> void:
+	if _streak != Vector2.ZERO:
+		draw_line(Vector2.ZERO, _streak, Color(GLOW_A, 0.55), 3.0)

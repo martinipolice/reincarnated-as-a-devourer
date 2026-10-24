@@ -52,11 +52,17 @@ const SUMMON_RING := 80.0
 ## Biomes by day; the Demon King's temple arena has this radius.
 const RUINS_FROM_DAY := 10
 const ARENA_RADIUS := 650.0
+## The world's light by area: dusk in the forest, gloom in the ruins, a
+## blood-dark temple. The hero's own light (Atmosphere) carries through it.
 const MOOD := {
-	"forest": Color(1.0, 0.98, 0.94),
-	"ruins": Color(0.86, 0.8, 0.9),
-	"temple": Color(0.78, 0.62, 0.66),
+	"forest": Color(0.5, 0.48, 0.64),
+	"ruins": Color(0.48, 0.4, 0.5),
+	"temple": Color(0.42, 0.28, 0.34),
 }
+const CHEST_REEL := preload("res://scripts/ui/chest_reel.gd")
+const VIGNETTE := preload("res://scripts/ui/vignette.gd")
+## The camera pulls back from 1.0 toward this as you level (30 levels).
+const MIN_ZOOM := 0.86
 ## The goddess finds you on the original game's lore days.
 const SHRINE_DAYS := [5, 10, 15, 19]
 const SHRINE_SCENE := preload("res://scenes/ui/shrine.tscn")
@@ -72,7 +78,7 @@ const PEAK_AT := 0.9
 const PEAK_RELEASE := 0.6
 const PEAK_HOLD := 20.0
 ## Elites can carry a trait from this day: some of the time, then always.
-const TRAITS_FROM_DAY := 3
+const TRAITS_FROM_DAY := 5  # after the goddess's first visit
 const TRAIT_CHANCE := 0.6
 const TRAITS_ALWAYS_FROM_DAY := 10
 const TRAIT_GOLD_MULT := 2.0
@@ -140,6 +146,9 @@ var revives := 0
 var training_ranks := {}
 var shrine: CanvasLayer
 var pause_menu: CanvasLayer
+var chest_reel: CanvasLayer
+var atmosphere: Atmosphere
+@onready var camera: Camera2D = $Player/Camera2D
 var _shrines_done := []
 var _awaiting_revive := false
 var _last_day := 0
@@ -186,6 +195,14 @@ func _ready() -> void:
 	shrine.closed.connect(_on_shrine_closed)
 	pause_menu = PAUSE_MENU.new()
 	add_child(pause_menu)
+	chest_reel = CHEST_REEL.new()
+	add_child(chest_reel)
+	atmosphere = Atmosphere.new()
+	player.add_child(atmosphere)
+	var vignette := VIGNETTE.new()
+	$HUD.add_child(vignette)
+	$HUD.move_child(vignette, 0)  # under the HUD
+	vignette.bind(player)
 	world.set_origin(player.position)
 	mood.color = MOOD.forest
 	if Save.resume and Save.has_journey():
@@ -196,6 +213,8 @@ func _ready() -> void:
 	end_menu.hide()
 	banner.hide()
 	Music.muffle(false)
+	atmosphere.set_area("ruins" if world.biome == "ruins" else "forest")
+	camera.set_base_zoom(_zoom_for_level(), 0.0)
 	style = StyleMeter.new()
 	add_child(style)
 	style.rank_changed.connect(_on_rank_changed)
@@ -241,6 +260,7 @@ func _process(delta: float) -> void:
 	if day() >= RUINS_FROM_DAY and world.biome == "forest":
 		world.biome = "ruins"
 		create_tween().tween_property(mood, "color", MOOD.ruins, 4.0)
+		atmosphere.set_area("ruins")
 		moments.area_card("The Fallen Ruins")
 	if day() >= FINAL_DAY and not _boss_spawned:
 		_spawn_boss()
@@ -522,6 +542,9 @@ func _spawn_boss() -> void:
 	if healed >= 1.0:
 		Game.float_text(player.global_position, "+%d HP" % roundi(healed), Color(1, 0.95, 0.6))
 	create_tween().tween_property(mood, "color", MOOD.temple, 2.0)
+	atmosphere.set_area("temple")
+	camera.punch(0.15, 1.6)
+	Game.shockwave(boss.global_position, Color(0.9, 0.2, 0.3), 260.0, 0.8)
 	enemies.add_child(boss)
 	hud.show_boss(boss, DEMON_KING.display_name)
 	moments.area_card("Temple of the Demon King")
@@ -556,16 +579,25 @@ func _on_chest_opened(chest: LootChest) -> void:
 		_spring_mimic(chest.global_position)
 		return
 	var golden := chest.kind == LootChest.Kind.GOLDEN
+	var at := chest.global_position
 	Game.sfx("chest_open", 0.0)
-	Game.fx("spark", chest.global_position, 3.0 if golden else 2.0, Color(1, 0.9, 0.5))
+	Game.fx("spark", at, 3.0 if golden else 2.0, Color(1, 0.9, 0.5))
 	Game.shake(0.35 if golden else 0.2)
-	Game.burst(chest.global_position, Color(1, 0.85, 0.35), 50 if golden else 25, 260.0)
 	var hurt := player.hp < player.stat("max_hp") * 0.9
-	var first := Loot.roll(hurt)
-	var lines := [_grant_loot(first, chest.global_position)]
+	var rewards := [Loot.roll(hurt)]
 	if golden:
-		var second := Loot.roll(hurt, first.id)
-		lines.append(_grant_loot(second, chest.global_position + Vector2(24, 0)))
+		rewards.append(Loot.roll(hurt, rewards[0].id))
+	# The ceremony: the run pauses while the reel spins, then the loot lands.
+	get_tree().paused = true
+	await chest_reel.reveal(rewards, golden)
+	if _over or _awaiting_revive:
+		return
+	get_tree().paused = false
+	Game.burst(at, Color(1, 0.85, 0.35), 50 if golden else 25, 260.0)
+	Game.shockwave(at, Color(1, 0.85, 0.35), 120.0 if golden else 90.0)
+	var lines := []
+	for i in rewards.size():
+		lines.append(_grant_loot(rewards[i], at + Vector2(24 * i, 0)))
 	var title := "GOLDEN CHEST\n" if golden else ""
 	show_banner(title + "\n".join(lines), 2.5 if golden else 2.0)
 
@@ -689,10 +721,14 @@ func _on_player_devoured(essence: EssenceData) -> void:
 func _on_weapon_evolved(weapon: Weapon) -> void:
 	Game.sfx("evolve", 0.0)
 	Game.shake(0.5)
+	camera.punch(0.1, 0.9)
+	Game.shockwave(player.global_position, Color(0.8, 0.5, 1.0), 220.0, 0.6)
 	show_banner("%s EVOLVED\n%s" % [weapon.data.display_name.to_upper(), weapon.data.evolved_name], 3.0)
 
 
 func _on_player_leveled_up() -> void:
+	Game.shockwave(player.global_position, Color(1.0, 0.9, 0.5), 170.0)
+	camera.set_base_zoom(_zoom_for_level())
 	if not level_up.visible:
 		_offer_next_level_up()
 
@@ -733,6 +769,11 @@ func _offer_next_level_up() -> void:
 	if offers.is_empty():
 		offers = [FALLBACK_UPGRADE]
 	level_up.open(offers, player)
+
+
+# More of the world comes into view as you grow.
+func _zoom_for_level() -> float:
+	return lerpf(1.0, MIN_ZOOM, clampf((player.level - 1) / 30.0, 0.0, 1.0))
 
 
 func revive_cost() -> int:

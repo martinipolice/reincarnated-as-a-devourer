@@ -81,7 +81,7 @@ slams and double rings. Kill him to win the run.
   kill and Devour, drains when you stop, and drops two ranks whenever you're hit. Higher
   ranks pay up to x1.6 gold and +25% XP, and push the music to full blast.
 - **Four weapons at a time.** Of the five, you carry at most four, so each build chooses.
-- **Elite traits.** From Day 3 (always from Day 10), elites can be **Swift**, **Armored**
+- **Elite traits.** From Day 5 (always from Day 10), elites can be **Swift**, **Armored**
   (half damage), **Splitting** (bursts into three) or **Vampiric** (heals when it hits you),
   named over their head. They pay double gold.
 - **Covenants.** At each shrine the goddess offers two covenants; seal one, if you dare, and
@@ -100,6 +100,30 @@ name and long bar bottom-center. Entering a place shows its name in a gothic tit
 death fades in **You Died** before the goddess offers a revive, and victory reads **Demon King
 Felled**. Damage numbers pop off enemies (gold for elites and the boss). The UI is built in
 code from `scripts/ui/ui_theme.gd`, which defines the palette, fonts and framed boxes.
+
+### Look and feel
+
+Built on what the best survivors-likes share (Vampire Survivors, Halls of Torment, Brotato,
+Death Must Die): a cascade of pickups, reward ceremonies, power you can see, and mood
+carried by light.
+
+- **Dark fantasy lighting.** The world sits in dusk (forest), gloom (ruins) and blood-dark
+  shadow (temple); a warm light travels with the hero and a vignette frames the screen.
+  Gems, essences, chests, flashes and numbers glow through the dark. Fireflies drift in the
+  forest, embers rise in the ruins, ash falls in the temple.
+- **Pickup symphony.** Gems streak toward you and chime up a scale as you chain them; the
+  XP bar flares with each one, and a level-up sends out a golden ring.
+- **Kills that land.** Monsters burst in a white flash and leave dark ichor in their own
+  color, fading after a few seconds.
+- **Danger you can feel.** The screen's edges flash red when you're hit and pulse with a
+  heartbeat below 30% HP.
+- **Chest ceremony.** Opening a chest pauses the run: a reel of loot spins, slows and slams
+  onto the reward, its name beneath (two reels for golden chests). Any key skips it.
+- **The camera** pulls back as you level, so you see more of the growing horde, and pushes
+  in for the Demon King's arrival and weapon evolutions. Its shake now follows smooth noise.
+
+"Reduce flashing" in Settings softens the red flashes, heartbeat pulse and kill flashes;
+screen shake has its own slider.
 
 ### Sound and music
 

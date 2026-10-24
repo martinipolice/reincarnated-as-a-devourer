@@ -66,6 +66,8 @@ const SFX := {
 	"open_menu": [["kenney_interface/maximize_004.ogg"], -8.0, 1.0, false],
 	"close_menu": [["kenney_interface/minimize_004.ogg"], -8.0, 1.0, false],
 	"denied": [["kenney_interface/error_006.ogg"], -6.0, 1.0, false],
+	"tick": [["kenney_interface/tick_00{1-2}.ogg"], -14.0, 1.0, false],
+	"heartbeat": [["kenney_impact/impactSoft_medium_00{0-4}.ogg"], -8.0, 0.45, false],
 }
 
 var _streams := {}
@@ -75,6 +77,18 @@ var _next_voice := {true: 0, false: 0}
 var footstep := "footstep_grass"
 ## Multiplies every new enemy's damage (a shrine covenant raises it).
 var enemy_atk_mult := 1.0
+## For things that should glow in the dark world (gems, flashes, numbers):
+## they skip the lighting, so the darkened Mood doesn't dim them.
+var unshaded: CanvasItemMaterial
+## Gem pickups chime up a pentatonic scale while you keep collecting.
+const CHIME_STEPS := [0, 2, 4, 7, 9, 12, 14, 16, 19, 21, 24]
+const CHIME_RESET := 0.6  # seconds without a gem before the scale restarts
+var _chime_step := 0
+var _chime_last := 0.0
+const MAX_SPLATS := 140
+var _splats: Array = []
+const MAX_POPS := 50
+var _pops := 0
 var _last_played := {}
 var _hit_stop_active := false
 var _fx_frames := {}
@@ -86,6 +100,8 @@ var _glow_material: CanvasItemMaterial
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS  # UI sounds play while paused
+	unshaded = CanvasItemMaterial.new()
+	unshaded.light_mode = CanvasItemMaterial.LIGHT_MODE_UNSHADED
 	_bind("move_left", [KEY_A, KEY_LEFT])
 	_bind("move_right", [KEY_D, KEY_RIGHT])
 	_bind("move_up", [KEY_W, KEY_UP])
@@ -118,7 +134,7 @@ static func damage(atk: float, defense: float) -> float:
 	return atk * 100.0 / (100.0 + defense)
 
 
-func sfx(sfx_name: String, pitch_variance := 0.08) -> void:
+func sfx(sfx_name: String, pitch_variance := 0.08, pitch := 1.0) -> void:
 	var now := Time.get_ticks_msec() / 1000.0
 	if now - _last_played.get(sfx_name, -1.0) < SFX_COOLDOWN:
 		return
@@ -129,7 +145,7 @@ func sfx(sfx_name: String, pitch_variance := 0.08) -> void:
 	_next_voice[entry[3]] = (_next_voice[entry[3]] + 1) % pool.size()
 	voice.stream = _streams[sfx_name].pick_random()
 	voice.volume_db = entry[1]
-	voice.pitch_scale = entry[2] * randf_range(1.0 - pitch_variance, 1.0 + pitch_variance)
+	voice.pitch_scale = entry[2] * pitch * randf_range(1.0 - pitch_variance, 1.0 + pitch_variance)
 	voice.play()
 
 
@@ -147,6 +163,71 @@ static func expand(files: Array) -> Array[String]:
 		for n in range(int(bounds[0]), int(bounds[1]) + 1):
 			out.append(file.substr(0, open) + str(n) + file.substr(close + 1))
 	return out
+
+
+## A gem collected: each one in a quick chain rings a note higher.
+func gem_chime() -> void:
+	var now := Time.get_ticks_msec() / 1000.0
+	if now - _chime_last > CHIME_RESET:
+		_chime_step = 0
+	_chime_last = now
+	var semitones: int = CHIME_STEPS[mini(_chime_step, CHIME_STEPS.size() - 1)]
+	_chime_step += 1
+	sfx("gem", 0.02, pow(2.0, semitones / 12.0))
+
+
+## An expanding ring at `at` (level-ups, the boss's arrival, rewards).
+func shockwave(at: Vector2, color: Color, radius := 140.0, duration := 0.45) -> void:
+	var parent := get_tree().get_first_node_in_group("effects")
+	if parent == null:
+		return
+	var ring := Shockwave.new()
+	ring.position = at
+	ring.color = color
+	ring.radius = radius
+	ring.duration = duration
+	ring.material = unshaded
+	parent.add_child(ring)
+
+
+## Dark ichor on the ground, in the monster's color. Only the newest stay.
+func splat(at: Vector2, color: Color, size := 14.0) -> void:
+	var parent := get_tree().get_first_node_in_group("effects")
+	if parent == null:
+		return
+	var blot := Splat.new()
+	blot.position = at
+	blot.color = Color(color.darkened(0.45), 0.75)
+	blot.size = size
+	parent.add_child(blot)
+	_splats.append(blot)
+	while _splats.size() > MAX_SPLATS:
+		var oldest: Variant = _splats.pop_front()  # may already have faded and freed itself
+		if is_instance_valid(oldest):
+			oldest.queue_free()
+
+
+## A dying monster's last frame swells and flashes out as it bursts.
+func kill_pop(sprite: AnimatedSprite2D) -> void:
+	var parent := get_tree().get_first_node_in_group("effects")
+	if parent == null or _pops >= MAX_POPS or sprite.sprite_frames == null:
+		return
+	_pops += 1
+	var ghost := Sprite2D.new()
+	ghost.texture = sprite.sprite_frames.get_frame_texture(sprite.animation, sprite.frame)
+	ghost.global_position = sprite.global_position
+	ghost.scale = sprite.global_scale
+	ghost.flip_h = sprite.flip_h
+	ghost.material = unshaded
+	var flash := 1.6 if Settings.data.get("reduce_flashing", false) else 3.0
+	ghost.modulate = Color(flash, flash, flash, 0.9)
+	parent.add_child(ghost)
+	var tween := ghost.create_tween().set_parallel()
+	tween.tween_property(ghost, "scale", ghost.scale * 1.4, 0.16).set_ease(Tween.EASE_OUT)
+	tween.tween_property(ghost, "modulate", Color(1, 1, 1, 0), 0.16)
+	tween.chain().tween_callback(func() -> void:
+		_pops -= 1
+		ghost.queue_free())
 
 
 ## Which way a sprite should face for a movement direction: the pack's
@@ -183,6 +264,7 @@ func burst(at: Vector2, color: Color, amount := 10, speed := 140.0) -> void:
 	if parent == null:
 		return
 	var particles := CPUParticles2D.new()
+	particles.material = unshaded
 	particles.position = at
 	particles.emitting = false
 	particles.one_shot = true
@@ -212,6 +294,7 @@ func fx(effect: String, at: Vector2, size := 2.0, tint := Color.WHITE) -> void:
 	if not _fx_frames.has(effect):
 		_fx_frames[effect] = load("res://assets/ninja/%s/sprite_frames.tres" % effect)
 	var sprite := AnimatedSprite2D.new()
+	sprite.material = unshaded
 	sprite.sprite_frames = _fx_frames[effect]
 	sprite.position = at
 	sprite.scale = Vector2.ONE * size
@@ -239,6 +322,7 @@ func make_glow(color: Color, radius: float) -> Sprite2D:
 		_glow_texture.height = 64
 		_glow_material = CanvasItemMaterial.new()
 		_glow_material.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+		_glow_material.light_mode = CanvasItemMaterial.LIGHT_MODE_UNSHADED  # glows in the dark
 	var glow := Sprite2D.new()
 	glow.texture = _glow_texture
 	glow.material = _glow_material
@@ -258,6 +342,7 @@ func damage_number(at: Vector2, amount: float, color := Color.WHITE) -> void:
 		return
 	_damage_numbers += 1
 	var label := Label.new()
+	label.material = unshaded
 	label.text = str(roundi(amount))
 	label.add_theme_font_size_override("font_size", 20)
 	label.add_theme_color_override("font_color", color)
