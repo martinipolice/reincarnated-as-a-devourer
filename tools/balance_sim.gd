@@ -46,6 +46,11 @@ func _process(_delta: float) -> bool:
 		return false
 	if mode != "afk":
 		_steer()
+		var pl = main.player
+		if pl.hp > 0 and pl.hp < pl.stat("max_hp") * 0.4 and pl.flask_charges > 0 and not pl.is_drinking():
+			Input.action_press("flask")
+		else:
+			Input.action_release("flask")
 	var p = main.player
 	var t := frame / 60.0
 	if last_hp >= 0.0 and p.hp < last_hp:
@@ -108,8 +113,6 @@ func _use_shrine() -> void:
 	var options = s._blessing_box.get_children()
 	options[randi() % options.size()].emit_signal("pressed")
 	var p = main.player
-	if p.hp < p.stat("max_hp") * 0.6 and main.gold >= 110 + main.revive_cost():
-		s._buy_potion(s.POTIONS[1])
 	while true:
 		var best = null
 		for t in s.TRAININGS:

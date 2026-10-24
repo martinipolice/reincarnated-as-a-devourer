@@ -10,6 +10,12 @@ var _offers: Array = []
 @onready var options: VBoxContainer = %Options
 
 
+func _ready() -> void:
+	title.add_theme_font_override("font", UITheme.title_font())
+	title.add_theme_font_size_override("font_size", 48)
+	title.add_theme_color_override("font_color", UITheme.GOLD)
+
+
 func open(offers: Array, player: Player) -> void:
 	_offers = offers
 	for child in options.get_children():
@@ -26,11 +32,12 @@ func open(offers: Array, player: Player) -> void:
 		button.add_theme_constant_override("h_separation", 14)
 		button.pressed.connect(_pick.bind(i))
 		options.add_child(button)
-	title.text = "LEVEL %d" % player.level
+	title.text = "Level %d" % player.level
 	Game.sfx("level_up", 0.0)
 	show()
 	get_tree().paused = true
 	(options.get_child(0) as Button).grab_focus()
+	Hints.show_hint("level_up", "Pick one with a click, the number keys 1-3, or the arrow keys and Enter. Esc shows your current build.")
 
 
 func _input(event: InputEvent) -> void:

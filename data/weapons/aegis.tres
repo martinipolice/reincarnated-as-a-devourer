@@ -11,5 +11,5 @@ description = "Golden blades orbit you, striking and shoving enemies away."
 scene = ExtResource("2")
 max_level = 3
 tier_names = PackedStringArray()
-level_descriptions = PackedStringArray("A golden blade orbits you, striking and shoving enemies.", "2 blades, damage 14 → 20", "3 blades, damage 20 → 28")
+level_descriptions = PackedStringArray("A golden blade orbits you, striking and shoving enemies.", "2 blades, damage 14 -> 20", "3 blades, damage 20 -> 28")
 icon = ExtResource("3")

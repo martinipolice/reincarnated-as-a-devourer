@@ -46,6 +46,8 @@ var _next_voice := 0
 var _last_played := {}
 var _hit_stop_active := false
 var _fx_frames := {}
+const MAX_DAMAGE_NUMBERS := 40
+var _damage_numbers := 0
 var _glow_texture: GradientTexture2D
 var _glow_material: CanvasItemMaterial
 
@@ -57,7 +59,14 @@ func _ready() -> void:
 	_bind("move_up", [KEY_W, KEY_UP])
 	_bind("move_down", [KEY_S, KEY_DOWN])
 	_bind("devour", [KEY_E, KEY_SPACE])
+	_bind("flask", [KEY_Q])
+	# Into the default theme too: controls under a CanvasLayer don't inherit
+	# the root window's theme, and the HUD and overlays all live in one.
+	var theme := UITheme.build()
+	get_tree().root.theme = theme
+	ThemeDB.get_default_theme().merge_with(theme)
 	_bind("restart", [KEY_R])
+	_bind("pause", [KEY_ESCAPE, KEY_P])
 	for sfx_name in SFX:
 		_streams[sfx_name] = SFX[sfx_name][0].map(func(file: String) -> AudioStream:
 			return load(AUDIO + file))
@@ -98,7 +107,7 @@ static func facing(direction: Vector2) -> String:
 func shake(amount: float) -> void:
 	var camera := get_tree().get_first_node_in_group("camera")
 	if camera:
-		camera.add_trauma(amount)
+		camera.add_trauma(amount * float(Settings.data.shake))
 
 
 ## Nearly freezes gameplay for a moment so big hits land. Uses a real-time
@@ -183,6 +192,32 @@ func make_glow(color: Color, radius: float) -> Sprite2D:
 	glow.modulate = color
 	glow.scale = Vector2.ONE * radius / 32.0
 	return glow
+
+
+## A small pixel number popping off a hit enemy. Capped, since a swarm can
+## take hundreds of hits a second; main sources skip tiny hits.
+func damage_number(at: Vector2, amount: float, color := Color.WHITE) -> void:
+	if _damage_numbers >= MAX_DAMAGE_NUMBERS or not Settings.data.damage_numbers:
+		return
+	var parent := get_tree().get_first_node_in_group("effects")
+	if parent == null:
+		return
+	_damage_numbers += 1
+	var label := Label.new()
+	label.text = str(roundi(amount))
+	label.add_theme_font_size_override("font_size", 20)
+	label.add_theme_color_override("font_color", color)
+	label.add_theme_color_override("font_outline_color", Color.BLACK)
+	label.add_theme_constant_override("outline_size", 4)
+	label.position = at + Vector2(randf_range(-12, 4), -28)
+	label.z_index = 20
+	parent.add_child(label)
+	var tween := label.create_tween().set_parallel()
+	tween.tween_property(label, "position:y", label.position.y - 18.0, 0.45).set_ease(Tween.EASE_OUT)
+	tween.tween_property(label, "modulate:a", 0.0, 0.2).set_delay(0.3)
+	tween.chain().tween_callback(func() -> void:
+		_damage_numbers -= 1
+		label.queue_free())
 
 
 ## A short line of text that floats up and fades, e.g. "+30 HP".

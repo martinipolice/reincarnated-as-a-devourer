@@ -5,6 +5,8 @@ extends Control
 
 const RUN_SCENE := "res://scenes/main.tscn"
 
+var _menu: PauseMenu
+
 @onready var continue_button: Button = %Continue
 @onready var new_button: Button = %New
 @onready var stats_label: Label = %Stats
@@ -12,7 +14,19 @@ const RUN_SCENE := "res://scenes/main.tscn"
 
 
 func _ready() -> void:
+	var name_label: Label = $Center/VBox/Name
+	name_label.add_theme_font_override("font", UITheme.title_font())
+	name_label.add_theme_font_size_override("font_size", 60)
 	continue_button.pressed.connect(_continue)
+	var help := Button.new()
+	help.text = "How to play  ·  Settings"
+	help.custom_minimum_size = Vector2(0, 44)
+	help.pressed.connect(_open_menu)
+	$Center/VBox.add_child(help)
+	$Center/VBox.move_child(help, new_button.get_index() + 1)
+	_menu = PauseMenu.new()
+	add_child(_menu)
+	_menu.closed.connect(func() -> void: help.grab_focus())
 	new_button.pressed.connect(_new_journey)
 	var journey: Variant = Save.data.journey
 	if Save.has_journey():
@@ -27,6 +41,10 @@ func _ready() -> void:
 		new_button.grab_focus()
 	stats_label.text = "Journeys %d   ·   Victories %d   ·   Best day %d" % [
 		int(Save.data.journeys), int(Save.data.wins), int(Save.data.best_day)]
+
+
+func _open_menu() -> void:
+	_menu.open()
 
 
 func _continue() -> void:

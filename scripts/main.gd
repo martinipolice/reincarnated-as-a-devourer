@@ -4,6 +4,10 @@ extends Node2D
 ## goddess's shrine on the lore days (checkpointing the journey there); and on
 ## death offers a revive for gold, or ends the journey for good.
 
+## For the HUD, which listens instead of reading the run every frame.
+signal gold_changed(gold: int, revive_cost: int)
+signal day_changed(day: int, final_day: int, next_shrine: int)
+
 const SECONDS_PER_DAY := 60.0  # 20 days in 20 minutes
 const FINAL_DAY := 20
 const SPAWN_RADIUS := 700.0
@@ -56,6 +60,11 @@ const MOOD := {
 ## The goddess finds you on the original game's lore days.
 const SHRINE_DAYS := [5, 10, 15, 19]
 const SHRINE_SCENE := preload("res://scenes/ui/shrine.tscn")
+const PAUSE_MENU := preload("res://scripts/ui/pause_menu.gd")
+## After a level-up, gems this close fly to you, so none are left behind.
+const LEVEL_UP_MAGNET := 700.0
+## Below this HP fraction, the first time, the game suggests the flask.
+const FLASK_HINT_HP := 0.5
 const SHRINE := preload("res://scripts/ui/shrine.gd")
 ## Reviving costs gold, doubling each time: 800, 1600, 3200...
 const REVIVE_BASE_COST := 800
@@ -96,21 +105,25 @@ const OFFERS_PER_LEVEL := 3
 
 var elapsed := 0.0
 var kills := 0
-var gold := 0
+var gold := 0:
+	set(value):
+		gold = value
+		gold_changed.emit(gold, revive_cost())
 var boss: Boss
 var revives := 0
 ## TrainingData.id -> ranks bought at the goddess's shrines this journey.
 var training_ranks := {}
 var shrine: CanvasLayer
+var pause_menu: CanvasLayer
 var _shrines_done := []
 var _awaiting_revive := false
+var _last_day := 0
 var _spawn_timer := GRACE_PERIOD
 var _elite_timer := ELITE_INTERVAL
 var _chest_timer := CHEST_FIRST
 var _event_timer := EVENT_FIRST
 var _fervor_until := 0.0
 var _boss_spawned := false
-var _devour_hint_shown := false
 var _over := false
 var _banner_tween: Tween
 
@@ -118,12 +131,10 @@ var _banner_tween: Tween
 @onready var enemies: Node2D = $Enemies
 @onready var pickups: Node2D = $Pickups
 @onready var level_up: CanvasLayer = $LevelUp
-@onready var info_label: Label = $HUD/Info
-@onready var xp_bar: ProgressBar = $HUD/XPBar
-@onready var boss_label: Label = $HUD/BossLabel
-@onready var boss_bar: ProgressBar = $HUD/BossBar
+@onready var hud: Control = $HUD/SoulsHUD
+@onready var moments: CanvasLayer = $Moments
 @onready var banner: Label = $HUD/Banner
-@onready var end_menu: Control = $HUD/EndMenu
+@onready var end_menu: Control = $EndLayer/EndMenu
 @onready var end_text: Label = %EndText
 @onready var primary_button: Button = %Primary
 @onready var secondary_button: Button = %Secondary
@@ -143,6 +154,8 @@ func _ready() -> void:
 	shrine = SHRINE_SCENE.instantiate()
 	add_child(shrine)
 	shrine.closed.connect(_on_shrine_closed)
+	pause_menu = PAUSE_MENU.new()
+	add_child(pause_menu)
 	world.set_origin(player.position)
 	mood.color = MOOD.forest
 	if Save.resume and Save.has_journey():
@@ -152,8 +165,12 @@ func _ready() -> void:
 	Save.resume = false
 	end_menu.hide()
 	banner.hide()
-	boss_label.hide()
-	boss_bar.hide()
+	hud.bind(player, self)
+	gold = gold  # announce the starting gold and revive price
+	_last_day = 0
+	moments.area_card("The Fallen Ruins" if day() >= RUINS_FROM_DAY else "The Whispering Forest")
+	Hints.show_hint("move", "Move with WASD or the arrow keys. Your weapons attack on their own: focus on staying alive.")
+	Hints.show_hint("pause", "Press Esc any time to pause, check your build, read how to play, or change settings.")
 
 
 func day() -> int:
@@ -172,13 +189,20 @@ func _process(delta: float) -> void:
 		return
 
 	elapsed += delta
+	if day() != _last_day:
+		_last_day = day()
+		day_changed.emit(day(), FINAL_DAY, next_shrine_day())
+		if next_shrine_day() == day() + 1:
+			Hints.show_hint("shrine_soon", "The goddess finds you tomorrow. At her shrine, gold buys training. Gold also pays for a revive if you fall, so don't spend it all.")
+	if not _over and player.hp < player.stat("max_hp") * FLASK_HINT_HP and player.flask_charges > 0:
+		Hints.show_hint("flask", "You're hurt! Press Q to drink the Goddess's Tears. She refills them at every shrine, so use them.")
 	if day() in SHRINE_DAYS and not day() in _shrines_done and not level_up.visible:
 		_shrines_done.append(day())
 		shrine.open(day(), self)
 	if day() >= RUINS_FROM_DAY and world.biome == "forest":
 		world.biome = "ruins"
 		create_tween().tween_property(mood, "color", MOOD.ruins, 4.0)
-		show_banner("The forest withers into ancient ruins...", 3.0)
+		moments.area_card("The Fallen Ruins")
 	if day() >= FINAL_DAY and not _boss_spawned:
 		_spawn_boss()
 
@@ -190,7 +214,7 @@ func _process(delta: float) -> void:
 		_chest_timer = CHEST_INTERVAL
 		_spawn_chest()
 
-	_update_hud()
+	_update_status()
 
 
 func _physics_process(_delta: float) -> void:
@@ -278,23 +302,22 @@ func _spawn_at(data: EnemyData, at: Vector2) -> void:
 	enemies.add_child(enemy)
 
 
-func _update_hud() -> void:
-	var text := "DAY %d / %d     Lv %d\nHP %d / %d\nKills %d   Gold %d" % [
-		day(), FINAL_DAY, player.level, ceili(player.hp), player.stat("max_hp"), kills, gold]
+## The next day the goddess will appear, or 0 if she won't again.
+func next_shrine_day() -> int:
+	for shrine_day: int in SHRINE_DAYS:
+		if shrine_day > day() or (shrine_day == day() and not shrine_day in _shrines_done):
+			return shrine_day
+	return 0
+
+
+# The HUD's status line: timed buffs and what you've devoured.
+func _update_status() -> void:
+	var parts := []
 	if elapsed < _fervor_until:
-		text += "\nGoddess's Fervor: %ds" % ceili(_fervor_until - elapsed)
-	text += "\nRevive: %dg" % revive_cost()
-	if player.devour_count() > 0:
-		var parts := []
-		for essence: EssenceData in player.essences:
-			parts.append("%s x%d" % [essence.display_name.get_slice(" ", 0), player.essences[essence]])
-		text += "\nDevoured: " + ", ".join(parts)
-	info_label.text = text
-	xp_bar.max_value = player.xp_to_next()
-	xp_bar.value = player.xp
-	if is_instance_valid(boss):
-		boss_bar.max_value = boss.max_hp
-		boss_bar.value = boss.hp
+		parts.append("Goddess's Fervor  %ds" % ceili(_fervor_until - elapsed))
+	for essence: EssenceData in player.essences:
+		parts.append("%s x%d" % [essence.display_name.get_slice(" ", 0), player.essences[essence]])
+	hud.set_status("   ".join(parts))
 
 
 func show_banner(text: String, duration := 2.5) -> void:
@@ -334,11 +357,18 @@ func _spawn_enemy(elite := false, distance := SPAWN_RADIUS) -> void:
 	enemy.setup(_pick_enemy(elite), player, elite, toughness())
 	enemy.position = _spawn_point(distance)
 	enemies.add_child(enemy)
+	if elite:
+		Hints.show_hint("elite", "An elite is coming: bigger and tougher. Kill it and it drops an essence you can Devour.")
 
 
 # Testing shortcuts. Only active in debug builds (running from the editor),
 # never in an exported game.
 func _unhandled_input(event: InputEvent) -> void:
+	# Esc pauses, unless a screen (level-up, shrine, death) already has.
+	if event.is_action_pressed("pause") and not _over and not get_tree().paused:
+		get_viewport().set_input_as_handled()
+		pause_menu.open(self)
+		return
 	if not OS.is_debug_build() or _over or not event is InputEventKey:
 		return
 	var key := event as InputEventKey
@@ -375,10 +405,10 @@ func _spawn_boss() -> void:
 		Game.float_text(player.global_position, "+%d HP" % roundi(healed), Color(1, 0.95, 0.6))
 	create_tween().tween_property(mood, "color", MOOD.temple, 2.0)
 	enemies.add_child(boss)
-	boss_label.text = DEMON_KING.display_name.to_upper()
-	boss_label.show()
-	boss_bar.show()
-	show_banner("DAY 20\nThe sky darkens... The Demon King descends.", 3.5)
+	hud.show_boss(boss, DEMON_KING.display_name)
+	moments.area_card("Temple of the Demon King")
+	show_banner("The sky darkens... The Demon King descends.", 3.5)
+	Hints.show_hint("boss", "A red mark on the ground shows where he will slam: step out of it. Dodge his rings of dark orbs, and drink your Tears when low.")
 
 
 func _spawn_chest() -> void:
@@ -392,6 +422,7 @@ func _spawn_chest() -> void:
 	elif roll < GOLDEN_CHANCE + MIMIC_CHANCE and day() >= MIMIC_FROM_DAY:
 		kind = LootChest.Kind.MIMIC
 	_place_chest(player.position + Vector2.RIGHT.rotated(randf() * TAU) * distance, kind)
+	Hints.show_hint("chest", "A chest appeared! Follow the golden arrow at the edge of the screen to find it.")
 
 
 func _place_chest(at: Vector2, kind: LootChest.Kind) -> void:
@@ -512,6 +543,7 @@ func _on_enemy_killed(enemy: Enemy) -> void:
 	if enemy.data.boss:
 		_end_run("VICTORY\n\nThe Demon King falls to his knees...\n\"Finally... Tell her... I waited.\"", true)
 		return
+	Hints.show_hint("gems", "Walk near the green gems to collect XP. Each level lets you pick a new weapon or upgrade.")
 	var gem := GEM_SCENE.instantiate() as XPGem
 	gem.setup(enemy.data.xp * (5 if enemy.elite else 1), player)
 	gem.position = enemy.global_position
@@ -521,9 +553,7 @@ func _on_enemy_killed(enemy: Enemy) -> void:
 		corpse.setup(enemy.data.essence)
 		corpse.position = enemy.global_position
 		pickups.add_child.call_deferred(corpse)
-		if not _devour_hint_shown:
-			_devour_hint_shown = true
-			show_banner("An elite has fallen.\nStand on its essence and hold E or Space to Devour.", 4.0)
+		Hints.show_hint("devour", "An elite has fallen! Follow the colored arrow, stand on its glowing essence and hold E or Space to Devour it: a lasting power that costs a little max HP.")
 
 
 func _on_player_devoured(essence: EssenceData) -> void:
@@ -554,7 +584,17 @@ func _on_upgrade_chosen(upgrade: Resource) -> void:
 	Game.fx("spark", player.global_position, 2.5, Color(1, 0.9, 0.5))
 	Game.burst(player.global_position, Color(1, 0.85, 0.35), 24, 220.0)
 	Game.shake(0.15)
+	if player.pending_level_ups == 0:
+		_gather_gems()
 	_offer_next_level_up()
+
+
+# After the level-up screen, nearby gems fly in on their own.
+func _gather_gems() -> void:
+	for node in pickups.get_children():
+		var gem := node as XPGem
+		if gem and gem.global_position.distance_to(player.global_position) < LEVEL_UP_MAGNET:
+			gem.magnetize()
 
 
 # Shows one level-up screen per pending level, one after another.
@@ -567,7 +607,6 @@ func _offer_next_level_up() -> void:
 	offers.resize(mini(OFFERS_PER_LEVEL, offers.size()))
 	if offers.is_empty():
 		offers = [FALLBACK_UPGRADE]
-	_update_hud()  # the HUD freezes while paused, so show the new level now
 	level_up.open(offers, player)
 
 
@@ -604,7 +643,8 @@ func _snapshot() -> Dictionary:
 		"day": day(), "level": player.level, "xp": player.xp,
 		"hp_fraction": player.hp / player.stat("max_hp"), "gold": gold, "kills": kills,
 		"revives": revives, "training": training_ranks.duplicate(), "upgrades": upgrades,
-		"essences": essences, "seed": world.seed_value, "devour_hint": _devour_hint_shown,
+		"essences": essences, "seed": world.seed_value,
+		"flask_max": player.flask_max, "flask_heal": player.flask_heal,
 	}
 
 
@@ -619,7 +659,6 @@ func _restore(journey: Dictionary) -> void:
 	gold = int(journey.gold)
 	kills = int(journey.kills)
 	revives = int(journey.revives)
-	_devour_hint_shown = bool(journey.get("devour_hint", false))
 	player.level = int(journey.level)
 	player.xp = int(journey.xp)
 	for entry: Array in journey.upgrades:
@@ -631,6 +670,9 @@ func _restore(journey: Dictionary) -> void:
 	for training: TrainingData in SHRINE.TRAININGS:
 		for i in int(journey.training.get(training.id, 0)):
 			add_training(training)
+	player.flask_max = int(journey.get("flask_max", player.flask_max))
+	player.flask_heal = float(journey.get("flask_heal", player.flask_heal))
+	player.refill_flask()
 	player.hp = player.stat("max_hp") * float(journey.hp_fraction)
 	if saved_day >= RUINS_FROM_DAY:
 		world.biome = "ruins"
@@ -642,12 +684,17 @@ func _restore(journey: Dictionary) -> void:
 func _on_player_died() -> void:
 	# The goddess can pull you back, for a price that doubles every time.
 	_awaiting_revive = true
+	primary_button.disabled = true  # until the offer is on screen
+	secondary_button.disabled = true
 	get_tree().paused = true
 	Game.sfx("defeat", 0.0)
 	banner.hide()
+	await moments.you_died()
+	if not _awaiting_revive:
+		return
 	var cost := revive_cost()
 	var can_pay := gold >= cost
-	end_text.text = "You have fallen...\n\nThe goddess reaches for you. She can pull you back,\nbut her light grows weaker each time.\n\nRevive: %d gold   (you have %d)" % [cost, gold]
+	end_text.text = "The goddess reaches for you. She can pull you back,\nbut her light grows weaker each time.\n\nRevive: %d gold   (you have %d)" % [cost, gold]
 	primary_button.text = "Revive  (%dg)" % cost
 	secondary_button.text = "Accept your fate"
 	secondary_button.show()
@@ -656,10 +703,14 @@ func _on_player_died() -> void:
 
 
 func _revive() -> void:
+	var cost := revive_cost()
+	if gold < cost:
+		return
 	_awaiting_revive = false
-	gold -= revive_cost()
 	revives += 1
+	gold -= cost  # after revives changes, so the HUD shows the next price
 	end_menu.hide()
+	moments.clear()
 	get_tree().paused = false
 	player.revive(REVIVE_HP, REVIVE_INVULN)
 	# She clears a little room around you; the Demon King is untouched.
@@ -681,9 +732,11 @@ func _end_run(message: String, won := false) -> void:
 	get_tree().paused = false
 	Game.sfx("victory" if won else "defeat", 0.0)
 	Save.end_journey(day(), won)
-	_update_hud()
 	enemies.process_mode = Node.PROCESS_MODE_DISABLED
 	banner.hide()
+	end_menu.hide()
+	if won:
+		await moments.felled("Demon King Felled")
 	end_text.text = "%s\n\nDay %d  ·  Level %d  ·  %d kills  ·  %d devoured  ·  %d revives" % [
 		message, day(), player.level, kills, player.devour_count(), revives]
 	primary_button.text = "Begin a new journey  (R)"

@@ -6,6 +6,11 @@ extends CharacterBody2D
 
 signal died
 signal leveled_up
+## For the HUD: it listens instead of reading the player every frame.
+signal hp_changed(hp: float, max_hp: float)
+signal stats_changed
+signal xp_changed(xp: int, needed: int, level: int)
+signal flask_changed(charges: int, max_charges: int)
 signal devoured(essence: EssenceData)
 signal weapon_evolved(weapon: Weapon)
 
@@ -19,21 +24,35 @@ const DEVOUR_RANGE := 40.0
 ## Fraction of (the new) max HP healed by each successful Devour.
 const DEVOUR_HEAL := 0.25
 const DEVOUR_COLOR := Color(0.8, 0.45, 1.0)
+## Goddess's Tears: a flask with a few charges (Q to drink), refilled at
+## every goddess shrine. Drinking slows you for a moment, like Estus.
+const FLASK_START_CHARGES := 3
+const FLASK_START_HEAL := 0.35  # fraction of max HP per sip
+const DRINK_TIME := 0.6
+const DRINK_SLOW := 0.35  # move speed multiplier while drinking
+const TEARS_COLOR := Color(1, 0.9, 0.55)
 
 var base := {
 	"max_hp": 120.0,
 	"might": 1.0,  # multiplies all weapon damage
 	"defense": 10.0,
 	"move_speed": 170.0,
-	"pickup_radius": 90.0,
+	"pickup_radius": 120.0,
 	"haste": 1.0,  # weapon attack speed multiplier
 	"regen": 0.0,  # HP per second
 }
 ## Each entry: {"stat": "defense", "add": 10.0, "mult": 0.0}
 var modifiers: Array[Dictionary] = []
-var hp: float
+var hp: float:
+	set(value):
+		hp = value
+		hp_changed.emit(hp, stat("max_hp"))
 var xp := 0
 var level := 1
+var flask_max := FLASK_START_CHARGES
+var flask_charges := FLASK_START_CHARGES
+var flask_heal := FLASK_START_HEAL
+var _drinking := 0.0
 ## Level-ups earned but not yet chosen on the level-up screen.
 var pending_level_ups := 0
 ## WeaponData / ItemData -> how many times it has been picked.
@@ -71,9 +90,11 @@ func stat(stat_name: String) -> float:
 
 func _physics_process(delta: float) -> void:
 	_update_devour(delta)
+	_update_flask(delta)
 	# Channeling Devour roots you in place: that is its risk.
 	var input := Input.get_vector("move_left", "move_right", "move_up", "move_down")
-	velocity = Vector2.ZERO if is_devouring() else input * stat("move_speed")
+	var speed := stat("move_speed") * (DRINK_SLOW if _drinking > 0.0 else 1.0)
+	velocity = Vector2.ZERO if is_devouring() else input * speed
 	move_and_slide()
 	_animate(input)
 
@@ -121,8 +142,43 @@ func gain_xp(amount: int) -> void:
 		level += 1
 		pending_level_ups += 1
 		gained = true
+	xp_changed.emit(xp, xp_to_next(), level)
 	if gained:
 		leveled_up.emit()
+
+
+## Tells the HUD about every stat at once (after loading, or big changes).
+func announce() -> void:
+	stats_changed.emit()
+	hp_changed.emit(hp, stat("max_hp"))
+	xp_changed.emit(xp, xp_to_next(), level)
+	flask_changed.emit(flask_charges, flask_max)
+
+
+func is_drinking() -> bool:
+	return _drinking > 0.0
+
+
+## Refill (at a shrine) or upgrade the flask.
+func refill_flask() -> void:
+	flask_charges = flask_max
+	flask_changed.emit(flask_charges, flask_max)
+
+
+func _update_flask(delta: float) -> void:
+	if _drinking > 0.0:
+		_drinking -= delta
+		if _drinking <= 0.0:
+			var healed := minf(stat("max_hp"), hp + stat("max_hp") * flask_heal) - hp
+			hp += healed
+			Game.fx("spark", global_position, 2.5, TEARS_COLOR)
+			Game.float_text(global_position, "+%d HP" % roundi(healed), TEARS_COLOR)
+		return
+	if Input.is_action_just_pressed("flask") and flask_charges > 0 and hp > 0.0:
+		flask_charges -= 1
+		_drinking = DRINK_TIME
+		Game.sfx("pick", 0.0)
+		flask_changed.emit(flask_charges, flask_max)
 
 
 ## Upgrades from `pool` that aren't at max level yet.
@@ -148,6 +204,7 @@ func apply_upgrade(upgrade: Resource) -> void:
 		hp += maxf(0.0, stat("max_hp") - old_max)
 		hp = minf(stat("max_hp"), hp + stat("max_hp") * item.heal_fraction)
 	_check_evolutions()
+	stats_changed.emit()
 
 
 func _level_weapon(data: WeaponData, new_level: int) -> void:
@@ -165,8 +222,10 @@ func _level_weapon(data: WeaponData, new_level: int) -> void:
 ## A modifier that removes itself after `duration` seconds of gameplay.
 func add_timed_modifier(mod: Dictionary, duration: float) -> void:
 	modifiers.append(mod)
+	stats_changed.emit()
 	await get_tree().create_timer(duration, false).timeout
 	modifiers.erase(mod)
+	stats_changed.emit()
 
 
 func is_devouring() -> bool:
@@ -193,6 +252,7 @@ func add_essence(essence: EssenceData) -> void:
 	modifiers.append({"stat": "max_hp", "add": -essence.max_hp_cost})
 	hp = minf(hp, stat("max_hp"))
 	_check_evolutions()
+	stats_changed.emit()
 
 
 ## Back from death (a goddess revive): some HP and a moment of safety.

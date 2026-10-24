@@ -14,12 +14,13 @@ const TRAININGS := [
 	preload("res://data/training/dexterity.tres"),
 	preload("res://data/training/guts.tres"),
 ]
-## [name, fraction of max HP restored, price, icon]
-const POTIONS := [
-	["Common Potion", 0.3, 60, preload("res://assets/ninja/images/common_potion.png")],
-	["High Potion", 0.6, 110, preload("res://assets/ninja/images/high_potion.png")],
-	["Flask of Rejuvenation", 1.0, 180, preload("res://assets/ninja/images/rejuvenation.png")],
+## Goddess's Tears upgrades: [id, name, description, base price, max rank].
+## Prices double with each rank.
+const TEARS := [
+	["vessel", "Tear Vessel", "+1 flask charge", 300, 3],
+	["blessed", "Blessed Tears", "Each sip heals 10% more", 250, 3],
 ]
+const TEARS_ICON := preload("res://assets/ninja/images/common_potion.png")
 ## The goddess's words on each shrine day, from the terminal game's lore.
 const STORY := {
 	5: ["You dream of the goddess watching from afar.",
@@ -60,8 +61,10 @@ func open(day: int, main: Node) -> void:
 	_main = main
 	_day = day
 	_blessed = false
+	_main.player.refill_flask()  # the goddess refills her tears
+	Hints.show_hint("shrine", "Her blessing is free: pick one first. Then spend gold on training, which lasts all journey. Keep enough gold for a revive.")
 	_story.text = "\n".join(STORY.get(day, []))
-	_title.text ="THE GODDESS  ·  DAY %d" % day if day != 19 else "THE GODDESS'S FAREWELL  ·  DAY 19"
+	_title.text = "The Goddess  ·  Day %d" % day if day != 19 else "The Goddess's Farewell  ·  Day 19"
 	_build_blessings()
 	_refresh()
 	visible = true
@@ -93,15 +96,21 @@ func _refresh() -> void:
 	for child in _potion_box.get_children():
 		_potion_box.remove_child(child)
 		child.queue_free()
-	for potion: Array in POTIONS:
+	for upgrade: Array in TEARS:
+		var rank := _tears_rank(upgrade[0])
 		var buy := Button.new()
-		buy.text = "%s\n%dg" % [potion[0], potion[2]]
-		buy.icon = potion[3]
+		buy.icon = TEARS_ICON
 		buy.expand_icon = true
-		buy.add_theme_constant_override("icon_max_width", 28)
-		buy.custom_minimum_size = Vector2(190, 56)
-		buy.disabled = _main.gold < potion[2] or player.hp >= player.stat("max_hp")
-		buy.pressed.connect(_buy_potion.bind(potion))
+		buy.add_theme_constant_override("icon_max_width", 26)
+		buy.custom_minimum_size = Vector2(290, 52)
+		if rank >= upgrade[4]:
+			buy.text = "%s  ·  mastered" % upgrade[1]
+			buy.disabled = true
+		else:
+			var cost: int = upgrade[3] << rank
+			buy.text = "%s  %dg\n%s" % [upgrade[1], cost, upgrade[2]]
+			buy.disabled = _main.gold < cost
+			buy.pressed.connect(_buy_tears.bind(upgrade))
 		_potion_box.add_child(buy)
 	_continue.disabled = not _blessed
 	_continue.text = "Continue your journey" if _blessed else "Choose her blessing first"
@@ -176,13 +185,25 @@ func _buy_training(training: TrainingData) -> void:
 	_refresh()
 
 
-func _buy_potion(potion: Array) -> void:
+func _tears_rank(id: String) -> int:
 	var player: Player = _main.player
-	if _main.gold < potion[2]:
+	if id == "vessel":
+		return player.flask_max - Player.FLASK_START_CHARGES
+	return roundi((player.flask_heal - Player.FLASK_START_HEAL) / 0.1)
+
+
+func _buy_tears(upgrade: Array) -> void:
+	var player: Player = _main.player
+	var cost: int = upgrade[3] << _tears_rank(upgrade[0])
+	if _main.gold < cost:
 		Game.sfx("denied", 0.0)
 		return
-	_main.gold -= potion[2]
-	player.hp = minf(player.stat("max_hp"), player.hp + player.stat("max_hp") * potion[1])
+	_main.gold -= cost
+	if upgrade[0] == "vessel":
+		player.flask_max += 1
+	else:
+		player.flask_heal += 0.1
+	player.refill_flask()
 	Game.sfx("loot", 0.0)
 	_refresh()
 
@@ -191,7 +212,7 @@ func _buy_potion(potion: Array) -> void:
 # left, and her words, blessing and shop on the right.
 func _build() -> void:
 	var dim := ColorRect.new()
-	dim.color = Color(0.05, 0.04, 0.09, 0.88)
+	dim.color = Color(0.02, 0.015, 0.03, 0.93)
 	add_child(dim)
 	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var goddess := AnimatedSprite2D.new()
@@ -211,38 +232,40 @@ func _build() -> void:
 	margin.add_theme_constant_override("margin_top", 24)
 	margin.add_theme_constant_override("margin_bottom", 24)
 	add_child(margin)
-	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	margin.set_anchors_and_offsets_preset(Control.PRESET_LEFT_WIDE)
+	margin.offset_right = 1280  # keep the 720p layout on wider screens
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 10)
 	margin.add_child(column)
 
-	_title = _label("", 30, Color(1, 0.9, 0.65))
+	_title = UITheme.title_label("", 48, UITheme.GOLD)
+	_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	column.add_child(_title)
-	_story = _label("", 18, Color(0.85, 0.82, 0.95))
+	_story = _label("", 20, Color(0.85, 0.82, 0.95))
 	_story.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	column.add_child(_story)
-	_gold_label = _label("", 22, Color(1, 0.85, 0.35))
+	_gold_label = _label("", 30, Color(1, 0.85, 0.35))
 	column.add_child(_gold_label)
 
-	_blessing_title = _label("", 18, Color.WHITE)
+	_blessing_title = _label("", 20, Color.WHITE)
 	column.add_child(_blessing_title)
 	_blessing_box = HBoxContainer.new()
 	_blessing_box.add_theme_constant_override("separation", 10)
 	column.add_child(_blessing_box)
 
-	column.add_child(_label("Training (lasts the whole journey)", 18, Color.WHITE))
+	column.add_child(_label("Training (lasts the whole journey)", 20, Color.WHITE))
 	_training_box = VBoxContainer.new()
 	column.add_child(_training_box)
 
-	column.add_child(_label("Potions", 18, Color.WHITE))
+	column.add_child(_label("Goddess's Tears (refilled at every shrine)", 20, Color.WHITE))
 	_potion_box = HBoxContainer.new()
 	_potion_box.add_theme_constant_override("separation", 10)
 	column.add_child(_potion_box)
 
-	_revive_label = _label("", 15, Color(0.75, 0.7, 0.8))
+	_revive_label = _label("", 20, Color(0.75, 0.7, 0.8))
 	column.add_child(_revive_label)
 	_continue = Button.new()
-	_continue.custom_minimum_size = Vector2(0, 46)
+	_continue.custom_minimum_size = Vector2(0, 44)
 	_continue.add_theme_font_size_override("font_size", 20)
 	_continue.pressed.connect(_close)
 	column.add_child(_continue)

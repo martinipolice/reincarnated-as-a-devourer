@@ -10,6 +10,9 @@ extends Area2D
 ## between monsters. Elites are tougher, gold-ringed versions that leave a
 ## Devour corpse.
 
+## For health bars that follow one enemy (the boss bar).
+signal damaged(hp: float, max_hp: float)
+
 enum State { MOVE, WINDUP, DASH, RECOVER }
 
 const KNOCKBACK_DECAY := 900.0
@@ -59,6 +62,7 @@ var _cooldown := 0.0
 var _flank := 0.0  # this swarm member's approach angle
 var _dash_target := Vector2.ZERO
 var _directional := false
+var _next_number := 0
 
 @onready var sprite: AnimatedSprite2D = $AnimatedSprite2D
 
@@ -206,7 +210,14 @@ func alive() -> bool:
 func take_damage(amount: float, knockback := Vector2.ZERO, hit_sfx := "enemy_hit") -> void:
 	if not alive():
 		return
-	hp -= Game.damage(amount, data.defense)
+	var dealt := Game.damage(amount, data.defense)
+	hp -= dealt
+	damaged.emit(hp, max_hp)
+	# Throttled per enemy, so a swarm under the Blade doesn't drown the screen.
+	var now := Time.get_ticks_msec()
+	if now >= _next_number:
+		_next_number = now + 250
+		Game.damage_number(global_position, dealt, Color(1, 0.85, 0.4) if elite or data.boss else Color.WHITE)
 	# A dashing pouncer is committed: hits don't knock it off course.
 	if state != State.DASH:
 		_knockback += knockback * data.knockback_scale * (ELITE_KNOCKBACK_MULT if elite else 1.0)

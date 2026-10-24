@@ -45,7 +45,7 @@ theme_override_constants/separation = 16
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.9, 0.65, 1)
 theme_override_font_sizes/font_size = 40
-text = "REINCARNATED AS A DEVOURER"
+text = "Reincarnated as a Devourer"
 horizontal_alignment = 1
 
 [node name="Quote" type="Label" parent="Center/VBox"]
@@ -58,13 +58,13 @@ horizontal_alignment = 1
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
-theme_override_font_sizes/font_size = 22
+theme_override_font_sizes/font_size = 20
 
 [node name="New" type="Button" parent="Center/VBox"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
-theme_override_font_sizes/font_size = 22
+theme_override_font_sizes/font_size = 20
 text = "Begin your journey"
 
 [node name="Note" type="Label" parent="Center/VBox"]

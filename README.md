@@ -20,6 +20,8 @@ as a real-time game.
 |---|---|
 | Move | WASD / arrow keys |
 | Devour (hold on an essence) | E / Space |
+| Drink the Goddess's Tears (heal) | Q |
+| Pause: your build, how to play, settings | Esc / P |
 | Pick a level-up | Click, 1-3, or arrows + Enter |
 | New journey after the end | R |
 
@@ -72,6 +74,28 @@ red slam marked on the ground under you with a ring of dark orbs (watch for the 
 glow), and summons a few minions now and then. Below half HP he enrages: faster, wider
 slams and double rings. Kill him to win the run.
 
+### Souls-like UI
+
+A framed, pixel-font HUD in the corners, away from the action: HP and XP top-left, the day
+top-right, the flask bottom-left, gold and the next revive price bottom-right, and the boss's
+name and long bar bottom-center. Entering a place shows its name in a gothic title card,
+death fades in **You Died** before the goddess offers a revive, and victory reads **Demon King
+Felled**. Damage numbers pop off enemies (gold for elites and the boss). The UI is built in
+code from `scripts/ui/ui_theme.gd`, which defines the palette, fonts and framed boxes.
+
+### Made for first-timers
+
+- **One-time hints** explain each thing the first time it comes up: moving, gems, elites,
+  Devour, chests, the flask when you're hurt, the shrine, the boss. Turn them off or replay
+  them in Settings.
+- **Esc pauses** with your **build** (stats, weapons and upgrades, essences, training), a
+  **how to play** card (also on the title screen), and **settings**: volume, screen shake,
+  damage numbers, fullscreen, hints. Settings live in `user://settings.json`, apart from the
+  journey save.
+- **Edge-of-screen arrows** point to chests (gold), essences waiting to be Devoured (their
+  color) and the Demon King (red).
+- **Gems come to you**: a wider pickup range, and after each level-up nearby gems fly in.
+
 ### One life, one journey
 
 A journey is 20 days, one minute each. **The goddess finds you on Days 5, 10, 15 and 19**,
@@ -80,9 +104,13 @@ a free **blessing** (pick one of three upgrades), and opens her shrine:
 
 - **Training** for the rest of the journey: Stamina, Strength, Resilience, Dexterity and
   Guts, from the original game's Train menu
-- **Potions** from the original shop: Common Potion, High Potion, Flask of Rejuvenation
+- **Goddess's Tears** upgrades: Tear Vessel (+1 flask charge) and Blessed Tears (each sip
+  heals more)
 
-When you fall, she can **pull you back for gold**: 400, then 800, 1600 and so on, and you
+The **Goddess's Tears** are your flask: 3 charges that each heal 35% of your max HP over a
+short, slowed sip (Q). She refills them at every shrine, so spend them freely.
+
+When you fall, she can **pull you back for gold**: 800, then 1600, 3200 and so on, and you
 return at half HP with the monsters around you cleared. Gold buys both upgrades and
 revives, so every purchase is a gamble. Refuse, or run out of gold, and the journey is over;
 the next one starts fresh, keeping only your records (journeys, victories, best day).
@@ -161,8 +189,8 @@ gold for its next revive, and revives whenever it can pay):
 | Bot | Result |
 |---|---|
 | `afk` | dies in 20-40 s |
-| `kite` (never Devours) | wins about half of journeys, usually after 1-3 revives |
-| `devour` (Devours when safe, keeps max HP above 80) | wins a little more often |
+| `kite` (never Devours) | wins about 3 in 4 journeys, often with 0-2 revives |
+| `devour` (Devours when safe, keeps max HP above 80) | about the same, 3 in 4 |
 | `greedy` (Devours everything) | dies by Day 7-12 even after paying for revives |
 
 Each run also prints the damage the bot took by source (e.g. `plague 320, Vexclaw pounce
