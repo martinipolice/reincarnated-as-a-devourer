@@ -17,6 +17,7 @@ const GOLDEN_TINT := Color(2.2, 1.8, 0.35)
 ## Set before add_child().
 var kind := Kind.NORMAL
 var is_open := false
+var _glow: Sprite2D
 
 @onready var sprite: AnimatedSprite2D = $AnimatedSprite2D
 
@@ -29,6 +30,9 @@ func _ready() -> void:
 	shape.shape = circle
 	add_child(shape)
 	sprite.frame = 0  # closed, until opened
+	_glow = Game.make_glow(GLOW, 48.0 if kind == Kind.GOLDEN else 34.0)
+	add_child(_glow)
+	move_child(_glow, 0)  # under the chest sprite
 	if kind == Kind.GOLDEN:
 		sprite.self_modulate = GOLDEN_TINT
 	body_entered.connect(_on_body_entered)
@@ -36,6 +40,7 @@ func _ready() -> void:
 
 func _process(_delta: float) -> void:
 	if not is_open:
+		_glow.modulate.a = 0.55 + 0.45 * sin(Time.get_ticks_msec() / 220.0)
 		queue_redraw()
 
 
@@ -48,6 +53,7 @@ func _on_body_entered(body: Node2D) -> void:
 		queue_free()
 		return
 	sprite.play("open")
+	_glow.hide()
 	queue_redraw()
 	opened.emit(self)
 	var tween := create_tween()

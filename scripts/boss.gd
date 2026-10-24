@@ -17,18 +17,18 @@ enum Attack { SLAM, VOLLEY }
 
 const ORB_SCENE := preload("res://scenes/boss_orb.tscn")
 const FIRST_ATTACK := 4.0
-const ATTACK_GAP := [3.5, 2.5]  # seconds between attacks, by phase
+const ATTACK_GAP := [3.5, 2.9]  # seconds between attacks, by phase
 const SLAM_WINDUP := 2.25  # 1.5 felt too fast in playtesting
 const SLAM_RADIUS := [150.0, 185.0]
-const SLAM_DAMAGE_MULT := 2.0
+const SLAM_DAMAGE_MULT := 1.6  # 2.0 felt too punishing in playtesting
 const SLAM_FLASH := 0.25
 const VOLLEY_WINDUP := [0.9, 0.7]
-const VOLLEY_ORBS := [12, 16]
+const VOLLEY_ORBS := [12, 14]
 const VOLLEY_WAVES := [1, 2]  # phase 2 fires a second, offset ring
 const VOLLEY_WAVE_GAP := 0.35
-const ORB_DAMAGE_MULT := 0.8
+const ORB_DAMAGE_MULT := 0.6
 const SUMMON_INTERVAL := [12.0, 9.0]
-const SUMMON_COUNT := 5
+const SUMMON_COUNT := 4
 const ENRAGE_AT := 0.5  # fraction of max HP
 const ENRAGED_SPEED_MULT := 1.35
 const TELEGRAPH_COLOR := Color(1, 0.2, 0.2)

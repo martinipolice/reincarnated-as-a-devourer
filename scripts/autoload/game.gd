@@ -46,6 +46,8 @@ var _next_voice := 0
 var _last_played := {}
 var _hit_stop_active := false
 var _fx_frames := {}
+var _glow_texture: GradientTexture2D
+var _glow_material: CanvasItemMaterial
 
 
 func _ready() -> void:
@@ -154,6 +156,33 @@ func fx(effect: String, at: Vector2, size := 2.0, tint := Color.WHITE) -> void:
 	sprite.animation_finished.connect(sprite.queue_free)
 	parent.add_child(sprite)
 	sprite.play("play")
+
+
+## A soft additive halo (a radial gradient that brightens what's under it),
+## used to make pickups glow like Minecraft XP orbs. Add it as the first
+## child so the item's sprite draws on top.
+func make_glow(color: Color, radius: float) -> Sprite2D:
+	if _glow_texture == null:
+		var gradient := Gradient.new()
+		gradient.set_color(0, Color(1, 1, 1, 1))
+		gradient.set_color(1, Color(1, 1, 1, 0))
+		gradient.add_point(0.35, Color(1, 1, 1, 0.55))
+		_glow_texture = GradientTexture2D.new()
+		_glow_texture.gradient = gradient
+		_glow_texture.fill = GradientTexture2D.FILL_RADIAL
+		_glow_texture.fill_from = Vector2(0.5, 0.5)
+		_glow_texture.fill_to = Vector2(1.0, 0.5)
+		_glow_texture.width = 64
+		_glow_texture.height = 64
+		_glow_material = CanvasItemMaterial.new()
+		_glow_material.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+	var glow := Sprite2D.new()
+	glow.texture = _glow_texture
+	glow.material = _glow_material
+	glow.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR  # smooth, unlike the pixel art
+	glow.modulate = color
+	glow.scale = Vector2.ONE * radius / 32.0
+	return glow
 
 
 ## A short line of text that floats up and fades, e.g. "+30 HP".

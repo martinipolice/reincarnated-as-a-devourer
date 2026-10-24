@@ -10,8 +10,9 @@ extends Node2D
 ##   around dark cobbles
 ## Chunks already on screen keep their look; new ones (and old ones once out
 ## of view) use the current biome, so the world changes as you explore.
-## Trees and rocks block movement (StaticBody2D for the player, Obstacles for
-## enemies); bushes, flowers and patches are decoration.
+## Everything that looks solid (trees, stumps, rocks, bushes, pillars) blocks
+## movement (StaticBody2D for the player, Obstacles for enemies); flowers,
+## clover and twigs are flat decoration you walk over.
 
 const TILE := 16  # art pixels
 const SCALE := 2.0  # the art is drawn at 2x
@@ -51,24 +52,27 @@ const GROUND := {
 		[Source.INTERIOR, Vector2i(13, 14), 10], [Source.INTERIOR, Vector2i(14, 14), 10],
 	],
 }
-## Decoration props from the nature sheet (regions in tiles), no collision.
+## Small props scattered over the ground: [region in tiles, collision radius].
+## Rule: anything that looks solid (bushes, small rocks and stumps) blocks;
+## only flat details (flowers, clover, twigs) have radius 0 and stay walk-through.
 const DECOR := {
-	"forest": [Rect2i(0, 10, 1, 1), Rect2i(1, 10, 1, 1), Rect2i(2, 10, 1, 1), Rect2i(3, 10, 1, 1),
-		Rect2i(4, 10, 1, 1), Rect2i(0, 11, 1, 1), Rect2i(1, 11, 1, 1), Rect2i(5, 11, 1, 1),
-		Rect2i(4, 13, 1, 1)],
-	"ruins": [Rect2i(16, 9, 1, 1), Rect2i(17, 9, 1, 1), Rect2i(12, 11, 1, 1),
-		Rect2i(13, 11, 1, 1), Rect2i(16, 9, 1, 1)],
+	"forest": [[Rect2i(0, 10, 1, 1), 10.0], [Rect2i(1, 10, 1, 1), 10.0], [Rect2i(2, 10, 1, 1), 10.0],
+		[Rect2i(3, 10, 1, 1), 10.0], [Rect2i(4, 10, 1, 1), 10.0], [Rect2i(4, 13, 1, 1), 11.0],
+		[Rect2i(0, 11, 1, 1), 0.0], [Rect2i(1, 11, 1, 1), 0.0], [Rect2i(5, 11, 1, 1), 0.0],
+		[Rect2i(0, 11, 1, 1), 0.0], [Rect2i(1, 11, 1, 1), 0.0]],
+	"ruins": [[Rect2i(16, 9, 1, 1), 11.0], [Rect2i(17, 9, 1, 1), 11.0],
+		[Rect2i(12, 11, 1, 1), 0.0], [Rect2i(13, 11, 1, 1), 0.0], [Rect2i(12, 11, 1, 1), 0.0]],
 }
 ## Blocking props: [region in tiles, collision radius in world px, weight].
 const BLOCKERS := {
-	"forest": [[Rect2i(0, 0, 2, 2), 14.0, 4], [Rect2i(16, 0, 2, 2), 14.0, 4],
-		[Rect2i(18, 0, 2, 2), 14.0, 3], [Rect2i(2, 8, 2, 2), 18.0, 1]],
-	"ruins": [[Rect2i(4, 0, 2, 2), 14.0, 3], [Rect2i(16, 6, 2, 2), 24.0, 3],
-		[Rect2i(12, 6, 2, 2), 24.0, 2], [Rect2i(2, 8, 2, 2), 18.0, 1]],
+	"forest": [[Rect2i(0, 0, 2, 2), 16.0, 4], [Rect2i(16, 0, 2, 2), 16.0, 4],
+		[Rect2i(18, 0, 2, 2), 16.0, 3], [Rect2i(2, 8, 2, 2), 22.0, 1]],
+	"ruins": [[Rect2i(4, 0, 2, 2), 16.0, 3], [Rect2i(16, 6, 2, 2), 28.0, 3],
+		[Rect2i(12, 6, 2, 2), 28.0, 2], [Rect2i(2, 8, 2, 2), 22.0, 1]],
 }
 ## How thick each biome's obstacles grow (noise threshold; lower = denser).
 const DENSITY := {"forest": 0.2, "ruins": 0.15}
-const PILLAR := [Rect2i(16, 6, 2, 2), 24.0]
+const PILLAR := [Rect2i(16, 6, 2, 2), 28.0]
 
 var biome := "forest"
 var seed_value := 0
@@ -170,11 +174,17 @@ func _build(key: Vector2i) -> void:
 	if not GROUND.has(ground_biome) or ground_biome == "temple":
 		return
 	var origin := Vector2(base_tile) * TILE * SCALE
-	# Decoration.
-	for i in 14:
+	# Small props: solid ones block, flat ones are decoration.
+	for i in 12:
 		var spot := origin + Vector2(rng.randf(), rng.randf()) * CHUNK_PX
-		if not _in_arena(spot, 20.0):
-			node.add_child(_sprite(NATURE_TEX, DECOR[ground_biome][rng.randi() % DECOR[ground_biome].size()], spot, true))
+		var prop: Array = DECOR[ground_biome][rng.randi() % DECOR[ground_biome].size()]
+		if _in_arena(spot, 20.0):
+			continue
+		if prop[1] > 0.0:
+			if spot.distance_to(_origin) > SAFE_RADIUS:
+				_add_blocker(record, prop[0], prop[1], spot)
+		else:
+			node.add_child(_sprite(NATURE_TEX, prop[0], spot, true))
 	# Obstacles on a jittered grid, in noise-shaped clusters.
 	for gx in range(0, CHUNK_TILES, CANDIDATE_STEP):
 		for gy in range(0, CHUNK_TILES, CANDIDATE_STEP):

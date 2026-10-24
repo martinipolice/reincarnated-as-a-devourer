@@ -10,6 +10,7 @@ const WISP := preload("res://assets/ninja/wisp/sprite_frames.tres")
 var essence: EssenceData
 
 var _life := LIFETIME
+var _glow: Sprite2D
 
 
 ## Call before add_child().
@@ -19,6 +20,9 @@ func setup(from_essence: EssenceData) -> void:
 
 func _ready() -> void:
 	add_to_group("corpses")
+	_glow = Game.make_glow(essence.color.lightened(0.2), 34.0)
+	_glow.position = Vector2(0, -6)
+	add_child(_glow)
 	var wisp := AnimatedSprite2D.new()
 	wisp.sprite_frames = WISP
 	wisp.scale = Vector2(1.6, 1.6)
@@ -34,6 +38,7 @@ func _process(delta: float) -> void:
 		queue_free()
 		return
 	visible = _life > BLINK_TIME or fmod(_life, 0.3) > 0.15
+	_glow.modulate.a = 0.6 + 0.4 * sin(Time.get_ticks_msec() / 160.0)
 	queue_redraw()
 
 

@@ -2,8 +2,9 @@ extends Weapon
 ## Strikes every enemy around you on a cooldown. Its levels are the old
 ## shop's weapon tiers: Dull Blade -> Standard Greatsword -> Mithril Warblade.
 ## Evolves into Vexclaw Rend after Devouring 3 Vexclaw essences at Lv 3.
-## Each swing, a sword sweeps one full circle at the Blade's reach with a
-## circular slash trailing it (red once evolved).
+## Each swing draws one clean swoosh: a single arc that sweeps once around
+## you at the Blade's reach, bright at its leading edge and fading behind
+## (red once evolved).
 
 const DAMAGE := [34.0, 50.0, 70.0]
 const RADIUS := [75.0, 90.0, 110.0]
@@ -12,48 +13,27 @@ const EVOLVED_DAMAGE := 90.0
 const EVOLVED_RADIUS := 120.0
 const EVOLVED_COOLDOWN := 0.6
 const KNOCKBACK := 140.0
-const SWEEP_TIME := 0.22  # one full circle
-const SWORD_TEXTURE := preload("res://assets/ninja/images/sword.png")
-const SWOOSH_FRAMES := preload("res://assets/ninja/swoosh/sprite_frames.tres")
-## Radius of the slash ring inside its 54 px frame, for scaling to reach.
-const SWOOSH_ART_RADIUS := 24.0
-const EVOLVED_TINT := Color(1.4, 0.45, 0.4)
+const SWEEP_TIME := 0.2  # one full circle
+const FADE_TIME := 0.08  # the tail catching up after the head finishes
+const TRAIL := 2.2  # radians of trail behind the leading edge
+const TRAIL_SEGMENTS := 24
+const WIDTH := 13.0
+const SHADOW := Color(0.1, 0.12, 0.05)  # keeps the white arc readable on grass
+const COLOR := Color(1, 1, 1)
+const EVOLVED_COLOR := Color(1, 0.35, 0.3)
 
 var _hitbox: Area2D
 var _timer := 0.0
-var _pivot: Node2D
-var _sword: Sprite2D
-var _swoosh: AnimatedSprite2D
-var _sweep: Tween
+var _sweep := -1.0  # seconds into the current swoosh; < 0 = none
+var _start_angle := 0.0
 
 
 func _ready() -> void:
 	_hitbox = make_hitbox(_radius())
-	_swoosh = AnimatedSprite2D.new()
-	_swoosh.sprite_frames = SWOOSH_FRAMES
-	_swoosh.visible = false
-	_swoosh.animation_finished.connect(_swoosh.hide)
-	add_child(_swoosh)
-	_pivot = Node2D.new()
-	add_child(_pivot)
-	_sword = Sprite2D.new()
-	_sword.texture = SWORD_TEXTURE
-	_sword.scale = Vector2(2.5, 2.5)
-	_sword.rotation = PI / 2.0  # the art points up; aim it outward along +x
-	_sword.visible = false
-	_pivot.add_child(_sword)
-	_on_level_changed()
 
 
 func _on_level_changed() -> void:
-	if _hitbox == null:
-		return
 	set_hitbox_radius(_hitbox, _radius())
-	_swoosh.scale = Vector2.ONE * _radius() / SWOOSH_ART_RADIUS
-	_sword.position = Vector2(_radius() * 0.78, 0)
-	var tint := EVOLVED_TINT if evolved else Color.WHITE
-	_swoosh.modulate = Color(tint, 0.85)
-	_sword.modulate = tint
 
 
 func _radius() -> float:
@@ -66,6 +46,11 @@ func _physics_process(delta: float) -> void:
 		var cooldown: float = EVOLVED_COOLDOWN if evolved else per_level(COOLDOWN)
 		_timer = cooldown / player.stat("haste")
 		_swing()
+	if _sweep >= 0.0:
+		_sweep += delta
+		if _sweep > SWEEP_TIME + FADE_TIME:
+			_sweep = -1.0
+		queue_redraw()
 
 
 func _swing() -> void:
@@ -76,18 +61,29 @@ func _swing() -> void:
 	for enemy in targets:
 		var push := global_position.direction_to(enemy.global_position) * KNOCKBACK
 		enemy.take_damage(damage(amount), push)
-	_play_sweep()
+	_sweep = 0.0
+	_start_angle = randf() * TAU
 
 
-func _play_sweep() -> void:
-	_swoosh.rotation = randf() * TAU  # vary where the trail starts
-	_swoosh.visible = true
-	_swoosh.play("play")
-	_swoosh.frame = 0
-	if _sweep:
-		_sweep.kill()
-	_pivot.rotation = _swoosh.rotation
-	_sword.visible = true
-	_sweep = create_tween()
-	_sweep.tween_property(_pivot, "rotation", _pivot.rotation + TAU, SWEEP_TIME)
-	_sweep.tween_callback(_sword.hide)
+func _draw() -> void:
+	if _sweep < 0.0:
+		return
+	# Leading edge: eases out over one full turn, then holds while the tail
+	# shrinks into it.
+	var t := clampf(_sweep / SWEEP_TIME, 0.0, 1.0)
+	var head := _start_angle + TAU * (1.0 - pow(1.0 - t, 2.0))
+	var fade := clampf((_sweep - SWEEP_TIME) / FADE_TIME, 0.0, 1.0)
+	var trail := minf(TRAIL * (1.0 - fade), head - _start_angle)
+	if trail <= 0.01:
+		return
+	var radius := _radius()
+	var color := EVOLVED_COLOR if evolved else COLOR
+	var previous := Vector2.RIGHT.rotated(head - trail) * radius
+	for i in range(1, TRAIL_SEGMENTS + 1):
+		var k := float(i) / TRAIL_SEGMENTS  # 0 at the tail, 1 at the head
+		var point := Vector2.RIGHT.rotated(head - trail * (1.0 - k)) * radius
+		# A shadow, a soft wide glow and a crisp core, all tapering toward the tail.
+		draw_line(previous + Vector2(0, 3), point + Vector2(0, 3), Color(SHADOW, 0.3 * k), WIDTH * k + 2.0)
+		draw_line(previous, point, Color(color, 0.22 * k), WIDTH * 2.2 * k + 1.0)
+		draw_line(previous, point, Color(color, 0.95 * k * k), WIDTH * k + 1.0)
+		previous = point
