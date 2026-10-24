@@ -104,8 +104,9 @@ func take_damage(atk: float, ignore_invuln := false) -> void:
 
 
 # Quadratic curve: early levels come fast, later ones take much longer.
+# Eased (x0.7) when enemies started spreading out and dying in smaller groups.
 func xp_to_next() -> int:
-	return 5 + level * level
+	return 5 + roundi(level * level * 0.7)
 
 
 func gain_xp(amount: int) -> void:

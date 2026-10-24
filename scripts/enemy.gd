@@ -1,11 +1,20 @@
 class_name Enemy
 extends Area2D
-## A monster that walks straight at the player. Stats and art come from an
-## EnemyData resource, so new monsters need a .tres file, not new code.
-## Enemies don't push each other: cheap enough for hundreds on screen.
-## Elites are tougher, gold-ringed versions that leave a Devour corpse.
+## A monster. Stats, art and behavior come from an EnemyData resource, so new
+## monsters need a .tres file, not new code. Behaviors (EnemyData.behavior):
+## - "chase":   walk straight at the player (the Demon King moves this way).
+## - "swarm":   approach from a personal angle so the pack surrounds you.
+## - "pounce":  close in, crouch with an aim line, then dash; recover after.
+## - "spitter": creep in slowly, pausing to lob globs that leave puddles.
+## Movement is steered (smooth acceleration) and Crowd keeps a little space
+## between monsters. Elites are tougher, gold-ringed versions that leave a
+## Devour corpse.
+
+enum State { MOVE, WINDUP, DASH, RECOVER }
 
 const KNOCKBACK_DECAY := 900.0
+const ACCEL := 900.0  # px/s^2 toward the desired velocity
+const SEPARATION := 140.0  # px/s of push when fully overlapping a neighbor
 const ELITE_HP_MULT := 4.0
 const ELITE_ATK_MULT := 1.5
 const ELITE_SIZE_MULT := 1.5
@@ -14,6 +23,26 @@ const ELITE_RING := Color(1, 0.85, 0.3)
 const ELITE_TINT := Color(1.35, 1.15, 0.7)
 const HIT_FLASH := Color(2.5, 2.5, 2.5)
 
+# swarm
+const FLANK_ANGLE := 0.6  # max radians off the direct line
+const FLANK_FADE := 220.0  # the angle fades to 0 within this distance
+# pounce
+const POUNCE_RANGE := 170.0
+const POUNCE_WINDUP := 0.6
+const POUNCE_DURATION := 0.35
+const POUNCE_SPEED_MULT := 2.6
+const POUNCE_RECOVER := 0.6
+const POUNCE_COOLDOWN := 3.2
+const POUNCE_LEAD := 0.2  # seconds of player movement to aim ahead
+const AIM_COLOR := Color(1, 0.4, 0.3)
+# spitter
+const SPIT_RANGE := 300.0  # spits when this close
+const SPIT_CREEP := 0.55  # speed fraction while in spitting range
+const SPIT_WINDUP := 0.4
+const SPIT_COOLDOWN := 5.0
+const SPIT_TINT := Color(0.7, 1.6, 0.6)
+const GLOB_SCENE := preload("res://scenes/plague_glob.tscn")
+
 var data: EnemyData
 var target: Node2D
 var elite := false
@@ -21,8 +50,14 @@ var hp: float
 var max_hp: float
 var atk: float
 var radius: float
+var state := State.MOVE
 
+var _velocity := Vector2.ZERO
 var _knockback := Vector2.ZERO
+var _state_time := 0.0
+var _cooldown := 0.0
+var _flank := 0.0  # this swarm member's approach angle
+var _dash_target := Vector2.ZERO
 
 @onready var sprite: AnimatedSprite2D = $AnimatedSprite2D
 
@@ -44,6 +79,8 @@ func _ready() -> void:
 	var shape := CircleShape2D.new()
 	shape.radius = radius
 	$CollisionShape2D.shape = shape
+	_flank = randf_range(-FLANK_ANGLE, FLANK_ANGLE)
+	_cooldown = randf_range(0.5, POUNCE_COOLDOWN)  # don't all pounce in sync
 	if data.sprite_frames:
 		sprite.sprite_frames = data.sprite_frames
 		sprite.scale = Vector2.ONE * data.sprite_scale * radius / data.radius
@@ -55,15 +92,98 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	if not is_instance_valid(target):
 		return
-	var dir := global_position.direction_to(target.global_position)
-	position += (dir * move_speed() + _knockback) * delta
+	_state_time += delta
+	_cooldown -= delta
+	var desired: Vector2
+	match data.behavior:
+		"swarm":
+			desired = _swarm()
+		"pounce":
+			desired = _pounce()
+		"spitter":
+			desired = _spitter()
+		_:
+			desired = global_position.direction_to(target.global_position) * move_speed()
+	if state != State.DASH and not data.boss:
+		desired += Crowd.separation(self) * SEPARATION
+	var accel := ACCEL * (4.0 if state == State.DASH else 1.0)
+	_velocity = _velocity.move_toward(desired, accel * delta)
+	position += (_velocity + _knockback) * delta
 	_knockback = _knockback.move_toward(Vector2.ZERO, KNOCKBACK_DECAY * delta)
-	if data.sprite_frames:
-		sprite.flip_h = dir.x < 0.0
+	if data.sprite_frames and absf(_velocity.x) > 5.0:
+		sprite.flip_h = _velocity.x < 0.0
 
 
 func move_speed() -> float:
 	return data.move_speed
+
+
+func _set_state(next: State) -> void:
+	state = next
+	_state_time = 0.0
+	queue_redraw()
+
+
+# Head for a point beside the player, at this member's own angle; the angle
+# fades as it closes in, so the pack ends up surrounding the player.
+func _swarm() -> Vector2:
+	var to_player := target.global_position - global_position
+	var fade := clampf(to_player.length() / FLANK_FADE, 0.0, 1.0)
+	return to_player.normalized().rotated(_flank * fade) * move_speed()
+
+
+func _pounce() -> Vector2:
+	var to_player := target.global_position - global_position
+	match state:
+		State.WINDUP:
+			if _state_time >= POUNCE_WINDUP:
+				_set_state(State.DASH)
+			queue_redraw()
+			return Vector2.ZERO
+		State.DASH:
+			if _state_time >= POUNCE_DURATION:
+				_set_state(State.RECOVER)
+			return global_position.direction_to(_dash_target) * move_speed() * POUNCE_SPEED_MULT
+		State.RECOVER:
+			if _state_time >= POUNCE_RECOVER:
+				_cooldown = POUNCE_COOLDOWN * (0.6 if elite else 1.0)
+				_set_state(State.MOVE)
+			return Vector2.ZERO
+	if _cooldown <= 0.0 and to_player.length() < POUNCE_RANGE:
+		# Aim where the player is heading, then commit to it.
+		var lead := Vector2.ZERO
+		if target is CharacterBody2D:
+			lead = (target as CharacterBody2D).velocity * POUNCE_LEAD
+		var aim := target.global_position + lead
+		_dash_target = global_position + global_position.direction_to(aim) * POUNCE_RANGE * 1.3
+		_set_state(State.WINDUP)
+		return Vector2.ZERO
+	return to_player.normalized() * move_speed()
+
+
+func _spitter() -> Vector2:
+	var to_player := target.global_position - global_position
+	var distance := to_player.length()
+	if state == State.WINDUP:
+		if _state_time >= SPIT_WINDUP:
+			_spit()
+			_cooldown = SPIT_COOLDOWN * (0.6 if elite else 1.0)
+			_set_state(State.MOVE)
+		return Vector2.ZERO
+	if _cooldown <= 0.0 and distance < SPIT_RANGE:
+		_set_state(State.WINDUP)
+		return Vector2.ZERO
+	# Always creeping closer (slower once in spitting range), so melee builds
+	# can still reach it; hanging back made them pile up out of reach.
+	var creep := SPIT_CREEP if distance < SPIT_RANGE else 1.0
+	return to_player / maxf(distance, 0.01) * move_speed() * creep
+
+
+func _spit() -> void:
+	var glob := GLOB_SCENE.instantiate() as PlagueGlob
+	glob.setup(target.global_position, atk * 0.4)
+	glob.position = global_position
+	get_parent().get_parent().add_child(glob)
 
 
 func alive() -> bool:
@@ -74,7 +194,9 @@ func take_damage(amount: float, knockback := Vector2.ZERO, hit_sfx := "enemy_hit
 	if not alive():
 		return
 	hp -= Game.damage(amount, data.defense)
-	_knockback += knockback * data.knockback_scale * (ELITE_KNOCKBACK_MULT if elite else 1.0)
+	# A dashing pouncer is committed: hits don't knock it off course.
+	if state != State.DASH:
+		_knockback += knockback * data.knockback_scale * (ELITE_KNOCKBACK_MULT if elite else 1.0)
 	# Flash the sprite (or our own drawing), never `modulate`, which would also
 	# tint children like the boss telegraph.
 	var flash_target: CanvasItem = sprite if data.sprite_frames else self
@@ -102,3 +224,11 @@ func _draw() -> void:
 		# Drawn under the sprite: a gold aura on the ground.
 		draw_circle(Vector2(0, radius * 0.6), radius * 0.9, Color(ELITE_RING, 0.25))
 		draw_arc(Vector2(0, radius * 0.6), radius * 0.9, 0.0, TAU, 32, ELITE_RING, 2.0)
+	if state == State.WINDUP:
+		if data.behavior == "pounce":
+			# The aim line brightens as the pounce is about to fire.
+			var t := clampf(_state_time / POUNCE_WINDUP, 0.0, 1.0)
+			draw_line(Vector2.ZERO, to_local(_dash_target), Color(AIM_COLOR, 0.5 + 0.5 * t), 3.0 + 2.0 * t)
+			draw_circle(Vector2.ZERO, radius + 4.0, Color(AIM_COLOR, 0.25 * t))
+		elif data.behavior == "spitter":
+			draw_circle(Vector2.ZERO, radius + 6.0, Color(SPIT_TINT, 0.3))

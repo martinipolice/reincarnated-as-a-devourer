@@ -6,6 +6,7 @@
 
 [resource]
 script = ExtResource("1")
+behavior = "spitter"
 display_name = "Plaguewing"
 max_hp = 176.0
 atk = 45.0

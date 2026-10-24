@@ -44,6 +44,19 @@ Attraction that pulls in all XP, Goddess's Fervor (weapons 50% faster for 15 s),
 Goddess's Blessing (free level-up). Brighter **golden chests** hold two rewards. From Day 3
 some chests are **Mimics**: they bite back, and killing one drops a golden chest.
 
+Every monster fights its own way, and every attack is telegraphed:
+
+| Monster | Behavior |
+|---|---|
+| Dreadling | Swarms: each one approaches from its own angle, so the pack surrounds you |
+| Vexclaw | Hunts: closes in, crouches with a red aim line, then pounces where you're heading |
+| Plaguewing | Spits: creeps in slowly, lobbing plague globs that leave poison puddles |
+| Mimic | Pounces like a Vexclaw |
+
+Spawning comes in waves that build up and then ease off, new monsters appear mostly
+ahead of where you're running, and from Day 3 announced events strike: an encircling ring
+of Dreadlings, a Vexclaw pack from one side, and later a plague tide.
+
 Monsters grow tougher every day, so you need to keep growing too. Devouring an essence
 also heals 25% of your max HP.
 
@@ -122,9 +135,12 @@ Current targets (12 runs, seeds 1-4):
 | Bot | Result |
 |---|---|
 | `afk` | dies in 20-40 s |
-| `kite` (never Devours) | wins about 40-50% of runs; boss fights 55-75 s |
-| `devour` (Devours nearby corpses when safe) | wins about 60% of runs; boss fights 45-70 s |
+| `kite` (never Devours) | wins about half of runs; boss fights 50-75 s |
+| `devour` (Devours when safe, keeps max HP above 80) | wins most runs; boss fights 30-75 s |
 | `greedy` (Devours everything) | usually dies before Day 20, at or near the 10 max-HP floor |
+
+Each run also prints the damage the bot took by source (e.g. `plague 320, Vexclaw pounce
+45`), which is how the plague puddles were caught being too strong.
 
 Devour should pay off when used carefully and kill you when used greedily. A full run
 earns about 13-15k gold (dying on Day 10: about 1.3k); mastering every Sanctuary training

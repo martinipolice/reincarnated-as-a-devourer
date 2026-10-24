@@ -5,6 +5,7 @@
 
 [resource]
 script = ExtResource("1")
+behavior = "pounce"
 display_name = "Mimic"
 max_hp = 260.0
 atk = 28.0

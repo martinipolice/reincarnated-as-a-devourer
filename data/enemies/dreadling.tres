@@ -6,6 +6,7 @@
 
 [resource]
 script = ExtResource("1")
+behavior = "swarm"
 display_name = "Dreadling"
 max_hp = 30.0
 atk = 10.0

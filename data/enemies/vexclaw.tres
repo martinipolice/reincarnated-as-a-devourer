@@ -6,6 +6,7 @@
 
 [resource]
 script = ExtResource("1")
+behavior = "pounce"
 display_name = "Vexclaw"
 max_hp = 96.0
 atk = 22.0

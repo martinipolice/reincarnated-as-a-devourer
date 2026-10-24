@@ -11,6 +11,8 @@ extends Resource
 @export var gold := 10
 ## Value of the XP gem it drops.
 @export var xp := 1
+## How it moves and attacks; see enemy.gd.
+@export_enum("chase", "swarm", "pounce", "spitter") var behavior := "chase"
 ## Granted when an elite of this type is Devoured. Empty = can't be Devoured.
 @export var essence: EssenceData
 ## Bosses end the run when killed and are never Devoured.

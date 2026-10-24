@@ -3,7 +3,8 @@ extends SceneTree
 # other day. Not part of the game. From the project folder:
 #   godot --headless --fixed-fps 60 -s res://tools/balance_sim.gd -- <mode> <seed>
 # Modes: afk (stands still), kite (dodges, collects gems, never Devours),
-#        devour (kite, plus Devours nearby corpses above 60% HP when the area is clear),
+#        devour (kite, plus Devours nearby corpses above 60% HP when the area is
+#               clear, stopping once max HP drops below 80),
 #        greedy (kite, plus Devours every corpse it can reach, no matter what).
 # Untyped on purpose: -s compiles this before autoloads exist.
 
@@ -17,6 +18,9 @@ var last_day := 0
 var first_level_at := -1.0
 var boss_at := -1.0
 var last_boss_report := 0
+var last_hp := -1.0
+## Damage taken by apparent source, printed at the end of the run.
+var damage_by := {}
 
 func _initialize() -> void:
 	var args := OS.get_cmdline_user_args()
@@ -34,6 +38,10 @@ func _process(_delta: float) -> bool:
 		_steer()
 	var p = main.player
 	var t := frame / 60.0
+	if last_hp >= 0.0 and p.hp < last_hp:
+		var source := _damage_source(p)
+		damage_by[source] = damage_by.get(source, 0.0) + (last_hp - p.hp)
+	last_hp = p.hp
 	if first_level_at < 0 and p.level > 1:
 		first_level_at = t
 	if main.day() != last_day and main.day() % 2 == 1:
@@ -53,8 +61,35 @@ func _process(_delta: float) -> bool:
 		print("END %s %s: day %d t=%ds lv %d kills %d gold %d devoured %d max_hp %d, %s, first level %.1fs" % [
 			mode, result, main.day(), t, p.level, main.kills, main.gold, p.devour_count(),
 			p.stat("max_hp"), fight, first_level_at])
+		var parts := []
+		for k in damage_by:
+			parts.append("%s %d" % [k, damage_by[k]])
+		print("    damage taken: ", ", ".join(parts))
 		return true
 	return false
+
+# Best guess at what just hurt the player: whatever touching thing is nearest.
+func _damage_source(p) -> String:
+	for shot in main.get_tree().get_nodes_in_group("enemy_shots"):
+		if shot.global_position.distance_to(p.global_position) < 55.0:
+			return "plague"
+	var best = null
+	var nd := 1e9
+	for e in main.enemies.get_children():
+		var d: float = e.global_position.distance_to(p.global_position)
+		if d < nd:
+			nd = d
+			best = e
+	if best == null:
+		return "other"
+	if best.data.boss:
+		return "boss"
+	var kind: String = best.data.display_name
+	if best.elite:
+		kind = "elite " + kind
+	if best.state == 2:  # DASH
+		kind += " pounce"
+	return kind
 
 func _loadout(p) -> String:
 	var parts := []
@@ -87,6 +122,11 @@ func _steer() -> void:
 		if away.length() < boss.slam_radius + 30.0:
 			push += away.normalized() * 6.0
 
+	for shot in main.get_tree().get_nodes_in_group("enemy_shots"):
+		var d: Vector2 = p.global_position - shot.global_position
+		var reach: float = (shot.radius() if shot.has_method("radius") else 20.0) + 40.0
+		if d.length() < reach and d.length() > 0.1:
+			push += d.normalized() * (reach - d.length()) / reach * 5.0
 	for orb in main.get_tree().get_nodes_in_group("boss_orbs"):
 		var d: Vector2 = p.global_position - orb.global_position
 		if d.length() < 90.0 and d.length() > 0.1:
@@ -129,7 +169,7 @@ func _wants_corpse(corpse) -> bool:
 	if mode != "devour":
 		return false
 	var p = main.player
-	if p.hp < p.stat("max_hp") * 0.6:
+	if p.hp < p.stat("max_hp") * 0.6 or p.stat("max_hp") < 80.0:
 		return false
 	for e in main.enemies.get_children():
 		if e.global_position.distance_to(corpse.global_position) < 120.0:

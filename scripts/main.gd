@@ -9,9 +9,24 @@ const SPAWN_RADIUS := 700.0
 const BOSS_SPAWN_DISTANCE := 450.0
 const GRACE_PERIOD := 2.0  # seconds before the first spawn
 const ELITE_INTERVAL := 30.0
+## Waves: spawning builds over WAVE_BUILD of each WAVE_CYCLE seconds from
+## WAVE_LOW to WAVE_HIGH times the base rate, then eases to WAVE_LULL.
+const WAVE_CYCLE := 24.0
+const WAVE_BUILD := 0.7  # fraction of the cycle spent building
+const WAVE_LOW := 1.0
+const WAVE_HIGH := 1.4
+const WAVE_LULL := 0.3
+## Share of spawns placed ahead of where the player is running.
+const AHEAD_CHANCE := 0.45
+const AHEAD_SPREAD := 1.1  # radians either side of the running direction
+## Announced events (encirclement, Vexclaw ambush, plague tide).
+const EVENT_FROM_DAY := 3
+const EVENT_FIRST := 75.0
+const EVENT_GAP := Vector2(40.0, 55.0)
+const EVENT_WARNING := 1.5
 ## Enemies get this much tougher each day after the first (HP fully, damage
 ## at 70%; see Enemy.setup). Day 20 is 1 + 19 * this.
-const TOUGHNESS_PER_DAY := 0.135
+const TOUGHNESS_PER_DAY := 0.14
 ## Treasure chests: one appears every CHEST_INTERVAL s (up to MAX_CHESTS at
 ## once) somewhere just off-screen; a HUD arrow points the way. Some are
 ## golden (two rewards); from MIMIC_FROM_DAY some are Mimics that fight back.
@@ -69,6 +84,7 @@ var boss: Boss
 var _spawn_timer := GRACE_PERIOD
 var _elite_timer := ELITE_INTERVAL
 var _chest_timer := CHEST_FIRST
+var _event_timer := EVENT_FIRST
 var _fervor_until := 0.0
 var _boss_spawned := false
 var _devour_hint_shown := false
@@ -138,10 +154,18 @@ func _process(delta: float) -> void:
 	_update_hud()
 
 
+func _physics_process(_delta: float) -> void:
+	Crowd.rebuild(enemies.get_children())
+
+
+func _exit_tree() -> void:
+	Crowd.clear()
+
+
 func _spawn_waves(delta: float) -> void:
 	_spawn_timer -= delta
 	if _spawn_timer <= 0.0:
-		_spawn_timer = maxf(0.45, 1.3 - day() * 0.05)
+		_spawn_timer = maxf(0.45, 1.3 - day() * 0.05) / wave_intensity()
 		# Bigger packs as the days pass: 1 per spawn on Days 1-4, 2 on 5-9, ...
 		for i in 1 + day() / 5:
 			_spawn_enemy()
@@ -149,6 +173,70 @@ func _spawn_waves(delta: float) -> void:
 	if _elite_timer <= 0.0:
 		_elite_timer = ELITE_INTERVAL
 		_spawn_enemy(true)
+	if day() >= EVENT_FROM_DAY:
+		_event_timer -= delta
+		if _event_timer <= 0.0:
+			_event_timer = randf_range(EVENT_GAP.x, EVENT_GAP.y)
+			_start_event()
+
+
+## How hard the current wave is pushing: builds up, then a short breather.
+func wave_intensity() -> float:
+	var t := fmod(elapsed, WAVE_CYCLE) / WAVE_CYCLE
+	if t > WAVE_BUILD:
+		return WAVE_LULL
+	return lerpf(WAVE_LOW, WAVE_HIGH, t / WAVE_BUILD)
+
+
+# Where a new enemy appears: mostly ahead of a running player, so fleeing in
+# a straight line runs into the next pack.
+func _spawn_point(distance: float) -> Vector2:
+	var angle := randf() * TAU
+	if player.velocity.length() > 10.0 and randf() < AHEAD_CHANCE:
+		angle = player.velocity.angle() + randf_range(-AHEAD_SPREAD, AHEAD_SPREAD)
+	return player.position + Vector2.RIGHT.rotated(angle) * distance
+
+
+func _start_event() -> void:
+	var events := ["encircle", "ambush"]
+	if day() >= 8:
+		events.append("plague")
+	var event: String = events.pick_random()
+	var warnings := {
+		"encircle": "They're surrounding you!",
+		"ambush": "A Vexclaw pack is hunting you!",
+		"plague": "A plague tide rises...",
+	}
+	show_banner(warnings[event], 2.0)
+	Game.sfx("boss_warn", 0.0)
+	await get_tree().create_timer(EVENT_WARNING, false).timeout
+	if _over or _boss_spawned:
+		return
+	match event:
+		"encircle":
+			# A closing ring of Dreadlings, all the way around.
+			var count := 12 + day()
+			for i in count:
+				var angle := TAU * i / count + randf_range(-0.05, 0.05)
+				_spawn_at(DREADLING, player.position + Vector2.RIGHT.rotated(angle) * 520.0)
+		"ambush":
+			# A Vexclaw pack from one side.
+			var side := randf() * TAU
+			for i in 3 + day() / 4:
+				_spawn_at(VEXCLAW, player.position + Vector2.RIGHT.rotated(side + randf_range(-0.4, 0.4)) * 600.0)
+		"plague":
+			var side := randf() * TAU
+			for i in 2 + day() / 8:
+				_spawn_at(PLAGUEWING, player.position + Vector2.RIGHT.rotated(side + randf_range(-0.5, 0.5)) * 600.0)
+			for i in 6:
+				_spawn_at(DREADLING, player.position + Vector2.RIGHT.rotated(side + randf_range(-0.6, 0.6)) * 560.0)
+
+
+func _spawn_at(data: EnemyData, at: Vector2) -> void:
+	var enemy := ENEMY_SCENE.instantiate() as Enemy
+	enemy.setup(data, player, false, toughness())
+	enemy.position = at
+	enemies.add_child(enemy)
 
 
 # The floor sprite follows the player so it looks endless, but only in jumps
@@ -211,7 +299,7 @@ func _pick_enemy(elite := false) -> EnemyData:
 func _spawn_enemy(elite := false, distance := SPAWN_RADIUS) -> void:
 	var enemy := ENEMY_SCENE.instantiate() as Enemy
 	enemy.setup(_pick_enemy(elite), player, elite, toughness())
-	enemy.position = player.position + Vector2.RIGHT.rotated(randf() * TAU) * distance
+	enemy.position = _spawn_point(distance)
 	enemies.add_child(enemy)
 
 
