@@ -1,9 +1,9 @@
 [gd_scene format=3]
 
-[ext_resource type="Script" path="res://scripts/ui/sanctuary.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/ui/title.gd" id="1"]
 [ext_resource type="SpriteFrames" path="res://assets/ninja/goddess/sprite_frames.tres" id="2"]
 
-[node name="Sanctuary" type="Control"]
+[node name="Title" type="Control"]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -22,8 +22,8 @@ grow_vertical = 2
 color = Color(0.09, 0.08, 0.13, 1)
 
 [node name="Goddess" type="AnimatedSprite2D" parent="."]
-position = Vector2(1060, 300)
-scale = Vector2(8, 8)
+position = Vector2(1060, 330)
+scale = Vector2(9, 9)
 sprite_frames = ExtResource("2")
 animation = &"run_down"
 autoplay = "run_down"
@@ -39,38 +39,39 @@ grow_vertical = 2
 [node name="VBox" type="VBoxContainer" parent="Center"]
 custom_minimum_size = Vector2(620, 0)
 layout_mode = 2
-theme_override_constants/separation = 14
+theme_override_constants/separation = 16
 
-[node name="Title" type="Label" parent="Center/VBox"]
+[node name="Name" type="Label" parent="Center/VBox"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 34
-text = "THE GODDESS'S SANCTUARY"
+theme_override_colors/font_color = Color(1, 0.9, 0.65, 1)
+theme_override_font_sizes/font_size = 40
+text = "REINCARNATED AS A DEVOURER"
 horizontal_alignment = 1
 
 [node name="Quote" type="Label" parent="Center/VBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.8, 0.75, 0.95, 1)
-text = "\"Rest, hero. Grow stronger. Face your fate.\""
+text = "\"Hero from another world... Survive, grow, and face your fate.\""
 horizontal_alignment = 1
 
-[node name="Gold" type="Label" parent="Center/VBox"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.85, 0.35, 1)
-theme_override_font_sizes/font_size = 24
-horizontal_alignment = 1
-
-[node name="Rows" type="VBoxContainer" parent="Center/VBox"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_constants/separation = 10
-
-[node name="Begin" type="Button" parent="Center/VBox"]
+[node name="Continue" type="Button" parent="Center/VBox"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
 theme_override_font_sizes/font_size = 22
-text = "Begin a new run  (R)"
+
+[node name="New" type="Button" parent="Center/VBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Begin your journey"
+
+[node name="Note" type="Label" parent="Center/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.75, 0.72, 0.85, 1)
+horizontal_alignment = 1
 
 [node name="Stats" type="Label" parent="Center/VBox"]
 unique_name_in_owner = true

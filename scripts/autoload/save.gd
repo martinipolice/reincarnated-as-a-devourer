@@ -1,14 +1,21 @@
 extends Node
-## Persistent progress, available everywhere as `Save`: banked gold,
-## Sanctuary training ranks and lifetime stats, stored in user://save.json.
+## Persistent progress, available everywhere as `Save`, stored in
+## user://save.json:
+## - `journey`: the one journey in progress, checkpointed at every goddess
+##   shrine so you can quit and continue (null when there is none). A hero
+##   only reincarnates once: when the journey ends, by victory or by a death
+##   you don't pay to undo, it is gone and the next one starts fresh.
+## - lifetime records: journeys, victories, best day.
 ## Every save carries a version; _migrate() upgrades older ones so an update
-## never wipes progress (the terminal game's fixed-format save broke on any
+## never wipes records (the terminal game's fixed-format save broke on any
 ## change to its fields).
 
 const PATH := "user://save.json"
-const VERSION := 1
+const VERSION := 2
 
 var data := {}
+## Set by the title screen: the next run scene continues the saved journey.
+var resume := false
 
 
 func _ready() -> void:
@@ -18,9 +25,8 @@ func _ready() -> void:
 func defaults() -> Dictionary:
 	return {
 		"version": VERSION,
-		"gold": 0,
-		"training": {},  # TrainingData.id -> rank
-		"runs": 0,
+		"journey": null,
+		"journeys": 0,
 		"wins": 0,
 		"best_day": 0,
 	}
@@ -60,40 +66,35 @@ func save_game() -> void:
 	DirAccess.rename_absolute(ProjectSettings.globalize_path(tmp), ProjectSettings.globalize_path(PATH))
 
 
-# Fills in fields added since the save was written. When a field changes
-# meaning, add a step here, e.g.:
-#   if int(old.version) < 2: old.gold = int(old.gold) * 10
+# Fills in fields added since the save was written, and converts old ones.
 func _migrate(old: Dictionary) -> Dictionary:
+	var version := int(old.get("version", 1))
+	if version < 2:
+		# v1 was a roguelite: banked gold and permanent Sanctuary training
+		# between runs. One-life journeys replace both; keep the records.
+		old = {"journeys": old.get("runs", 0), "wins": old.get("wins", 0),
+			"best_day": old.get("best_day", 0)}
 	var result := defaults()
 	result.merge(old, true)
 	result.version = VERSION
 	return result
 
 
-func gold() -> int:
-	return int(data.gold)
+func has_journey() -> bool:
+	return data.journey is Dictionary
 
 
-func add_gold(amount: int) -> void:
-	data.gold = gold() + amount
-
-
-func training_rank(training: TrainingData) -> int:
-	return int(data.training.get(training.id, 0))
-
-
-func buy_training(training: TrainingData) -> bool:
-	var rank := training_rank(training)
-	if rank >= training.max_rank or gold() < training.cost(rank):
-		return false
-	data.gold = gold() - training.cost(rank)
-	data.training[training.id] = rank + 1
+## Checkpoints the journey in progress (main.gd builds the snapshot).
+func save_journey(snapshot: Dictionary) -> void:
+	data.journey = snapshot
 	save_game()
-	return true
 
 
-func record_run(day: int, won: bool) -> void:
-	data.runs = int(data.runs) + 1
+## The journey is over: record it and clear the checkpoint.
+func end_journey(day: int, won: bool) -> void:
+	data.journey = null
+	data.journeys = int(data.journeys) + 1
 	if won:
 		data.wins = int(data.wins) + 1
 	data.best_day = maxi(int(data.best_day), day)
+	save_game()

@@ -1,8 +1,8 @@
 # Reincarnated as a Devourer
 
-A survivors-like action roguelite built in Godot 4. You have 20 days to grow strong
-enough to face the Demon King, and you grow by **devouring** what you kill, at the
-cost of your own life.
+A survivors-like action game built in Godot 4. You were reincarnated once, and you get one
+life: 20 days to grow strong enough to face the Demon King, growing by **devouring** what
+you kill, at the cost of your own life.
 
 It started as a turn-based terminal RPG I wrote in Python for CMSC 12, and is being rebuilt
 as a real-time game.
@@ -21,7 +21,7 @@ as a real-time game.
 | Move | WASD / arrow keys |
 | Devour (hold on an essence) | E / Space |
 | Pick a level-up | Click, 1-3, or arrows + Enter |
-| Play again after a run | R |
+| New journey after the end | R |
 
 **Testing shortcuts** (only when running from the editor, never in an exported build):
 
@@ -72,14 +72,28 @@ red slam marked on the ground under you with a ring of dark orbs (watch for the 
 glow), and summons a few minions now and then. Below half HP he enrages: faster, wider
 slams and double rings. Kill him to win the run.
 
-Gold you earn is banked when a run ends. Spend it at the **Goddess's Sanctuary** on
-permanent training (Stamina, Strength, Resilience, Dexterity and Guts, from the original
-game's Train menu) that applies to every future run. Progress is saved automatically to
-`user://save.json` (on Windows: `%APPDATA%/Godot/app_userdata/Reincarnated as a Devourer`).
+### One life, one journey
+
+A journey is 20 days, one minute each. **The goddess finds you on Days 5, 10, 15 and 19**,
+the lore days of the original game. Time stops, she speaks her part of the story, grants
+a free **blessing** (pick one of three upgrades), and opens her shrine:
+
+- **Training** for the rest of the journey: Stamina, Strength, Resilience, Dexterity and
+  Guts, from the original game's Train menu
+- **Potions** from the original shop: Common Potion, High Potion, Flask of Rejuvenation
+
+When you fall, she can **pull you back for gold**: 400, then 800, 1600 and so on, and you
+return at half HP with the monsters around you cleared. Gold buys both upgrades and
+revives, so every purchase is a gamble. Refuse, or run out of gold, and the journey is over;
+the next one starts fresh, keeping only your records (journeys, victories, best day).
+
+The journey **saves at every shrine**: quit any time and continue from the title screen,
+at the start of the day you last met the goddess. Saves live in `user://save.json`
+(on Windows: `%APPDATA%/Godot/app_userdata/Reincarnated as a Devourer`).
 
 ## Design in one paragraph
 
-A run is 20 in-game days (30 seconds each in the MVP). Monsters from the original game,
+A journey is 20 in-game days of one minute each, with one life. Monsters from the original game,
 Dreadling, Vexclaw and Plaguewing, swarm in stronger mixes as days pass. Elites can
 be **Devoured**: a one-second channel that grants an Essence (which changes your build,
 and three of a kind evolves a weapon) and permanently lowers your max HP for the run.
@@ -92,7 +106,8 @@ decides the ending. Full pitch: [docs/DESIGN.md](docs/DESIGN.md).
 - [x] **M2** Movement and threat: player, chasing enemies, contact damage, death, day-based spawn director
 - [x] **M3** Fun check: XP gems, level-up with 3 choices, Goddess Light and Aegis, early balance pass
 - [x] **M4** Devour (elites, Essences, evolution) and the Demon King boss
-- [x] **M5** CC0 art and sound, juice (shake, hit stop, particles), Goddess's Sanctuary, versioned save file
+- [x] **M5** CC0 art and sound, juice, procedural world, versioned save file
+- [x] **Progression** One-life journeys: goddess shrines on the lore days, gold revives, shrine checkpoints
 - [ ] **M6** Lore beats, Day 20 dialogue, endings, itch.io web release
 
 ## Project layout

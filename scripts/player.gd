@@ -106,9 +106,9 @@ func take_damage(atk: float, ignore_invuln := false) -> void:
 
 
 # Quadratic curve: early levels come fast, later ones take much longer.
-# Eased (x0.7) when enemies started spreading out and dying in smaller groups.
+# (Full strength again since journeys became 20 one-minute days.)
 func xp_to_next() -> int:
-	return 5 + roundi(level * level * 0.7)
+	return 5 + level * level
 
 
 func gain_xp(amount: int) -> void:
@@ -185,10 +185,25 @@ func devour_count() -> int:
 	return total
 
 
-func devour(essence: EssenceData) -> void:
+## An essence's stat boost and max-HP cost, with no fanfare (also used to
+## rebuild a saved journey).
+func add_essence(essence: EssenceData) -> void:
 	essences[essence] = essences.get(essence, 0) + 1
 	modifiers.append({"stat": essence.stat, "add": essence.add, "mult": essence.mult})
 	modifiers.append({"stat": "max_hp", "add": -essence.max_hp_cost})
+	hp = minf(hp, stat("max_hp"))
+	_check_evolutions()
+
+
+## Back from death (a goddess revive): some HP and a moment of safety.
+func revive(hp_fraction: float, invulnerable_for: float) -> void:
+	hp = stat("max_hp") * hp_fraction
+	_invuln = invulnerable_for
+	set_physics_process(true)
+
+
+func devour(essence: EssenceData) -> void:
+	add_essence(essence)
 	# Feeding restores you, which pays for standing still to channel.
 	var healed := minf(stat("max_hp"), hp + stat("max_hp") * DEVOUR_HEAL) - hp
 	hp += healed
@@ -198,7 +213,6 @@ func devour(essence: EssenceData) -> void:
 	Game.sfx("devour")
 	Game.shake(0.3)
 	devoured.emit(essence)
-	_check_evolutions()
 
 
 func _update_devour(delta: float) -> void:

@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/shrine.gd" id="1"]
+
+[node name="Shrine" type="CanvasLayer"]
+script = ExtResource("1")

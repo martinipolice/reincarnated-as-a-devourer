@@ -19,6 +19,7 @@ var first_level_at := -1.0
 var boss_at := -1.0
 var last_boss_report := 0
 var last_hp := -1.0
+var shrines := 0
 ## Damage taken by apparent source, printed at the end of the run.
 var damage_by := {}
 
@@ -33,6 +34,15 @@ func _process(_delta: float) -> bool:
 	frame += 1
 	if main.level_up.visible:
 		main.level_up._pick(randi() % main.level_up._offers.size())
+		return false
+	if main.shrine.visible:
+		_use_shrine()
+		return false
+	if main._awaiting_revive and not main.primary_button.disabled:
+		main._on_primary()  # revive whenever it can pay
+		return false
+	if main._awaiting_revive and main.secondary_button.disabled == false and main.gold < main.revive_cost():
+		main._on_secondary()
 		return false
 	if mode != "afk":
 		_steer()
@@ -58,8 +68,8 @@ func _process(_delta: float) -> bool:
 	if main._over:
 		var result := "WON" if not is_instance_valid(main.boss) and boss_at >= 0 and p.hp > 0 else "DIED"
 		var fight := "boss fight %ds" % (t - boss_at) if boss_at >= 0 else "no boss"
-		print("END %s %s: day %d t=%ds lv %d kills %d gold %d devoured %d max_hp %d, %s, first level %.1fs" % [
-			mode, result, main.day(), t, p.level, main.kills, main.gold, p.devour_count(),
+		print("END %s %s: day %d t=%ds lv %d kills %d gold %d revives %d shrines %d devoured %d max_hp %d, %s, first level %.1fs" % [
+			mode, result, main.day(), t, p.level, main.kills, main.gold, main.revives, shrines, p.devour_count(),
 			p.stat("max_hp"), fight, first_level_at])
 		var parts := []
 		for k in damage_by:
@@ -90,6 +100,27 @@ func _damage_source(p) -> String:
 	if best.state == 2:  # DASH
 		kind += " pounce"
 	return kind
+
+# Shrine policy: take a random blessing, heal if hurt, then buy the cheapest
+# training while keeping enough gold for the next revive.
+func _use_shrine() -> void:
+	var s = main.shrine
+	var options = s._blessing_box.get_children()
+	options[randi() % options.size()].emit_signal("pressed")
+	var p = main.player
+	if p.hp < p.stat("max_hp") * 0.6 and main.gold >= 110 + main.revive_cost():
+		s._buy_potion(s.POTIONS[1])
+	while true:
+		var best = null
+		for t in s.TRAININGS:
+			var rank = main.training_ranks.get(t.id, 0)
+			if rank < t.max_rank and (best == null or t.cost(rank) < best.cost(main.training_ranks.get(best.id, 0))):
+				best = t
+		if best == null or main.gold - best.cost(main.training_ranks.get(best.id, 0)) < main.revive_cost():
+			break
+		s._buy_training(best)
+	shrines += 1
+	s._close()
 
 func _loadout(p) -> String:
 	var parts := []

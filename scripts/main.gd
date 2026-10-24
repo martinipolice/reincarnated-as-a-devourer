@@ -1,9 +1,10 @@
 extends Node2D
-## Run controller: the day clock, the spawn director, elites and the boss,
-## level-ups, the HUD and the end of the run (which banks gold for the
-## Goddess's Sanctuary).
+## The journey controller: one life, twenty days. Runs the day clock, the
+## spawn director, elites and the boss, level-ups and the HUD; opens the
+## goddess's shrine on the lore days (checkpointing the journey there); and on
+## death offers a revive for gold, or ends the journey for good.
 
-const SECONDS_PER_DAY := 30.0  # MVP: 20 days in 10 minutes
+const SECONDS_PER_DAY := 60.0  # 20 days in 20 minutes
 const FINAL_DAY := 20
 const SPAWN_RADIUS := 700.0
 const BOSS_SPAWN_DISTANCE := 450.0
@@ -26,7 +27,7 @@ const EVENT_GAP := Vector2(40.0, 55.0)
 const EVENT_WARNING := 1.5
 ## Enemies get this much tougher each day after the first (HP fully, damage
 ## at 70%; see Enemy.setup). Day 20 is 1 + 19 * this.
-const TOUGHNESS_PER_DAY := 0.125
+const TOUGHNESS_PER_DAY := 0.16
 ## Treasure chests: one appears every CHEST_INTERVAL s (up to MAX_CHESTS at
 ## once) somewhere just off-screen; a HUD arrow points the way. Some are
 ## golden (two rewards); from MIMIC_FROM_DAY some are Mimics that fight back.
@@ -52,8 +53,16 @@ const MOOD := {
 	"ruins": Color(0.86, 0.8, 0.9),
 	"temple": Color(0.78, 0.62, 0.66),
 }
-const SANCTUARY_SCENE := "res://scenes/ui/sanctuary.tscn"
-const SANCTUARY := preload("res://scripts/ui/sanctuary.gd")
+## The goddess finds you on the original game's lore days.
+const SHRINE_DAYS := [5, 10, 15, 19]
+const SHRINE_SCENE := preload("res://scenes/ui/shrine.tscn")
+const SHRINE := preload("res://scripts/ui/shrine.gd")
+## Reviving costs gold, doubling each time: 800, 1600, 3200...
+const REVIVE_BASE_COST := 800
+const REVIVE_HP := 0.5  # fraction of max HP you come back with
+const REVIVE_CLEAR_RADIUS := 450.0
+const REVIVE_INVULN := 2.5
+const TITLE_SCENE := "res://scenes/ui/title.tscn"
 ## Ignore end-screen input briefly so a held key doesn't skip it.
 const END_MENU_DELAY := 0.8
 
@@ -89,6 +98,12 @@ var elapsed := 0.0
 var kills := 0
 var gold := 0
 var boss: Boss
+var revives := 0
+## TrainingData.id -> ranks bought at the goddess's shrines this journey.
+var training_ranks := {}
+var shrine: CanvasLayer
+var _shrines_done := []
+var _awaiting_revive := false
 var _spawn_timer := GRACE_PERIOD
 var _elite_timer := ELITE_INTERVAL
 var _chest_timer := CHEST_FIRST
@@ -110,8 +125,8 @@ var _banner_tween: Tween
 @onready var banner: Label = $HUD/Banner
 @onready var end_menu: Control = $HUD/EndMenu
 @onready var end_text: Label = %EndText
-@onready var again_button: Button = %Again
-@onready var sanctuary_button: Button = %ToSanctuary
+@onready var primary_button: Button = %Primary
+@onready var secondary_button: Button = %Secondary
 @onready var world: ChunkWorld = $World
 @onready var mood: CanvasModulate = $Mood
 
@@ -123,12 +138,18 @@ func _ready() -> void:
 	player.devoured.connect(_on_player_devoured)
 	player.weapon_evolved.connect(_on_weapon_evolved)
 	level_up.chosen.connect(_on_upgrade_chosen)
-	again_button.pressed.connect(_play_again)
-	sanctuary_button.pressed.connect(_go_to_sanctuary)
-	_apply_training()
-	player.apply_upgrade(STARTING_WEAPON)
+	primary_button.pressed.connect(_on_primary)
+	secondary_button.pressed.connect(_on_secondary)
+	shrine = SHRINE_SCENE.instantiate()
+	add_child(shrine)
+	shrine.closed.connect(_on_shrine_closed)
 	world.set_origin(player.position)
 	mood.color = MOOD.forest
+	if Save.resume and Save.has_journey():
+		_restore(Save.data.journey)
+	else:
+		player.apply_upgrade(STARTING_WEAPON)
+	Save.resume = false
 	end_menu.hide()
 	banner.hide()
 	boss_label.hide()
@@ -146,11 +167,14 @@ func toughness() -> float:
 func _process(delta: float) -> void:
 	world.update(player.position, get_viewport_rect().size)
 	if _over:
-		if Input.is_action_just_pressed("restart") and not again_button.disabled:
-			_play_again()
+		if Input.is_action_just_pressed("restart") and not primary_button.disabled:
+			_on_primary()
 		return
 
 	elapsed += delta
+	if day() in SHRINE_DAYS and not day() in _shrines_done and not level_up.visible:
+		_shrines_done.append(day())
+		shrine.open(day(), self)
 	if day() >= RUINS_FROM_DAY and world.biome == "forest":
 		world.biome = "ruins"
 		create_tween().tween_property(mood, "color", MOOD.ruins, 4.0)
@@ -259,6 +283,7 @@ func _update_hud() -> void:
 		day(), FINAL_DAY, player.level, ceili(player.hp), player.stat("max_hp"), kills, gold]
 	if elapsed < _fervor_until:
 		text += "\nGoddess's Fervor: %ds" % ceili(_fervor_until - elapsed)
+	text += "\nRevive: %dg" % revive_cost()
 	if player.devour_count() > 0:
 		var parts := []
 		for essence: EssenceData in player.essences:
@@ -546,43 +571,150 @@ func _offer_next_level_up() -> void:
 	level_up.open(offers, player)
 
 
+func revive_cost() -> int:
+	return REVIVE_BASE_COST * (1 << revives)
+
+
+## Training bought at a shrine: its modifiers last the rest of the journey.
+func add_training(training: TrainingData) -> void:
+	training_ranks[training.id] = int(training_ranks.get(training.id, 0)) + 1
+	var old_max := player.stat("max_hp")
+	for mod: Dictionary in training.per_rank:
+		player.modifiers.append(mod.duplicate())
+	player.hp += maxf(0.0, player.stat("max_hp") - old_max)
+
+
+func _on_shrine_closed() -> void:
+	Save.save_journey(_snapshot())
+	if day() == 19:
+		show_banner("Tomorrow, the Demon King.", 2.5)
+	else:
+		show_banner("Your journey continues... (saved)", 2.0)
+
+
+# Everything needed to rebuild this hero at the shrine just visited.
+func _snapshot() -> Dictionary:
+	var upgrades := []
+	for upgrade: Resource in player.upgrade_levels:
+		upgrades.append([upgrade.resource_path, player.upgrade_levels[upgrade]])
+	var essences := []
+	for essence: EssenceData in player.essences:
+		essences.append([essence.resource_path, player.essences[essence]])
+	return {
+		"day": day(), "level": player.level, "xp": player.xp,
+		"hp_fraction": player.hp / player.stat("max_hp"), "gold": gold, "kills": kills,
+		"revives": revives, "training": training_ranks.duplicate(), "upgrades": upgrades,
+		"essences": essences, "seed": world.seed_value, "devour_hint": _devour_hint_shown,
+	}
+
+
+# Continue from a shrine checkpoint: same hero, same world, start of that day.
+func _restore(journey: Dictionary) -> void:
+	world.set_seed(int(journey.seed))
+	var saved_day := int(journey.day)
+	elapsed = (saved_day - 1) * SECONDS_PER_DAY + 0.5
+	for shrine_day: int in SHRINE_DAYS:
+		if shrine_day <= saved_day:
+			_shrines_done.append(shrine_day)
+	gold = int(journey.gold)
+	kills = int(journey.kills)
+	revives = int(journey.revives)
+	_devour_hint_shown = bool(journey.get("devour_hint", false))
+	player.level = int(journey.level)
+	player.xp = int(journey.xp)
+	for entry: Array in journey.upgrades:
+		for i in int(entry[1]):
+			player.apply_upgrade(load(entry[0]))
+	for entry: Array in journey.essences:
+		for i in int(entry[1]):
+			player.add_essence(load(entry[0]))
+	for training: TrainingData in SHRINE.TRAININGS:
+		for i in int(journey.training.get(training.id, 0)):
+			add_training(training)
+	player.hp = player.stat("max_hp") * float(journey.hp_fraction)
+	if saved_day >= RUINS_FROM_DAY:
+		world.biome = "ruins"
+		mood.color = MOOD.ruins
+	_spawn_timer = GRACE_PERIOD
+	show_banner("Day %d. Your journey continues." % saved_day, 2.5)
+
+
 func _on_player_died() -> void:
-	_end_run("You have fallen in battle...\nThe cycle remains unbroken.")
+	# The goddess can pull you back, for a price that doubles every time.
+	_awaiting_revive = true
+	get_tree().paused = true
+	Game.sfx("defeat", 0.0)
+	banner.hide()
+	var cost := revive_cost()
+	var can_pay := gold >= cost
+	end_text.text = "You have fallen...\n\nThe goddess reaches for you. She can pull you back,\nbut her light grows weaker each time.\n\nRevive: %d gold   (you have %d)" % [cost, gold]
+	primary_button.text = "Revive  (%dg)" % cost
+	secondary_button.text = "Accept your fate"
+	secondary_button.show()
+	_show_end_menu(primary_button if can_pay else secondary_button)
+	primary_button.disabled = not can_pay
 
 
-# Sanctuary training ranks become modifiers, like any other bonus.
-func _apply_training() -> void:
-	for training: TrainingData in SANCTUARY.TRAININGS:
-		for rank in Save.training_rank(training):
-			for mod: Dictionary in training.per_rank:
-				player.modifiers.append(mod.duplicate())
-	player.hp = player.stat("max_hp")
+func _revive() -> void:
+	_awaiting_revive = false
+	gold -= revive_cost()
+	revives += 1
+	end_menu.hide()
+	get_tree().paused = false
+	player.revive(REVIVE_HP, REVIVE_INVULN)
+	# She clears a little room around you; the Demon King is untouched.
+	for node in enemies.get_children():
+		var enemy := node as Enemy
+		if enemy and not enemy.data.boss and enemy.alive() \
+				and enemy.global_position.distance_to(player.global_position) < REVIVE_CLEAR_RADIUS:
+			Game.burst(enemy.global_position, Color(1, 0.95, 0.7), 6)
+			enemy.queue_free()
+	Game.fx("spark", player.global_position, 4.0, Color(1, 0.95, 0.6))
+	Game.shake(0.4)
+	Game.sfx("level_up", 0.0)
+	show_banner("The goddess pulls you back...\nher light grows weaker.", 2.5)
 
 
 func _end_run(message: String, won := false) -> void:
 	_over = true
+	_awaiting_revive = false
+	get_tree().paused = false
 	Game.sfx("victory" if won else "defeat", 0.0)
-	Save.add_gold(gold)
-	Save.record_run(day(), won)
-	Save.save_game()
+	Save.end_journey(day(), won)
 	_update_hud()
 	enemies.process_mode = Node.PROCESS_MODE_DISABLED
 	banner.hide()
-	end_text.text = "%s\n\nDay %d  ·  Level %d  ·  %d kills  ·  %d devoured\n+%d gold  (%d banked)" % [
-		message, day(), player.level, kills, player.devour_count(), gold, Save.gold()]
+	end_text.text = "%s\n\nDay %d  ·  Level %d  ·  %d kills  ·  %d devoured  ·  %d revives" % [
+		message, day(), player.level, kills, player.devour_count(), revives]
+	primary_button.text = "Begin a new journey  (R)"
+	secondary_button.text = "Title screen"
+	secondary_button.show()
+	_show_end_menu(primary_button)
+
+
+func _show_end_menu(focus: Button) -> void:
 	end_menu.show()
-	again_button.disabled = true
-	sanctuary_button.disabled = true
+	primary_button.disabled = true
+	secondary_button.disabled = true
 	await get_tree().create_timer(END_MENU_DELAY).timeout
-	again_button.disabled = false
-	sanctuary_button.disabled = false
-	sanctuary_button.grab_focus()
+	primary_button.disabled = _awaiting_revive and gold < revive_cost()
+	secondary_button.disabled = false
+	focus.grab_focus()
 
 
-func _play_again() -> void:
-	get_tree().reload_current_scene()
+func _on_primary() -> void:
+	if _awaiting_revive:
+		_revive()
+	else:
+		Game.sfx("click", 0.0)
+		Save.resume = false
+		get_tree().reload_current_scene()
 
 
-func _go_to_sanctuary() -> void:
-	Game.sfx("click", 0.0)
-	get_tree().change_scene_to_file(SANCTUARY_SCENE)
+func _on_secondary() -> void:
+	if _awaiting_revive:
+		_awaiting_revive = false
+		_end_run("You have fallen in battle...\nThe cycle remains unbroken.")
+	else:
+		Game.sfx("click", 0.0)
+		get_tree().change_scene_to_file(TITLE_SCENE)

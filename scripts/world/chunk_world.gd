@@ -129,6 +129,14 @@ func update(center: Vector2, view_size: Vector2) -> void:
 			_unload(key)
 
 
+## Rebuilds the world from `value` (continuing a saved journey).
+func set_seed(value: int) -> void:
+	seed_value = value
+	_noise.seed = value
+	for key: Vector2i in _chunks.keys():
+		_unload(key)
+
+
 ## Where the run starts: kept clear of obstacles.
 func set_origin(at: Vector2) -> void:
 	_origin = at
