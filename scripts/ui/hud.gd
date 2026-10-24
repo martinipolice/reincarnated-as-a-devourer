@@ -6,6 +6,7 @@ extends Control
 ## - top-right: the day, and when the goddess comes next
 ## - bottom-left: Goddess's Tears (the flask) and its key
 ## - bottom-right: gold, and what the next revive costs
+## - right edge: the style rank (D to SSS), its name and a gauge
 ## - bottom-center: the Demon King's name and a long health bar
 ## Everything updates from signals (player, run and boss), never by reading
 ## game state every frame.
@@ -29,6 +30,10 @@ var _boss_box: VBoxContainer
 var _boss_name: Label
 var _boss_bar: ProgressBar
 var _player: Player
+var _style_box: VBoxContainer
+var _style_letter: Label
+var _style_name: Label
+var _style_bar: ProgressBar
 
 
 func _ready() -> void:
@@ -47,6 +52,34 @@ func bind(player: Player, run: Node) -> void:
 	run.gold_changed.connect(_on_gold_changed)
 	run.day_changed.connect(_on_day_changed)
 	player.announce()
+
+
+## Shows the style rank; hidden while there's no style at all.
+func bind_style(style: StyleMeter) -> void:
+	style.changed.connect(_on_style_changed)
+	style.rank_changed.connect(_on_rank_changed)
+
+
+func _on_style_changed(rank: int, progress: float) -> void:
+	_style_box.visible = rank > 0 or progress > 0.0
+	_style_bar.value = progress
+	_style_letter.text = StyleMeter.LETTERS[rank]
+	_style_name.text = StyleMeter.NAMES[rank]
+	var color: Color = StyleMeter.COLORS[rank]
+	_style_letter.add_theme_color_override("font_color", color)
+	_style_bar.get_theme_stylebox("fill").bg_color = color
+
+
+# A rank-up pops the letter; a drop shakes it.
+func _on_rank_changed(_rank: int, rising: bool) -> void:
+	_style_letter.pivot_offset = _style_letter.size / 2.0
+	var tween := create_tween()
+	if rising:
+		_style_letter.scale = Vector2(1.6, 1.6)
+		tween.tween_property(_style_letter, "scale", Vector2.ONE, 0.25) 			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	else:
+		_style_letter.scale = Vector2(0.7, 0.7)
+		tween.tween_property(_style_letter, "scale", Vector2.ONE, 0.2)
 
 
 func set_status(text: String) -> void:
@@ -136,6 +169,28 @@ func _build() -> void:
 	_next_shrine = _label("", 20, UITheme.ASH)
 	_next_shrine.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	day_box.add_child(_next_shrine)
+
+	# Right edge, under the day: the style rank.
+	_style_box = VBoxContainer.new()
+	_style_box.alignment = BoxContainer.ALIGNMENT_CENTER
+	_style_box.add_theme_constant_override("separation", 0)
+	_style_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_style_box)
+	_style_box.set_anchors_and_offsets_preset(Control.PRESET_CENTER_RIGHT)
+	_style_box.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	_style_box.offset_right = -MARGIN
+	_style_box.offset_top = -150
+	_style_letter = UITheme.title_label("D", 96, UITheme.BONE)
+	_style_letter.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_style_box.add_child(_style_letter)
+	_style_name = _label("", 20, UITheme.BONE)
+	_style_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_style_box.add_child(_style_name)
+	_style_bar = _bar(Vector2(150, 6), UITheme.GOLD)
+	_style_bar.max_value = 1.0
+	_style_bar.size_flags_horizontal = Control.SIZE_SHRINK_END
+	_style_box.add_child(_style_bar)
+	_style_box.hide()
 
 	# Bottom-left: the flask.
 	var bottom_left := _corner(Control.PRESET_BOTTOM_LEFT)

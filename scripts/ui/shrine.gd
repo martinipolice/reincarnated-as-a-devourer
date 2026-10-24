@@ -2,8 +2,10 @@ extends CanvasLayer
 ## The goddess's shrine, on the lore days of the original game (5, 10, 15 and
 ## her farewell on 19). The run pauses; she speaks her story beat, grants a
 ## free blessing (pick one of three upgrades), and her shrine sells training
-## (the old Train menu) and potions (the old shop's) for this journey's gold.
-## Gold is also what buys revives, so every purchase is a gamble.
+## (the old Train menu) and upgrades to her Tears for this journey's gold.
+## Gold is also what buys revives, so every purchase is a gamble. She also
+## offers two covenants (main.gd COVENANTS): seal one, if you dare, and its
+## curse and reward last until the next shrine.
 
 signal closed
 
@@ -21,6 +23,9 @@ const TEARS := [
 	["blessed", "Blessed Tears", "Each sip heals 10% more", 250, 3],
 ]
 const TEARS_ICON := preload("res://assets/ninja/images/common_potion.png")
+const COVENANT_ICON := preload("res://assets/ninja/images/icon_covenant.png")
+const COVENANT_COLOR := Color(0.75, 0.55, 1.0)
+const COVENANTS_OFFERED := 2
 ## The goddess's words on each shrine day, from the terminal game's lore.
 const STORY := {
 	5: ["You dream of the goddess watching from afar.",
@@ -45,6 +50,10 @@ var _blessing_box: HBoxContainer
 var _blessing_title: Label
 var _training_box: VBoxContainer
 var _potion_box: HBoxContainer
+var _covenant_box: HBoxContainer
+var _offered: Array = []
+var _sealed := false
+var _blessings_left := 1
 var _revive_label: Label
 var _continue: Button
 
@@ -61,6 +70,12 @@ func open(day: int, main: Node) -> void:
 	_main = main
 	_day = day
 	_blessed = false
+	_blessings_left = 1
+	_sealed = false
+	_main.set_covenant("")  # the last covenant ends here
+	_offered = _main.COVENANTS.keys()
+	_offered.shuffle()
+	_offered.resize(COVENANTS_OFFERED)
 	_main.player.refill_flask()  # the goddess refills her tears
 	Game.sfx("shrine", 0.0)
 	Music.set_intensity(1.0)
@@ -87,7 +102,7 @@ func _close() -> void:
 func _refresh() -> void:
 	var player: Player = _main.player
 	_gold_label.text = "Gold: %d" % _main.gold
-	_revive_label.text = "Your next revive costs %d gold." % _main.revive_cost()
+	_revive_label.text = "Next revive: %d gold" % _main.revive_cost()
 	_blessing_title.text = "Her blessing: choose one" if not _blessed else "Her blessing is with you."
 	for child in _blessing_box.get_children():
 		(child as Button).disabled = _blessed
@@ -105,7 +120,7 @@ func _refresh() -> void:
 		buy.icon = TEARS_ICON
 		buy.expand_icon = true
 		buy.add_theme_constant_override("icon_max_width", 26)
-		buy.custom_minimum_size = Vector2(290, 52)
+		buy.custom_minimum_size = Vector2(290, 46)
 		if rank >= upgrade[4]:
 			buy.text = "%s  ·  mastered" % upgrade[1]
 			buy.disabled = true
@@ -115,6 +130,22 @@ func _refresh() -> void:
 			buy.disabled = _main.gold < cost
 			buy.pressed.connect(_buy_tears.bind(upgrade))
 		_potion_box.add_child(buy)
+	for child in _covenant_box.get_children():
+		_covenant_box.remove_child(child)
+		child.queue_free()
+	for id: String in _offered:
+		var entry: Array = _main.COVENANTS[id]
+		var seal := Button.new()
+		seal.icon = COVENANT_ICON
+		seal.expand_icon = true
+		seal.add_theme_constant_override("icon_max_width", 26)
+		seal.custom_minimum_size = Vector2(290, 46)
+		seal.add_theme_color_override("font_color", COVENANT_COLOR)
+		var sealed_this: bool = _main.covenant == id
+		seal.text = "%s%s\n%s  ·  %s" % [entry[0], "  (sealed)" if sealed_this else "", entry[1], entry[2]]
+		seal.disabled = _sealed
+		seal.pressed.connect(_seal.bind(id))
+		_covenant_box.add_child(seal)
 	_continue.disabled = not _blessed
 	_continue.text = "Continue your journey" if _blessed else "Choose her blessing first"
 
@@ -170,11 +201,31 @@ func _build_blessings() -> void:
 
 
 func _bless(upgrade: Resource) -> void:
-	_blessed = true
+	_blessings_left -= 1
+	_blessed = _blessings_left <= 0
 	_main.player.apply_upgrade(upgrade)
 	Game.sfx("pick", 0.0)
+	if not _blessed:
+		_build_blessings()  # Thirst: pick again from a fresh three
 	_refresh()
-	_continue.grab_focus()
+	if _blessed:
+		_continue.grab_focus()
+
+
+# A covenant is for good: once sealed, it can't be undone at this shrine.
+func _seal(id: String) -> void:
+	if _sealed:
+		return
+	_sealed = true
+	_main.set_covenant(id)
+	Game.sfx("covenant", 0.0)
+	Game.shake(0.2)
+	if id == "thirst":
+		_blessings_left += 1  # its reward: a second blessing
+		if _blessed:
+			_blessed = false
+			_build_blessings()
+	_refresh()
 
 
 func _buy_training(training: TrainingData) -> void:
@@ -238,7 +289,7 @@ func _build() -> void:
 	margin.set_anchors_and_offsets_preset(Control.PRESET_LEFT_WIDE)
 	margin.offset_right = 1280  # keep the 720p layout on wider screens
 	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 10)
+	column.add_theme_constant_override("separation", 6)
 	margin.add_child(column)
 
 	_title = UITheme.title_label("", 48, UITheme.GOLD)
@@ -247,8 +298,13 @@ func _build() -> void:
 	_story = _label("", 20, Color(0.85, 0.82, 0.95))
 	_story.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	column.add_child(_story)
+	var money := HBoxContainer.new()
+	money.add_theme_constant_override("separation", 24)
+	column.add_child(money)
 	_gold_label = _label("", 30, Color(1, 0.85, 0.35))
-	column.add_child(_gold_label)
+	money.add_child(_gold_label)
+	_revive_label = _label("", 20, Color(0.75, 0.7, 0.8))
+	money.add_child(_revive_label)
 
 	_blessing_title = _label("", 20, Color.WHITE)
 	column.add_child(_blessing_title)
@@ -265,8 +321,10 @@ func _build() -> void:
 	_potion_box.add_theme_constant_override("separation", 10)
 	column.add_child(_potion_box)
 
-	_revive_label = _label("", 20, Color(0.75, 0.7, 0.8))
-	column.add_child(_revive_label)
+	column.add_child(_label("A covenant until her next shrine (optional, and final)", 20, COVENANT_COLOR))
+	_covenant_box = HBoxContainer.new()
+	_covenant_box.add_theme_constant_override("separation", 10)
+	column.add_child(_covenant_box)
 	_continue = Button.new()
 	_continue.custom_minimum_size = Vector2(0, 44)
 	_continue.add_theme_font_size_override("font_size", 20)

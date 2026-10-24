@@ -35,8 +35,9 @@ as a real-time game.
 | F4 | Full heal |
 
 Weapons attack automatically. Collect XP gems to level up and choose from three upgrades,
-each showing exactly what it changes: the **Blade**, **Goddess Light** and **Aegis**
-weapons, or the **Guard**, **Treads**, **Stamina**, **Fury** (attack speed), **Magnet
+each showing exactly what it changes: the **Blade**, **Goddess Light**, **Aegis**,
+**Devourer's Maw** (jaws that bite the nearest enemies and heal you on kills) and **Hellfire
+Chains** (a burning lash where you face) weapons, or the **Guard**, **Treads**, **Stamina**, **Fury** (attack speed), **Magnet
 Charm** (pickup range) and **Vigor** (HP regen) passives. Tier names come from the original
 game's shop.
 
@@ -73,6 +74,23 @@ On **Day 20** the horde scatters and the Demon King descends for a duel. He alte
 red slam marked on the ground under you with a ring of dark orbs (watch for the purple
 glow), and summons a few minions now and then. Below half HP he enrages: faster, wider
 slams and double rings. Kill him to win the run.
+
+### Style, traits and covenants
+
+- **Style rank.** A Devil May Cry-style rank, D (Dull) to SSS (Soul Devourer), climbs as you
+  kill and Devour, drains when you stop, and drops two ranks whenever you're hit. Higher
+  ranks pay up to x1.6 gold and +25% XP, and push the music to full blast.
+- **Four weapons at a time.** Of the five, you carry at most four, so each build chooses.
+- **Elite traits.** From Day 3 (always from Day 10), elites can be **Swift**, **Armored**
+  (half damage), **Splitting** (bursts into three) or **Vampiric** (heals when it hits you),
+  named over their head. They pay double gold.
+- **Covenants.** At each shrine the goddess offers two covenants; seal one, if you dare, and
+  it lasts until her next shrine: **Blood** (enemies hit harder, much more gold), **the
+  Horde** (more enemies, more XP and gold), **Frailty** (less max HP, more damage) or
+  **Thirst** (your Tears emptied, a second blessing now).
+- **Evolutions.** Each new weapon evolves at Lv 3 after Devouring 3 of an essence, like the
+  Blade: the Maw with Dreadlings (Abyssal Maw), the Chains with Plaguewings (Chains of the
+  Damned).
 
 ### Souls-like UI
 
@@ -197,14 +215,18 @@ always starts from a fresh save and never writes yours:
 godot --headless --fixed-fps 60 --path . -s res://tools/balance_sim.gd -- kite 1
 ```
 
+Add `cov` after the seed to make the bot seal a random covenant at every shrine. Each run
+also reports the share of time spent at each style rank.
+
 Current targets (20 full journeys, seeds 1-8; the bot visits every shrine, keeps enough
 gold for its next revive, and revives whenever it can pay):
 
 | Bot | Result |
 |---|---|
 | `afk` | dies in 20-40 s |
-| `kite` (never Devours) | wins about 3 in 4 journeys, often with 0-2 revives |
-| `devour` (Devours when safe, keeps max HP above 80) | about the same, 3 in 4 |
+| `kite` (never Devours) | wins about 3 in 4 journeys, often with 0-2 revives, mostly at style D-B |
+| `devour` (Devours when safe, keeps max HP above 80) | wins 5-6 in 8; reaches higher style ranks |
+| `devour ... cov` (also seals a random covenant at every shrine) | wins a little more often: covenants pay, but hurt |
 | `greedy` (Devours everything) | dies by Day 7-14 even after paying for revives |
 
 Each run also prints the damage the bot took by source (e.g. `plague 320, Vexclaw pounce

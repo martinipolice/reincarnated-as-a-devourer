@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/weapon_data.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/weapons/maw.tscn" id="2"]
+[ext_resource type="Resource" path="res://data/essences/dreadling_essence.tres" id="3"]
+[ext_resource type="Texture2D" path="res://assets/ninja/images/icon_maw.png" id="4"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Devourer's Maw"
+description = "Jaws snap shut on the nearest enemy. Each kill heals you."
+scene = ExtResource("2")
+max_level = 3
+evolve_with = ExtResource("3")
+evolve_count = 3
+evolved_name = "Abyssal Maw"
+level_descriptions = PackedStringArray("Jaws snap shut on the nearest enemy. Each kill heals you 1 HP.", "Damage 36 -> 50, bites faster, kills heal 2 HP", "2 bites at once, damage 50 -> 68, kills heal 3 HP. Devour 3 Dreadlings to evolve it")
+icon = ExtResource("4")

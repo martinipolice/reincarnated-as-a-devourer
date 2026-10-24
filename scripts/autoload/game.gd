@@ -29,6 +29,10 @@ const SFX := {
 	"gem": [["kenney_interface/glass_00{1-6}.ogg"], -16.0, 1.0, true],
 	"footstep_grass": [["kenney_impact/footstep_grass_00{0-4}.ogg"], -21.0, 1.0, true],
 	"footstep_stone": [["kenney_impact/footstep_concrete_00{0-4}.ogg"], -21.0, 1.0, true],
+	"maw": [["kenney_impact/impactSoft_heavy_00{0-4}.ogg"], -9.0, 0.6, true],
+	"maw_hit": [["kenney_impact/impactPunch_heavy_00{0-4}.ogg"], -14.0, 0.8, true],
+	"chains": [["kenney_rpg/beltHandle{1-2}.ogg", "kenney_rpg/metalClick.ogg"], -8.0, 0.7, true],
+	"chains_hit": [["kenney_impact/impactMetal_medium_00{0-4}.ogg"], -15.0, 0.75, true],
 	# The hero and the world.
 	"elite_die": [["kenney_impact/impactBell_heavy_00{0-4}.ogg"], -6.0, 0.8, false],
 	"player_hurt": [["kenney_impact/impactPlate_heavy_00{0-4}.ogg"], -5.0, 1.0, false],
@@ -42,6 +46,8 @@ const SFX := {
 	"loot": [["kenney_digital/powerUp4.ogg"], -6.0, 1.0, false],
 	"bomb": [["kenney_impact/impactMining_00{0-4}.ogg"], 0.0, 0.7, false],
 	"shrine": [["kenney_interface/bong_001.ogg"], -6.0, 0.6, false],
+	"covenant": [["kenney_digital/lowRandom.ogg"], -4.0, 0.7, false],
+	"rank_up": [["kenney_impact/impactMetal_heavy_00{0-4}.ogg"], -9.0, 1.3, false],
 	# The Demon King.
 	"boss_warn": [["kenney_digital/lowThreeTone.ogg"], -6.0, 1.0, false],
 	"boss_slam": [["kenney_impact/impactPunch_heavy_00{0-4}.ogg", "kenney_impact/impactMetal_heavy_00{0-4}.ogg"], -2.0, 0.7, false],
@@ -67,6 +73,8 @@ var _pools := {true: [], false: []}  # combat? -> voices
 var _next_voice := {true: 0, false: 0}
 ## Which footstep set the ground calls for; main.gd switches it by area.
 var footstep := "footstep_grass"
+## Multiplies every new enemy's damage (a shrine covenant raises it).
+var enemy_atk_mult := 1.0
 var _last_played := {}
 var _hit_stop_active := false
 var _fx_frames := {}

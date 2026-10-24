@@ -71,6 +71,21 @@ const PRESSURE_FULL := 30.0
 const PEAK_AT := 0.9
 const PEAK_RELEASE := 0.6
 const PEAK_HOLD := 20.0
+## Elites can carry a trait from this day: some of the time, then always.
+const TRAITS_FROM_DAY := 3
+const TRAIT_CHANCE := 0.6
+const TRAITS_ALWAYS_FROM_DAY := 10
+const TRAIT_GOLD_MULT := 2.0
+const SPLIT_COUNT := 3
+## Shrine covenants: a curse until the next shrine, for a reward.
+## id -> [name, curse, boon]. Effects live in set_covenant() and the
+## *_mult() functions below.
+const COVENANTS := {
+	"blood": ["Covenant of Blood", "Enemies hit 35% harder", "Gold x1.5"],
+	"horde": ["Covenant of the Horde", "40% more enemies", "XP and gold x1.3"],
+	"frailty": ["Covenant of Frailty", "Max HP -30%", "Damage +40%"],
+	"thirst": ["Covenant of Thirst", "Your Tears are emptied", "A second blessing, now"],
+}
 ## Below this HP fraction, the first time, the game suggests the flask.
 const FLASK_HINT_HP := 0.5
 const SHRINE := preload("res://scripts/ui/shrine.gd")
@@ -102,6 +117,8 @@ const UPGRADE_POOL := [
 	preload("res://data/weapons/blade.tres"),
 	preload("res://data/weapons/goddess_light.tres"),
 	preload("res://data/weapons/aegis.tres"),
+	preload("res://data/weapons/maw.tres"),
+	preload("res://data/weapons/chains.tres"),
 	preload("res://data/items/wooden_guard.tres"),
 	preload("res://data/items/leather_treads.tres"),
 	preload("res://data/items/stamina.tres"),
@@ -126,6 +143,8 @@ var pause_menu: CanvasLayer
 var _shrines_done := []
 var _awaiting_revive := false
 var _last_day := 0
+var style: StyleMeter
+var covenant := ""
 var _pressure := 0.0
 var _pressure_timer := 0.0
 var _peak_hold := 0.0
@@ -177,6 +196,13 @@ func _ready() -> void:
 	end_menu.hide()
 	banner.hide()
 	Music.muffle(false)
+	style = StyleMeter.new()
+	add_child(style)
+	style.rank_changed.connect(_on_rank_changed)
+	player.hurt.connect(style.on_hurt)
+	hud.bind_style(style)
+	if covenant == "":
+		set_covenant("")  # clears a multiplier left from a previous run
 	hud.bind(player, self)
 	gold = gold  # announce the starting gold and revive price
 	_last_day = 0
@@ -204,6 +230,7 @@ func _process(delta: float) -> void:
 	if day() != _last_day:
 		_last_day = day()
 		day_changed.emit(day(), FINAL_DAY, next_shrine_day())
+		style.scale = 1.0 + StyleMeter.DAY_SCALE * (day() - 1)
 		if next_shrine_day() == day() + 1:
 			Hints.show_hint("shrine_soon", "The goddess finds you tomorrow. At her shrine, gold buys training. Gold also pays for a revive if you fall, so don't spend it all.")
 	if not _over and player.hp < player.stat("max_hp") * FLASK_HINT_HP and player.flask_charges > 0:
@@ -241,7 +268,7 @@ func _exit_tree() -> void:
 func _spawn_waves(delta: float) -> void:
 	_spawn_timer -= delta
 	if _spawn_timer <= 0.0:
-		_spawn_timer = maxf(0.45, 1.3 - day() * 0.05) / wave_intensity()
+		_spawn_timer = maxf(0.45, 1.3 - day() * 0.05) / wave_intensity() / (1.4 if covenant == "horde" else 1.0)
 		# Bigger packs as the days pass: 1 per spawn on Days 1-4, 2 on 5-9, ...
 		for i in 1 + day() / 5:
 			_spawn_enemy()
@@ -333,7 +360,7 @@ func _update_music(delta: float) -> void:
 				near += 1
 		_pressure = clampf(near / PRESSURE_FULL, 0.0, 1.0)
 	var wave := clampf((wave_intensity() - WAVE_LULL) / (WAVE_HIGH - WAVE_LULL), 0.0, 1.0)
-	var intensity := maxf(0.3 + 0.7 * wave, _pressure)
+	var intensity := maxf(maxf(0.3 + 0.7 * wave, _pressure), style.intensity())
 	Music.set_intensity(intensity)
 	if world.biome == "forest":
 		Music.play("forest", 2.5)
@@ -343,6 +370,40 @@ func _update_music(delta: float) -> void:
 	elif intensity < PEAK_RELEASE:
 		_peak_hold -= delta
 	Music.play("ruins_peak" if _peak_hold > 0.0 else "ruins", 2.5)
+
+
+func _on_rank_changed(rank: int, rising: bool) -> void:
+	if rising and rank >= 2:
+		Game.sfx("rank_up", 0.0)
+		if rank == StyleMeter.LETTERS.size() - 1:
+			Game.sfx("toll", 0.0)
+		Hints.show_hint("style", "Your style rank (D to SSS) climbs as you kill and drops when you're hit. Higher ranks pay more gold and XP.")
+
+
+## Gold and XP rewards: the style rank times any covenant's boon.
+func gold_mult() -> float:
+	return style.gold_mult() * {"blood": 1.5, "horde": 1.3}.get(covenant, 1.0)
+
+
+func xp_mult() -> float:
+	return style.xp_mult() * (1.3 if covenant == "horde" else 1.0)
+
+
+## Seals a covenant ("" lifts it): it lasts until the next shrine.
+func set_covenant(id: String) -> void:
+	for i in range(player.modifiers.size() - 1, -1, -1):
+		if player.modifiers[i].get("source", "") == "covenant":
+			player.modifiers.remove_at(i)
+	covenant = id
+	Game.enemy_atk_mult = 1.35 if id == "blood" else 1.0
+	if id == "frailty":
+		player.modifiers.append({"stat": "max_hp", "add": 0.0, "mult": -0.3, "source": "covenant"})
+		player.modifiers.append({"stat": "might", "add": 0.0, "mult": 0.4, "source": "covenant"})
+		player.hp = minf(player.hp, player.stat("max_hp"))
+	elif id == "thirst":
+		player.flask_charges = 0
+		player.flask_changed.emit(0, player.flask_max)
+	player.stats_changed.emit()
 
 
 ## The next day the goddess will appear, or 0 if she won't again.
@@ -356,6 +417,8 @@ func next_shrine_day() -> int:
 # The HUD's status line: timed buffs and what you've devoured.
 func _update_status() -> void:
 	var parts := []
+	if covenant != "":
+		parts.append(COVENANTS[covenant][0])
 	if elapsed < _fervor_until:
 		parts.append("Goddess's Fervor  %ds" % ceili(_fervor_until - elapsed))
 	for essence: EssenceData in player.essences:
@@ -397,9 +460,14 @@ func _pick_enemy(elite := false) -> EnemyData:
 
 func _spawn_enemy(elite := false, distance := SPAWN_RADIUS) -> void:
 	var enemy := ENEMY_SCENE.instantiate() as Enemy
-	enemy.setup(_pick_enemy(elite), player, elite, toughness())
+	var affix := ""
+	if elite and day() >= TRAITS_FROM_DAY and (day() >= TRAITS_ALWAYS_FROM_DAY or randf() < TRAIT_CHANCE):
+		affix = Enemy.TRAITS.keys().pick_random()
+	enemy.setup(_pick_enemy(elite), player, elite, toughness(), affix)
 	enemy.position = _spawn_point(distance)
 	enemies.add_child(enemy)
+	if affix != "":
+		Hints.show_hint("affix", "Elites can carry a affix, named over their head: Swift, Armored, Splitting (bursts into three) or Vampiric (heals when it hits you). They pay double gold.")
 	if elite:
 		Hints.show_hint("elite", "An elite is coming: bigger and tougher. Kill it and it drops an essence you can Devour.")
 
@@ -587,7 +655,13 @@ func _on_boss_summon(at: Vector2, count: int, phase_two: bool) -> void:
 
 func _on_enemy_killed(enemy: Enemy) -> void:
 	kills += 1
-	gold += enemy.data.gold * (5 if enemy.elite else 1)
+	style.add_kill(enemy.elite)
+	var bounty := enemy.data.gold * (5 if enemy.elite else 1) * (TRAIT_GOLD_MULT if enemy.affix != "" else 1.0)
+	gold += roundi(bounty * gold_mult())
+	if enemy.affix == "splitting":
+		for i in SPLIT_COUNT:
+			var at := enemy.global_position + Vector2.RIGHT.rotated(TAU * i / SPLIT_COUNT) * 30.0
+			_spawn_at.call_deferred(enemy.data, at)
 	if enemy.data.drops_golden_chest:
 		_place_chest.call_deferred(enemy.global_position, LootChest.Kind.GOLDEN)
 	if enemy.data.boss:
@@ -595,7 +669,7 @@ func _on_enemy_killed(enemy: Enemy) -> void:
 		return
 	Hints.show_hint("gems", "Walk near the green gems to collect XP. Each level lets you pick a new weapon or upgrade.")
 	var gem := GEM_SCENE.instantiate() as XPGem
-	gem.setup(enemy.data.xp * (5 if enemy.elite else 1), player)
+	gem.setup(ceili(enemy.data.xp * (5 if enemy.elite else 1) * xp_mult()), player)
 	gem.position = enemy.global_position
 	pickups.add_child.call_deferred(gem)
 	if enemy.elite and enemy.data.essence:
@@ -607,6 +681,7 @@ func _on_enemy_killed(enemy: Enemy) -> void:
 
 
 func _on_player_devoured(essence: EssenceData) -> void:
+	style.add(StyleMeter.DEVOUR_POINTS)
 	show_banner("Devoured %s\n%s   -%d max HP" % [
 		essence.display_name, essence.description, essence.max_hp_cost])
 
@@ -694,7 +769,7 @@ func _snapshot() -> Dictionary:
 		"hp_fraction": player.hp / player.stat("max_hp"), "gold": gold, "kills": kills,
 		"revives": revives, "training": training_ranks.duplicate(), "upgrades": upgrades,
 		"essences": essences, "seed": world.seed_value,
-		"flask_max": player.flask_max, "flask_heal": player.flask_heal,
+		"flask_max": player.flask_max, "flask_heal": player.flask_heal, "covenant": covenant,
 	}
 
 
@@ -723,6 +798,11 @@ func _restore(journey: Dictionary) -> void:
 	player.flask_max = int(journey.get("flask_max", player.flask_max))
 	player.flask_heal = float(journey.get("flask_heal", player.flask_heal))
 	player.refill_flask()
+	var sealed := String(journey.get("covenant", ""))
+	if sealed != "thirst":  # Thirst's price was paid at the shrine
+		set_covenant(sealed)
+	else:
+		covenant = sealed
 	player.hp = player.stat("max_hp") * float(journey.hp_fraction)
 	if saved_day >= RUINS_FROM_DAY:
 		world.biome = "ruins"

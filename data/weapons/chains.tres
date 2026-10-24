@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/weapon_data.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/weapons/chains.tscn" id="2"]
+[ext_resource type="Resource" path="res://data/essences/plaguewing_essence.tres" id="3"]
+[ext_resource type="Texture2D" path="res://assets/ninja/images/icon_chains.png" id="4"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Hellfire Chains"
+description = "A burning chain lashes where you face, setting enemies alight."
+scene = ExtResource("2")
+max_level = 3
+evolve_with = ExtResource("3")
+evolve_count = 3
+evolved_name = "Chains of the Damned"
+level_descriptions = PackedStringArray("A burning chain lashes where you face, setting enemies alight.", "Damage 20 -> 28, a longer, wider lash, burns hotter", "Damage 28 -> 38, a near half-circle lash, burns hottest. Devour 3 Plaguewings to evolve it")
+icon = ExtResource("4")

@@ -1,11 +1,12 @@
 extends SceneTree
 # Headless balance sim: plays a run with a bot and prints progress every
 # other day. Not part of the game. From the project folder:
-#   godot --headless --fixed-fps 60 -s res://tools/balance_sim.gd -- <mode> <seed>
+#   godot --headless --fixed-fps 60 -s res://tools/balance_sim.gd -- <mode> <seed> [cov]
 # Modes: afk (stands still), kite (dodges, collects gems, never Devours),
 #        devour (kite, plus Devours nearby corpses above 60% HP when the area is
 #               clear, stopping once max HP drops below 80),
 #        greedy (kite, plus Devours every corpse it can reach, no matter what).
+# With "cov", the bot seals a random offered covenant at every shrine.
 # Untyped on purpose: -s compiles this before autoloads exist.
 
 const DODGE_RADIUS := 60.0
@@ -22,11 +23,15 @@ var last_hp := -1.0
 var shrines := 0
 ## Damage taken by apparent source, printed at the end of the run.
 var damage_by := {}
+var covenants := false
+## Seconds spent at each style rank.
+var style_time := [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
 func _initialize() -> void:
 	var args := OS.get_cmdline_user_args()
 	if args.size() > 0: mode = args[0]
 	if args.size() > 1: seed(int(args[1]))
+	covenants = args.size() > 2 and args[2] == "cov"
 	main = load("res://scenes/main.tscn").instantiate()
 	root.add_child(main)
 
@@ -53,6 +58,8 @@ func _process(_delta: float) -> bool:
 			Input.action_release("flask")
 	var p = main.player
 	var t := frame / 60.0
+	if main.style and not main.get_tree().paused:
+		style_time[main.style.rank] += 1.0 / 60.0
 	if last_hp >= 0.0 and p.hp < last_hp:
 		var source := _damage_source(p)
 		damage_by[source] = damage_by.get(source, 0.0) + (last_hp - p.hp)
@@ -80,6 +87,10 @@ func _process(_delta: float) -> bool:
 		for k in damage_by:
 			parts.append("%s %d" % [k, damage_by[k]])
 		print("    damage taken: ", ", ".join(parts))
+		var ranks := []
+		for r in style_time.size():
+			ranks.append("%s %d%%" % [["D", "C", "B", "A", "S", "SS", "SSS"][r], roundi(100.0 * style_time[r] / maxf(t, 1.0))])
+		print("    style: ", ", ".join(ranks), "   cov=", covenants)
 		return true
 	return false
 
@@ -110,8 +121,12 @@ func _damage_source(p) -> String:
 # training while keeping enough gold for the next revive.
 func _use_shrine() -> void:
 	var s = main.shrine
-	var options = s._blessing_box.get_children()
-	options[randi() % options.size()].emit_signal("pressed")
+	if covenants and not s._sealed:
+		var seals = s._covenant_box.get_children()
+		seals[randi() % seals.size()].emit_signal("pressed")
+	while not s._blessed:
+		var options = s._blessing_box.get_children().filter(func(b): return not b.disabled and not b.is_queued_for_deletion())
+		options[randi() % options.size()].emit_signal("pressed")
 	var p = main.player
 	while true:
 		var best = null

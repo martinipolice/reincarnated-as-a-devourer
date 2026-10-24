@@ -14,10 +14,13 @@ const CONTROLS := [
 
 const GUIDE := [
 	"Survive 20 days, one minute each. On Day 20 the Demon King comes for you.",
-	"Collect the green gems to level up, then choose a new weapon or upgrade.",
+	"Collect the green gems to level up, then choose a new weapon or upgrade. You can carry four weapons at a time.",
 	"Elites drop a glowing essence. Hold E on it to Devour: a lasting power, at the cost of some max HP.",
 	"Golden arrows at the screen's edge point to chests; colored ones to essences.",
+	"Your style rank (D to SSS) climbs as you kill and drops two ranks when you're hit. Higher ranks pay more gold and XP.",
+	"From Day 3, elites can carry a trait: Swift, Armored, Splitting or Vampiric. They pay double gold.",
 	"The goddess finds you on Days 5, 10, 15 and 19. She refills your Tears, gives a free blessing, and sells training for gold. The journey saves there.",
+	"At her shrine you may seal one covenant: a curse until the next shrine, for a reward.",
 	"You live only once. If you fall, she can pull you back for gold, and the price doubles each time. Keep some gold in reserve.",
 ]
 

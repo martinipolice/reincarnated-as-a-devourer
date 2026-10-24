@@ -8,7 +8,8 @@ extends Area2D
 ## - "spitter": creep in slowly, pausing to lob globs that leave puddles.
 ## Movement is steered (smooth acceleration) and Crowd keeps a little space
 ## between monsters. Elites are tougher, gold-ringed versions that leave a
-## Devour corpse.
+## Devour corpse. From Day 3 an elite can carry a trait (TRAITS), named over
+## its head and colored in its ring. Weapons can set enemies burning.
 
 ## For health bars that follow one enemy (the boss bar).
 signal damaged(hp: float, max_hp: float)
@@ -25,6 +26,20 @@ const ELITE_KNOCKBACK_MULT := 0.5
 const ELITE_RING := Color(1, 0.85, 0.3)
 const ELITE_TINT := Color(1.35, 1.15, 0.7)
 const HIT_FLASH := Color(2.5, 2.5, 2.5)
+## Elite traits: id -> [name, ring color].
+## - swift: much faster. - armored: takes half damage.
+## - splitting: bursts into three of its kind. - vampiric: heals on every hit.
+const TRAITS := {
+	"swift": ["Swift", Color(0.45, 0.85, 1.0)],
+	"armored": ["Armored", Color(0.8, 0.85, 0.95)],
+	"splitting": ["Splitting", Color(0.55, 1.0, 0.4)],
+	"vampiric": ["Vampiric", Color(1.0, 0.25, 0.4)],
+}
+const SWIFT_SPEED := 1.3
+const ARMORED_TAKEN := 0.5
+const VAMPIRIC_HEAL := 0.2  # of max HP per hit landed
+const BURN_TICK := 0.5
+const BURN_COLOR := Color(1.0, 0.45, 0.1)
 
 # swarm
 const FLANK_ANGLE := 0.6  # max radians off the direct line
@@ -49,6 +64,7 @@ const GLOB_SCENE := preload("res://scenes/plague_glob.tscn")
 var data: EnemyData
 var target: Node2D
 var elite := false
+var affix := ""
 var hp: float
 var max_hp: float
 var atk: float
@@ -63,19 +79,23 @@ var _flank := 0.0  # this swarm member's approach angle
 var _dash_target := Vector2.ZERO
 var _directional := false
 var _next_number := 0
+var _burn_dps := 0.0
+var _burn_time := 0.0
+var _burn_tick := 0.0
 
 @onready var sprite: AnimatedSprite2D = $AnimatedSprite2D
 
 
 ## Call before add_child(). `toughness` scales HP fully and damage at 70%
 ## of that rate (main.gd raises it as the days pass).
-func setup(enemy_data: EnemyData, chase_target: Node2D, is_elite := false, toughness := 1.0) -> void:
+func setup(enemy_data: EnemyData, chase_target: Node2D, is_elite := false, toughness := 1.0, elite_trait := "") -> void:
 	data = enemy_data
 	target = chase_target
 	elite = is_elite
+	affix = elite_trait if is_elite else ""
 	max_hp = data.max_hp * (ELITE_HP_MULT if elite else 1.0) * toughness
 	hp = max_hp
-	atk = data.atk * (ELITE_ATK_MULT if elite else 1.0) * (1.0 + (toughness - 1.0) * 0.7)
+	atk = data.atk * (ELITE_ATK_MULT if elite else 1.0) * (1.0 + (toughness - 1.0) * 0.7) * Game.enemy_atk_mult
 	radius = data.radius * (ELITE_SIZE_MULT if elite else 1.0)
 
 
@@ -93,6 +113,17 @@ func _ready() -> void:
 		sprite.play("run_down" if _directional else "run")
 		if elite:
 			sprite.self_modulate = ELITE_TINT
+	if affix != "":
+		var tag := Label.new()
+		tag.text = "%s %s" % [TRAITS[affix][0], data.display_name]
+		tag.add_theme_font_size_override("font_size", 20)
+		tag.add_theme_color_override("font_color", TRAITS[affix][1])
+		tag.add_theme_constant_override("outline_size", 4)
+		tag.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		tag.size = Vector2(200, 24)
+		tag.position = Vector2(-100, -radius * 2.4 - 24)
+		tag.z_index = 10
+		add_child(tag)
 
 
 func _physics_process(delta: float) -> void:
@@ -112,6 +143,9 @@ func _physics_process(delta: float) -> void:
 			desired = global_position.direction_to(target.global_position) * move_speed()
 	if state != State.DASH and not data.boss:
 		desired += Crowd.separation(self) * SEPARATION
+	_update_burn(delta)
+	if not alive():
+		return
 	var accel := ACCEL * (4.0 if state == State.DASH else 1.0)
 	_velocity = _velocity.move_toward(desired, accel * delta)
 	position += (_velocity + _knockback) * delta
@@ -121,7 +155,39 @@ func _physics_process(delta: float) -> void:
 
 
 func move_speed() -> float:
-	return data.move_speed
+	return data.move_speed * (SWIFT_SPEED if affix == "swift" else 1.0)
+
+
+## Sets it alight: `dps` for `duration` seconds (the stronger burn wins).
+func burn(dps: float, duration: float) -> void:
+	if not alive():
+		return
+	if _burn_time <= 0.0:
+		_burn_tick = BURN_TICK
+	_burn_dps = maxf(_burn_dps, dps)
+	_burn_time = maxf(_burn_time, duration)
+	queue_redraw()
+
+
+func _update_burn(delta: float) -> void:
+	if _burn_time <= 0.0:
+		return
+	_burn_time -= delta
+	_burn_tick -= delta
+	if _burn_tick <= 0.0:
+		_burn_tick = BURN_TICK
+		take_damage(_burn_dps * BURN_TICK, Vector2.ZERO, "")
+	if _burn_time <= 0.0:
+		_burn_dps = 0.0
+	queue_redraw()
+
+
+## Called when its touch damaged the player.
+func on_hit_player() -> void:
+	if affix == "vampiric" and alive():
+		hp = minf(max_hp, hp + max_hp * VAMPIRIC_HEAL)
+		damaged.emit(hp, max_hp)
+		Game.burst(global_position, TRAITS.vampiric[1], 8)
 
 
 # Four-direction sheets face where they're going; single strips (the boss,
@@ -210,12 +276,12 @@ func alive() -> bool:
 func take_damage(amount: float, knockback := Vector2.ZERO, hit_sfx := "enemy_hit") -> void:
 	if not alive():
 		return
-	var dealt := Game.damage(amount, data.defense)
+	var dealt := Game.damage(amount, data.defense) * (ARMORED_TAKEN if affix == "armored" else 1.0)
 	hp -= dealt
 	damaged.emit(hp, max_hp)
 	# Throttled per enemy, so a swarm under the Blade doesn't drown the screen.
 	var now := Time.get_ticks_msec()
-	if now >= _next_number:
+	if now >= _next_number and hit_sfx != "":  # burn ticks ("") stay quiet
 		_next_number = now + 250
 		Game.damage_number(global_position, dealt, Color(1, 0.85, 0.4) if elite or data.boss else Color.WHITE)
 	# A dashing pouncer is committed: hits don't knock it off course.
@@ -227,7 +293,8 @@ func take_damage(amount: float, knockback := Vector2.ZERO, hit_sfx := "enemy_hit
 	var flash_property := "modulate" if data.sprite_frames else "self_modulate"
 	flash_target.set(flash_property, HIT_FLASH)
 	create_tween().tween_property(flash_target, flash_property, Color.WHITE, 0.1)
-	Game.sfx(hit_sfx)
+	if hit_sfx != "":
+		Game.sfx(hit_sfx)
 	if not alive():
 		_die()
 
@@ -247,8 +314,12 @@ func _draw() -> void:
 		draw_circle(Vector2.ZERO, radius, data.color)
 	if elite:
 		# Drawn under the sprite: a gold aura on the ground.
-		draw_circle(Vector2(0, radius * 0.6), radius * 0.9, Color(ELITE_RING, 0.25))
-		draw_arc(Vector2(0, radius * 0.6), radius * 0.9, 0.0, TAU, 32, ELITE_RING, 2.0)
+		var ring: Color = TRAITS[affix][1] if affix != "" else ELITE_RING
+		draw_circle(Vector2(0, radius * 0.6), radius * 0.9, Color(ring, 0.25))
+		draw_arc(Vector2(0, radius * 0.6), radius * 0.9, 0.0, TAU, 32, ring, 2.0 if affix == "" else 3.0)
+	if _burn_time > 0.0:
+		var flicker := 0.25 + 0.1 * sin(Time.get_ticks_msec() / 60.0)
+		draw_circle(Vector2(0, -radius * 0.3), radius * 0.75, Color(BURN_COLOR, flicker))
 	if state == State.WINDUP:
 		if data.behavior == "pounce":
 			# The aim line brightens as the pounce is about to fire.

@@ -5,6 +5,8 @@ extends CharacterBody2D
 ## `base` for a temporary effect (the old Defend bug came from doing that).
 
 signal died
+## Every hit taken (the style meter drops on it).
+signal hurt
 signal leveled_up
 ## For the HUD: it listens instead of reading the player every frame.
 signal hp_changed(hp: float, max_hp: float)
@@ -31,7 +33,9 @@ const FLASK_START_HEAL := 0.35  # fraction of max HP per sip
 const DRINK_TIME := 0.6
 const DRINK_SLOW := 0.35  # move speed multiplier while drinking
 const TEARS_COLOR := Color(1, 0.9, 0.55)
-const STEP_TIME := 0.3  # seconds between footsteps at base speed
+const STEP_TIME := 0.3
+## Weapons carried at once (of five), so each build has to choose.
+const MAX_WEAPONS := 4  # seconds between footsteps at base speed
 
 var base := {
 	"max_hp": 120.0,
@@ -66,6 +70,8 @@ var _facing := "down"
 var _devour_target: DevourCorpse
 var _devour_progress := 0.0
 var _step := 0.0
+## The last direction you moved: where facing weapons (the Chains) strike.
+var aim := Vector2.DOWN
 
 @onready var hurtbox: Area2D = $Hurtbox
 @onready var weapons: Node2D = $Weapons
@@ -95,6 +101,8 @@ func _physics_process(delta: float) -> void:
 	_update_flask(delta)
 	# Channeling Devour roots you in place: that is its risk.
 	var input := Input.get_vector("move_left", "move_right", "move_up", "move_down")
+	if input != Vector2.ZERO:
+		aim = input.normalized()
 	var speed := stat("move_speed") * (DRINK_SLOW if _drinking > 0.0 else 1.0)
 	velocity = Vector2.ZERO if is_devouring() else input * speed
 	move_and_slide()
@@ -106,6 +114,7 @@ func _physics_process(delta: float) -> void:
 		for area in hurtbox.get_overlapping_areas():
 			if area is Enemy:
 				take_damage((area as Enemy).atk)
+				(area as Enemy).on_hit_player()
 				break
 	queue_redraw()
 
@@ -117,6 +126,7 @@ func take_damage(atk: float, ignore_invuln := false) -> void:
 		return
 	hp -= Game.damage(atk, stat("defense"))
 	_invuln = HIT_INVULN
+	hurt.emit()
 	Game.sfx("player_hurt")
 	Game.shake(0.35)
 	Game.hit_stop(0.06)
@@ -185,9 +195,14 @@ func _update_flask(delta: float) -> void:
 
 
 ## Upgrades from `pool` that aren't at max level yet.
+## A new weapon is only offered while you carry fewer than MAX_WEAPONS.
 func available_upgrades(pool: Array) -> Array:
+	var weapons_held := upgrade_levels.keys().filter(func(u: Resource) -> bool: return u is WeaponData).size()
 	return pool.filter(func(upgrade: Resource) -> bool:
-		return upgrade_levels.get(upgrade, 0) < upgrade.max_level)
+		var level: int = upgrade_levels.get(upgrade, 0)
+		if upgrade is WeaponData and level == 0 and weapons_held >= MAX_WEAPONS:
+			return false
+		return level < upgrade.max_level)
 
 
 func upgrade_level(upgrade: Resource) -> int:

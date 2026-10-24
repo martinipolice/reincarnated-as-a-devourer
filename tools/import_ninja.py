@@ -52,6 +52,9 @@ STATIC = {
     "icon_magnet": "Ui/Skill Icon/Items & Weapon/Hook.png",
     "icon_vigor": "Ui/Skill Icon/Items & Weapon/Amulet.png",
     "icon_scroll": "Ui/Skill Icon/Items & Weapon/Scroll.png",
+    "icon_maw": "Ui/Skill Icon/Spell/Death.png",
+    "icon_chains": "Ui/Skill Icon/Spell/Fireball.png",
+    "icon_covenant": "Ui/Skill Icon/Spell/BookDarkness.png",
     # loot and pickups
     "common_potion": "Items/Potion/LifePot.png",
     "high_potion": "Items/Potion/Medipack.png",
