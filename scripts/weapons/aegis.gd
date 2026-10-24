@@ -4,13 +4,12 @@ extends Weapon
 ## soon as it touches an enemy; HIT_COOLDOWN stops it hitting the same enemy
 ## every frame while they overlap.
 
-const BLADE_TEXTURE := preload("res://assets/weapons/weapon_golden_sword.png")
+const BLADE_TEXTURE := preload("res://assets/ninja/images/katana.png")
 const SHIELDS := [1, 2, 3]
 const DAMAGE := [14.0, 20.0, 28.0]
 const ORBIT_RADIUS := 60.0
-const SPRITE_SCALE := 2.0
-## Capsule around the blade art (10x22 px at 2x), slightly narrower than the
-## sprite so grazing the empty corners doesn't count.
+const SPRITE_SCALE := 2.5
+## Capsule around the blade art (6x14 px at 2.5x).
 const BLADE_HALF_WIDTH := 8.0
 const SPIN := 3.0  # radians per second, times the player's haste
 const HIT_COOLDOWN := 0.35  # per enemy

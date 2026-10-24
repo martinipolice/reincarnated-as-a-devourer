@@ -26,7 +26,7 @@ const EVENT_GAP := Vector2(40.0, 55.0)
 const EVENT_WARNING := 1.5
 ## Enemies get this much tougher each day after the first (HP fully, damage
 ## at 70%; see Enemy.setup). Day 20 is 1 + 19 * this.
-const TOUGHNESS_PER_DAY := 0.14
+const TOUGHNESS_PER_DAY := 0.125
 ## Treasure chests: one appears every CHEST_INTERVAL s (up to MAX_CHESTS at
 ## once) somewhere just off-screen; a HUD arrow points the way. Some are
 ## golden (two rewards); from MIMIC_FROM_DAY some are Mimics that fight back.
@@ -44,6 +44,14 @@ const BOMB_DAMAGE := 150.0
 const GOLD_POUCH_PER_DAY := 20
 ## How far from the Demon King his summoned minions appear.
 const SUMMON_RING := 80.0
+## Biomes by day; the Demon King's temple arena has this radius.
+const RUINS_FROM_DAY := 10
+const ARENA_RADIUS := 650.0
+const MOOD := {
+	"forest": Color(1.0, 0.98, 0.94),
+	"ruins": Color(0.86, 0.8, 0.9),
+	"temple": Color(0.78, 0.62, 0.66),
+}
 const SANCTUARY_SCENE := "res://scenes/ui/sanctuary.tscn"
 const SANCTUARY := preload("res://scripts/ui/sanctuary.gd")
 ## Ignore end-screen input briefly so a held key doesn't skip it.
@@ -104,7 +112,8 @@ var _banner_tween: Tween
 @onready var end_text: Label = %EndText
 @onready var again_button: Button = %Again
 @onready var sanctuary_button: Button = %ToSanctuary
-@onready var floor_sprite: Sprite2D = $Floor
+@onready var world: ChunkWorld = $World
+@onready var mood: CanvasModulate = $Mood
 
 
 func _ready() -> void:
@@ -118,6 +127,8 @@ func _ready() -> void:
 	sanctuary_button.pressed.connect(_go_to_sanctuary)
 	_apply_training()
 	player.apply_upgrade(STARTING_WEAPON)
+	world.set_origin(player.position)
+	mood.color = MOOD.forest
 	end_menu.hide()
 	banner.hide()
 	boss_label.hide()
@@ -133,13 +144,17 @@ func toughness() -> float:
 
 
 func _process(delta: float) -> void:
-	_follow_floor()
+	world.update(player.position, get_viewport_rect().size)
 	if _over:
 		if Input.is_action_just_pressed("restart") and not again_button.disabled:
 			_play_again()
 		return
 
 	elapsed += delta
+	if day() >= RUINS_FROM_DAY and world.biome == "forest":
+		world.biome = "ruins"
+		create_tween().tween_property(mood, "color", MOOD.ruins, 4.0)
+		show_banner("The forest withers into ancient ruins...", 3.0)
 	if day() >= FINAL_DAY and not _boss_spawned:
 		_spawn_boss()
 
@@ -239,13 +254,6 @@ func _spawn_at(data: EnemyData, at: Vector2) -> void:
 	enemies.add_child(enemy)
 
 
-# The floor sprite follows the player so it looks endless, but only in jumps
-# of one full texture repeat; any smaller step would slide the pattern.
-func _follow_floor() -> void:
-	var period := Vector2(floor_sprite.texture.get_size()) * floor_sprite.scale
-	floor_sprite.position = (player.position / period).floor() * period
-
-
 func _update_hud() -> void:
 	var text := "DAY %d / %d     Lv %d\nHP %d / %d\nKills %d   Gold %d" % [
 		day(), FINAL_DAY, player.level, ceili(player.hp), player.stat("max_hp"), kills, gold]
@@ -333,6 +341,14 @@ func _spawn_boss() -> void:
 	boss.summon.connect(_on_boss_summon)
 	boss.enraged.connect(func() -> void: show_banner("The Demon King is enraged!", 2.0))
 	_clear_swarm()
+	world.make_arena(player.position, ARENA_RADIUS)
+	# The goddess's last gift: the duel starts at full strength.
+	var healed := player.stat("max_hp") - player.hp
+	player.hp = player.stat("max_hp")
+	Game.fx("spark", player.global_position, 3.0, Color(1, 0.95, 0.6))
+	if healed >= 1.0:
+		Game.float_text(player.global_position, "+%d HP" % roundi(healed), Color(1, 0.95, 0.6))
+	create_tween().tween_property(mood, "color", MOOD.temple, 2.0)
 	enemies.add_child(boss)
 	boss_label.text = DEMON_KING.display_name.to_upper()
 	boss_label.show()
@@ -356,7 +372,7 @@ func _spawn_chest() -> void:
 func _place_chest(at: Vector2, kind: LootChest.Kind) -> void:
 	var chest := CHEST_SCENE.instantiate() as LootChest
 	chest.kind = kind
-	chest.position = at
+	chest.position = Obstacles.push_out(at, 24.0)
 	chest.opened.connect(_on_chest_opened)
 	pickups.add_child(chest)
 
@@ -367,6 +383,7 @@ func _on_chest_opened(chest: LootChest) -> void:
 		return
 	var golden := chest.kind == LootChest.Kind.GOLDEN
 	Game.sfx("chest_open", 0.0)
+	Game.fx("spark", chest.global_position, 3.0 if golden else 2.0, Color(1, 0.9, 0.5))
 	Game.shake(0.35 if golden else 0.2)
 	Game.burst(chest.global_position, Color(1, 0.85, 0.35), 50 if golden else 25, 260.0)
 	var hurt := player.hp < player.stat("max_hp") * 0.9
@@ -416,6 +433,7 @@ func _grant_loot(entry: Dictionary, at: Vector2) -> String:
 		"bomb":
 			Game.sfx("bomb", 0.0)
 			Game.shake(0.6)
+			Game.fx("explosion", player.global_position, 4.0)
 			Game.burst(player.global_position, Color(1, 0.6, 0.2), 60, 450.0)
 			for node in enemies.get_children():
 				var enemy := node as Enemy
@@ -508,6 +526,7 @@ func _on_upgrade_chosen(upgrade: Resource) -> void:
 	if upgrade.max_level < 100:
 		title += "  ·  Lv %d" % level
 	show_banner(title, 1.2)
+	Game.fx("spark", player.global_position, 2.5, Color(1, 0.9, 0.5))
 	Game.burst(player.global_position, Color(1, 0.85, 0.35), 24, 220.0)
 	Game.shake(0.15)
 	_offer_next_level_up()

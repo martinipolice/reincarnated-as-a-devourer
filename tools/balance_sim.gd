@@ -121,6 +121,11 @@ func _steer() -> void:
 		var away: Vector2 = p.global_position - boss.slam_at
 		if away.length() < boss.slam_radius + 30.0:
 			push += away.normalized() * 6.0
+	for handle in Obstacles.near(p.global_position):
+		var d: Vector2 = p.global_position - handle.center
+		var reach: float = handle.radius + 34.0
+		if d.length() < reach and d.length() > 0.1:
+			push += d.normalized() * (reach - d.length()) / reach * 3.0
 
 	for shot in main.get_tree().get_nodes_in_group("enemy_shots"):
 		var d: Vector2 = p.global_position - shot.global_position

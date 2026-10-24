@@ -1,6 +1,7 @@
 [gd_resource type="Resource" script_class="ItemData" format=3]
 
 [ext_resource type="Script" path="res://scripts/data/item_data.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/ninja/images/icon_stamina.png" id="2"]
 
 [resource]
 script = ExtResource("1")
@@ -9,3 +10,4 @@ description = "+30 max HP, and heal that much."
 stat = "max_hp"
 add_per_level = 30.0
 max_level = 3
+icon = ExtResource("2")

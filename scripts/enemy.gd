@@ -58,6 +58,7 @@ var _state_time := 0.0
 var _cooldown := 0.0
 var _flank := 0.0  # this swarm member's approach angle
 var _dash_target := Vector2.ZERO
+var _directional := false
 
 @onready var sprite: AnimatedSprite2D = $AnimatedSprite2D
 
@@ -84,7 +85,8 @@ func _ready() -> void:
 	if data.sprite_frames:
 		sprite.sprite_frames = data.sprite_frames
 		sprite.scale = Vector2.ONE * data.sprite_scale * radius / data.radius
-		sprite.play("run")
+		_directional = data.sprite_frames.has_animation("run_down")
+		sprite.play("run_down" if _directional else "run")
 		if elite:
 			sprite.self_modulate = ELITE_TINT
 
@@ -109,13 +111,24 @@ func _physics_process(delta: float) -> void:
 	var accel := ACCEL * (4.0 if state == State.DASH else 1.0)
 	_velocity = _velocity.move_toward(desired, accel * delta)
 	position += (_velocity + _knockback) * delta
+	position = Obstacles.push_out(position, radius * 0.8)
 	_knockback = _knockback.move_toward(Vector2.ZERO, KNOCKBACK_DECAY * delta)
-	if data.sprite_frames and absf(_velocity.x) > 5.0:
-		sprite.flip_h = _velocity.x < 0.0
+	_animate()
 
 
 func move_speed() -> float:
 	return data.move_speed
+
+
+# Four-direction sheets face where they're going; single strips (the boss,
+# the Mimic) just flip.
+func _animate() -> void:
+	if data.sprite_frames == null or _velocity.length() < 5.0:
+		return
+	if _directional:
+		sprite.play("run_" + Game.facing(_velocity))
+	else:
+		sprite.flip_h = _velocity.x < 0.0
 
 
 func _set_state(next: State) -> void:
@@ -210,6 +223,7 @@ func take_damage(amount: float, knockback := Vector2.ZERO, hit_sfx := "enemy_hit
 
 func _die() -> void:
 	Game.sfx("elite_die" if elite else "enemy_die")
+	Game.fx("smoke", global_position, 2.5 if elite else 1.5)
 	Game.burst(global_position, data.color.lightened(0.2), 18 if elite else 8)
 	if elite:
 		Game.shake(0.25)

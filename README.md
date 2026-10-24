@@ -7,7 +7,8 @@ cost of your own life.
 It started as a turn-based terminal RPG I wrote in Python for CMSC 12, and is being rebuilt
 as a real-time game.
 
-> **Status:** prototype (Milestone 5 of 6 done). CC0 pixel art and sound; story and endings come next.
+> **Status:** prototype (Milestone 5 of 6 done). CC0 pixel art (Ninja Adventure) and sound;
+> story and endings come next.
 
 ## Play / run
 
@@ -101,21 +102,30 @@ data/        Game content as .tres Resources (enemies, essences, weapons, items,
              Tune here, not in code.
 scenes/      main (run controller + HUD), player, enemy, boss, XP gem, weapons/, ui/
 scripts/     GDScript; autoload/ holds Game (juice, input) and Save, data/ the Resource classes
-tools/       Dev tools, not shipped: headless balance sim, sprite importer
+tools/       Dev tools, not shipped: headless balance sim, art importer
 assets/      Art and audio (see CREDITS.md for sources and licenses)
 docs/        Design documents
 ```
 
-**Swapping art:** sprites come from 0x72's DungeonTileset II through
-`tools/import_0x72.py`, which copies the frames and writes a `sprite_frames.tres` per
-character. To give a monster different art, change its entry in `ROLES` and re-run:
+**The world** is generated in 512 px chunks around you from a per-run seed
+(`scripts/world/chunk_world.gd`), so every run's map is different and walking back finds
+things where you left them. It's a forest of trees, stumps, bushes and flowers until
+Day 10, then crumbles into ruins of dead trees and boulders, and on Day 20 a temple arena of
+dark stone, ringed by pillars with four openings, rises around you for the Demon King.
+Trees, rocks and pillars block movement; monsters slide around them.
+
+**Swapping art:** all art comes from the Ninja Adventure pack through
+`tools/import_ninja.py`, which copies the sheets and writes a `sprite_frames.tres` per
+character and effect. To give something different art, change its entry in the tables
+at the top and re-run:
 
 ```
-python tools/import_0x72.py path/to/0x72_DungeonTilesetII_v1.7
+python tools/import_ninja.py "path/to/Ninja Adventure - Asset Pack"
 ```
 
 Each enemy's `.tres` points at its `sprite_frames.tres` and has a `sprite_scale`; clear
-`sprite_frames` and it falls back to a colored circle. Hitboxes are sized from `radius`,
+`sprite_frames` and it falls back to a colored circle. Terrain tiles and props are listed
+in tables at the top of `chunk_world.gd`. Hitboxes are sized from `radius`,
 not the sprite, so new art never changes the balance. Sounds are mapped by name in
 `scripts/autoload/game.gd` (`SFX`).
 
@@ -135,8 +145,8 @@ Current targets (12 runs, seeds 1-4):
 | Bot | Result |
 |---|---|
 | `afk` | dies in 20-40 s |
-| `kite` (never Devours) | wins about half of runs; boss fights 50-75 s |
-| `devour` (Devours when safe, keeps max HP above 80) | wins most runs; boss fights 30-75 s |
+| `kite` (never Devours) | wins about half or more of runs; boss fights 45-75 s |
+| `devour` (Devours when safe, keeps max HP above 80) | wins about 40%; its lower max HP makes the boss slam dangerous |
 | `greedy` (Devours everything) | usually dies before Day 20, at or near the 10 max-HP floor |
 
 Each run also prints the damage the bot took by source (e.g. `plague 320, Vexclaw pounce

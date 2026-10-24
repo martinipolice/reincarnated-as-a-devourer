@@ -5,6 +5,9 @@ extends Node2D
 const ACCEL := 1400.0
 const MAX_SPEED := 900.0
 const COLLECT_DISTANCE := 14.0
+const GEM_SMALL := preload("res://assets/ninja/images/gem_small.png")
+const GEM_MEDIUM := preload("res://assets/ninja/images/gem_medium.png")
+const GEM_LARGE := preload("res://assets/ninja/images/gem_large.png")
 
 var value := 1
 var player: Player
@@ -40,15 +43,15 @@ func _physics_process(delta: float) -> void:
 	position += to_player / distance * _speed * delta
 
 
-func _draw() -> void:
-	var color := Color(0.4, 0.7, 1.0)
-	var size := 5.0
+func _ready() -> void:
+	var gem := Sprite2D.new()
 	if value >= 10:
-		color = Color(1.0, 0.4, 0.45)
-		size = 8.0
+		gem.texture = GEM_LARGE
+		gem.scale = Vector2.ONE * 2.0
 	elif value >= 3:
-		color = Color(0.45, 1.0, 0.55)
-		size = 6.5
-	draw_colored_polygon(PackedVector2Array([
-		Vector2(0, -size), Vector2(size * 0.7, 0), Vector2(0, size), Vector2(-size * 0.7, 0)
-	]), color)
+		gem.texture = GEM_MEDIUM
+		gem.scale = Vector2.ONE * 1.6
+	else:
+		gem.texture = GEM_SMALL
+		gem.scale = Vector2.ONE * 1.3
+	add_child(gem)

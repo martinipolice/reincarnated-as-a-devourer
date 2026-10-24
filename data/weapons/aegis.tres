@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" path="res://scripts/data/weapon_data.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/weapons/aegis.tscn" id="2"]
+[ext_resource type="Texture2D" path="res://assets/ninja/images/icon_aegis.png" id="3"]
 
 [resource]
 script = ExtResource("1")
@@ -11,3 +12,4 @@ scene = ExtResource("2")
 max_level = 3
 tier_names = PackedStringArray()
 level_descriptions = PackedStringArray("A golden blade orbits you, striking and shoving enemies.", "2 blades, damage 14 → 20", "3 blades, damage 20 → 28")
+icon = ExtResource("3")

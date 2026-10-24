@@ -5,6 +5,7 @@ extends Node2D
 
 const LIFETIME := 12.0
 const BLINK_TIME := 3.0
+const WISP := preload("res://assets/ninja/wisp/sprite_frames.tres")
 
 var essence: EssenceData
 
@@ -18,6 +19,13 @@ func setup(from_essence: EssenceData) -> void:
 
 func _ready() -> void:
 	add_to_group("corpses")
+	var wisp := AnimatedSprite2D.new()
+	wisp.sprite_frames = WISP
+	wisp.scale = Vector2(1.6, 1.6)
+	wisp.modulate = essence.color.lightened(0.3)
+	wisp.position = Vector2(0, -10)
+	add_child(wisp)
+	wisp.play("play")
 
 
 func _process(delta: float) -> void:
@@ -31,5 +39,6 @@ func _process(delta: float) -> void:
 
 func _draw() -> void:
 	var pulse := 0.5 + 0.5 * sin(Time.get_ticks_msec() / 150.0)
-	draw_circle(Vector2.ZERO, 14.0, Color(essence.color, 0.35 + 0.25 * pulse))
-	draw_arc(Vector2.ZERO, 18.0 + 4.0 * pulse, 0.0, TAU, 32, Color(essence.color.lightened(0.4), 0.9), 2.0)
+	# A glow on the ground under the wisp.
+	draw_circle(Vector2(0, 6), 14.0, Color(essence.color, 0.25 + 0.2 * pulse))
+	draw_arc(Vector2(0, 6), 18.0 + 4.0 * pulse, 0.0, TAU, 32, Color(essence.color.lightened(0.4), 0.8), 2.0)

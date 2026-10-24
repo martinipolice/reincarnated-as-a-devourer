@@ -45,6 +45,7 @@ var _voices: Array[AudioStreamPlayer] = []
 var _next_voice := 0
 var _last_played := {}
 var _hit_stop_active := false
+var _fx_frames := {}
 
 
 func _ready() -> void:
@@ -81,6 +82,14 @@ func sfx(sfx_name: String, pitch_variance := 0.08) -> void:
 	voice.volume_db = SFX[sfx_name][1]
 	voice.pitch_scale = randf_range(1.0 - pitch_variance, 1.0 + pitch_variance)
 	voice.play()
+
+
+## Which way a sprite should face for a movement direction: the pack's
+## sheets have "down", "up", "left" and "right" animations.
+static func facing(direction: Vector2) -> String:
+	if absf(direction.x) > absf(direction.y):
+		return "right" if direction.x > 0.0 else "left"
+	return "down" if direction.y > 0.0 else "up"
 
 
 ## Trauma-based screen shake on the player's camera; 0..1, adds up.
@@ -127,6 +136,44 @@ func burst(at: Vector2, color: Color, amount := 10, speed := 140.0) -> void:
 	particles.finished.connect(particles.queue_free)
 	parent.add_child(particles)
 	particles.emitting = true
+
+
+## Plays a one-shot sprite effect from assets/ninja (smoke, explosion,
+## spark...) and frees it when the animation ends.
+func fx(effect: String, at: Vector2, size := 2.0, tint := Color.WHITE) -> void:
+	var parent := get_tree().get_first_node_in_group("effects")
+	if parent == null:
+		return
+	if not _fx_frames.has(effect):
+		_fx_frames[effect] = load("res://assets/ninja/%s/sprite_frames.tres" % effect)
+	var sprite := AnimatedSprite2D.new()
+	sprite.sprite_frames = _fx_frames[effect]
+	sprite.position = at
+	sprite.scale = Vector2.ONE * size
+	sprite.modulate = tint
+	sprite.animation_finished.connect(sprite.queue_free)
+	parent.add_child(sprite)
+	sprite.play("play")
+
+
+## A short line of text that floats up and fades, e.g. "+30 HP".
+func float_text(at: Vector2, text: String, color: Color) -> void:
+	var parent := get_tree().get_first_node_in_group("effects")
+	if parent == null:
+		return
+	var label := Label.new()
+	label.text = text
+	label.add_theme_color_override("font_color", color)
+	label.add_theme_color_override("font_outline_color", Color.BLACK)
+	label.add_theme_constant_override("outline_size", 5)
+	label.add_theme_font_size_override("font_size", 20)
+	label.position = at + Vector2(-30, -60)
+	label.z_index = 20
+	parent.add_child(label)
+	var tween := label.create_tween().set_parallel()
+	tween.tween_property(label, "position:y", label.position.y - 40.0, 0.9).set_ease(Tween.EASE_OUT)
+	tween.tween_property(label, "modulate:a", 0.0, 0.4).set_delay(0.5)
+	tween.chain().tween_callback(label.queue_free)
 
 
 # Actions are registered in code so they can be rebound later without

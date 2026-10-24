@@ -144,6 +144,7 @@ func _fire_ring(count: int, offset: float) -> void:
 
 
 func _die() -> void:
+	Game.fx("explosion", global_position, 5.0)
 	Game.burst(global_position, Color(1, 0.35, 0.3), 60, 320.0)
 	Game.shake(1.0)
 	super()

@@ -42,6 +42,7 @@ var upgrade_levels := {}
 var essences := {}
 
 var _invuln := 0.0
+var _facing := "down"
 var _devour_target: DevourCorpse
 var _devour_progress := 0.0
 
@@ -96,7 +97,8 @@ func take_damage(atk: float, ignore_invuln := false) -> void:
 	Game.sfx("player_hurt")
 	Game.shake(0.35)
 	Game.hit_stop(0.06)
-	sprite.play("hit")
+	sprite.modulate = Color(1, 0.35, 0.35)
+	create_tween().tween_property(sprite, "modulate", Color.WHITE, 0.25)
 	if hp <= 0.0:
 		hp = 0.0
 		set_physics_process(false)
@@ -188,7 +190,11 @@ func devour(essence: EssenceData) -> void:
 	modifiers.append({"stat": essence.stat, "add": essence.add, "mult": essence.mult})
 	modifiers.append({"stat": "max_hp", "add": -essence.max_hp_cost})
 	# Feeding restores you, which pays for standing still to channel.
-	hp = minf(stat("max_hp"), hp + stat("max_hp") * DEVOUR_HEAL)
+	var healed := minf(stat("max_hp"), hp + stat("max_hp") * DEVOUR_HEAL) - hp
+	hp += healed
+	Game.fx("spark", global_position, 2.5, Color(0.5, 1, 0.5))
+	if healed >= 1.0:
+		Game.float_text(global_position, "+%d HP" % roundi(healed), Color(0.5, 1, 0.5))
 	Game.sfx("devour")
 	Game.shake(0.3)
 	devoured.emit(essence)
@@ -236,13 +242,11 @@ func _check_evolutions() -> void:
 
 
 func _animate(input: Vector2) -> void:
-	if input.x != 0.0:
-		sprite.flip_h = input.x < 0.0
+	if input != Vector2.ZERO:
+		_facing = Game.facing(input)
 	# Blink while invulnerable after a hit.
 	sprite.visible = _invuln == 0.0 or fmod(_invuln, 0.1) > 0.05
-	if sprite.animation == &"hit" and sprite.is_playing():
-		return
-	sprite.play(&"run" if velocity != Vector2.ZERO else &"idle")
+	sprite.play(("run_" if velocity != Vector2.ZERO else "idle_") + _facing)
 
 
 func _draw() -> void:

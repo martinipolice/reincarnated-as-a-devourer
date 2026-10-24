@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" path="res://scripts/data/weapon_data.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/weapons/goddess_light.tscn" id="2"]
+[ext_resource type="Texture2D" path="res://assets/ninja/images/icon_light.png" id="3"]
 
 [resource]
 script = ExtResource("1")
@@ -11,3 +12,4 @@ scene = ExtResource("2")
 max_level = 3
 tier_names = PackedStringArray()
 level_descriptions = PackedStringArray("Fires a bolt of light at the nearest enemy.", "2 bolts, damage 22 → 30, each pierces 1 enemy", "4 bolts, damage 30 → 40, pierce 3, fires faster")
+icon = ExtResource("3")

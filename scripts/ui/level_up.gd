@@ -19,7 +19,11 @@ func open(offers: Array, player: Player) -> void:
 		var button := Button.new()
 		button.text = "%d.  %s" % [i + 1, _describe(offers[i], player)]
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		button.custom_minimum_size = Vector2(520, 72)
+		button.custom_minimum_size = Vector2(560, 76)
+		button.icon = offers[i].icon
+		button.expand_icon = true  # the 24 px icons, scaled up to 48 px
+		button.add_theme_constant_override("icon_max_width", 48)
+		button.add_theme_constant_override("h_separation", 14)
 		button.pressed.connect(_pick.bind(i))
 		options.add_child(button)
 	title.text = "LEVEL %d" % player.level

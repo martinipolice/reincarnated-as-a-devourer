@@ -12,7 +12,7 @@ enum Kind { NORMAL, GOLDEN, MIMIC }
 const RADIUS := 16.0
 const FADE_DELAY := 1.5
 const GLOW := Color(1, 0.85, 0.35)
-const GOLDEN_TINT := Color(1.5, 1.3, 0.55)
+const GOLDEN_TINT := Color(2.2, 1.8, 0.35)
 
 ## Set before add_child().
 var kind := Kind.NORMAL

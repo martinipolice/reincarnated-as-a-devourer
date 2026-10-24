@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://scripts/main.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/player.tscn" id="2"]
 [ext_resource type="PackedScene" path="res://scenes/ui/level_up.tscn" id="3"]
-[ext_resource type="Texture2D" path="res://assets/environment/floor.png" id="4"]
+[ext_resource type="Script" path="res://scripts/world/chunk_world.gd" id="4"]
 [ext_resource type="Script" path="res://scripts/ui/chest_arrows.gd" id="5"]
 
 [sub_resource type="StyleBoxFlat" id="xp_bg"]
@@ -16,24 +16,24 @@ bg_color = Color(0.4, 0.7, 1, 1)
 bg_color = Color(0.8, 0.15, 0.2, 1)
 
 [node name="Main" type="Node2D"]
+y_sort_enabled = true
 script = ExtResource("1")
 
-[node name="Floor" type="Sprite2D" parent="."]
-modulate = Color(0.5, 0.47, 0.55, 1)
-z_index = -10
-texture_repeat = 2
-scale = Vector2(2, 2)
-texture = ExtResource("4")
-region_enabled = true
-region_rect = Rect2(0, 0, 1536, 1024)
+[node name="Mood" type="CanvasModulate" parent="."]
+
+[node name="World" type="Node2D" parent="."]
+script = ExtResource("4")
 
 [node name="Pickups" type="Node2D" parent="."]
+z_index = -1
 
 [node name="Enemies" type="Node2D" parent="."]
+y_sort_enabled = true
 
 [node name="Player" parent="." instance=ExtResource("2")]
 
 [node name="Effects" type="Node2D" parent="." groups=["effects"]]
+z_index = 5
 
 [node name="HUD" type="CanvasLayer" parent="."]
 
