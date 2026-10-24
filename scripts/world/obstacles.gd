@@ -6,6 +6,7 @@ class_name Obstacles
 ## around trees instead of through them.
 
 const CELL := 96.0
+const EMPTY := []  # shared, so a miss doesn't allocate a new array
 
 static var _cells := {}
 
@@ -35,7 +36,7 @@ static func clear() -> void:
 
 ## `at` moved out of any obstacle a circle of `radius` would overlap.
 static func push_out(at: Vector2, radius: float) -> Vector2:
-	for handle: Dictionary in _cells.get(_key(at), []):
+	for handle: Dictionary in _cells.get(_key(at), EMPTY):
 		var away: Vector2 = at - handle.center
 		var reach: float = handle.radius + radius
 		var distance := away.length()
@@ -49,7 +50,7 @@ static func push_out(at: Vector2, radius: float) -> Vector2:
 
 ## True when a circle at `at` would overlap an obstacle.
 static func blocked(at: Vector2, radius: float) -> bool:
-	for handle: Dictionary in _cells.get(_key(at), []):
+	for handle: Dictionary in _cells.get(_key(at), EMPTY):
 		if at.distance_to(handle.center) < handle.radius + radius:
 			return true
 	return false
@@ -57,7 +58,7 @@ static func blocked(at: Vector2, radius: float) -> bool:
 
 ## Obstacle circles near `at` (for the balance-sim bot).
 static func near(at: Vector2) -> Array:
-	return _cells.get(_key(at), [])
+	return _cells.get(_key(at), EMPTY)
 
 
 static func _key(at: Vector2) -> Vector2i:

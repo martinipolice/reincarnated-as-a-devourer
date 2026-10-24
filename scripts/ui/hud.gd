@@ -8,8 +8,11 @@ extends Control
 ## - bottom-right: gold, and what the next revive costs
 ## - right edge: the style rank (D to SSS), its name and a gauge
 ## - bottom-center: the Demon King's name and a long health bar
+## - top-center, if "Show FPS" is on: frame rate, frame time, enemy count
 ## Everything updates from signals (player, run and boss), never by reading
-## game state every frame.
+## game state every frame. Signals that can fire dozens of times in one frame
+## (gold, XP, style during a mass kill) only record the newest values;
+## _process applies them once per frame.
 
 const MARGIN := 22
 const HP_WIDTH := 300
@@ -34,6 +37,13 @@ var _style_box: VBoxContainer
 var _style_letter: Label
 var _style_name: Label
 var _style_bar: ProgressBar
+## Newest values from frequent signals, applied once per frame.
+var _pending := {}
+var _xp_flare := 0.0
+var _run: Node
+var _perf: Label
+var _perf_timer := 0.0
+var _flare_fade := 7.0
 
 
 func _ready() -> void:
@@ -45,6 +55,7 @@ func _ready() -> void:
 ## Connects to the player and the run; call once both exist.
 func bind(player: Player, run: Node) -> void:
 	_player = player
+	_run = run
 	player.hp_changed.connect(_on_hp_changed)
 	player.stats_changed.connect(func() -> void: _on_hp_changed(player.hp, player.stat("max_hp")))
 	player.xp_changed.connect(_on_xp_changed)
@@ -61,6 +72,10 @@ func bind_style(style: StyleMeter) -> void:
 
 
 func _on_style_changed(rank: int, progress: float) -> void:
+	_pending.style = [rank, progress]
+
+
+func _apply_style(rank: int, progress: float) -> void:
 	_style_box.visible = rank > 0 or progress > 0.0
 	_style_bar.value = progress
 	_style_letter.text = StyleMeter.LETTERS[rank]
@@ -80,6 +95,29 @@ func _on_rank_changed(_rank: int, rising: bool) -> void:
 	else:
 		_style_letter.scale = Vector2(0.7, 0.7)
 		tween.tween_property(_style_letter, "scale", Vector2.ONE, 0.2)
+
+
+func _process(delta: float) -> void:
+	if not _pending.is_empty():
+		if _pending.has("gold"):
+			_apply_gold.callv(_pending.gold)
+		if _pending.has("xp"):
+			_apply_xp.callv(_pending.xp)
+		if _pending.has("style"):
+			_apply_style.callv(_pending.style)
+		_pending.clear()
+	_perf.visible = Settings.data.get("show_fps", false)
+	if _perf.visible:
+		_perf_timer -= delta
+		if _perf_timer <= 0.0:
+			_perf_timer = 0.25
+			var enemies: int = _run.enemies.get_child_count() if _run else 0
+			_perf.text = "%d fps  ·  %.1f ms  ·  %d enemies%s" % [Engine.get_frames_per_second(),
+				Game.frame_ms, enemies, "  ·  effects %d%%" % roundi(Game.fx_quality * 100.0) if Game.fx_quality < 1.0 else ""]
+	if _xp_flare > 0.0:
+		_xp_flare = maxf(0.0, _xp_flare - _flare_fade * delta)
+		var f := 1.0 + _xp_flare
+		_xp_bar.modulate = Color(f, f, 1.0 + _xp_flare * 0.8)
 
 
 func set_status(text: String) -> void:
@@ -107,14 +145,17 @@ func _on_hp_changed(hp: float, max_hp: float) -> void:
 
 
 func _on_xp_changed(xp: int, needed: int, level: int) -> void:
+	_pending.xp = [xp, needed, level]
+
+
+func _apply_xp(xp: int, needed: int, level: int) -> void:
 	var leveled := _level.text != "Lv %d" % level and _level.text != ""
 	_xp_bar.max_value = needed
 	_xp_bar.value = xp
 	_level.text = "Lv %d" % level
 	# Every gem makes the bar breathe; a level-up flares it and pops the level.
-	var flare := 2.4 if leveled else 1.5
-	_xp_bar.modulate = Color(flare, flare, flare * 0.8)
-	create_tween().tween_property(_xp_bar, "modulate", Color.WHITE, 0.35 if leveled else 0.15)
+	_xp_flare = maxf(_xp_flare, 1.4 if leveled else 0.5)
+	_flare_fade = 4.0 if leveled else 7.0
 	if leveled:
 		_level.pivot_offset = _level.size / 2.0
 		_level.scale = Vector2(1.6, 1.6)
@@ -128,6 +169,10 @@ func _on_flask_changed(charges: int, max_charges: int) -> void:
 
 
 func _on_gold_changed(gold: int, revive_cost: int) -> void:
+	_pending.gold = [gold, revive_cost]
+
+
+func _apply_gold(gold: int, revive_cost: int) -> void:
 	_gold.text = str(gold)
 	_revive.text = "Revive  %d" % revive_cost
 	_revive.add_theme_color_override("font_color", UITheme.ASH if gold >= revive_cost else UITheme.BLOOD.lightened(0.3))
@@ -201,6 +246,15 @@ func _build() -> void:
 	_style_bar.size_flags_horizontal = Control.SIZE_SHRINK_END
 	_style_box.add_child(_style_bar)
 	_style_box.hide()
+
+	# Top-center: the optional performance readout.
+	_perf = _label("", 20, UITheme.ASH)
+	add_child(_perf)
+	_perf.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+	_perf.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_perf.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_perf.offset_top = 6
+	_perf.hide()
 
 	# Bottom-left: the flask.
 	var bottom_left := _corner(Control.PRESET_BOTTOM_LEFT)

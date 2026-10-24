@@ -19,6 +19,10 @@ enum State { MOVE, WINDUP, DASH, RECOVER }
 const KNOCKBACK_DECAY := 900.0
 const ACCEL := 900.0  # px/s^2 toward the desired velocity
 const SEPARATION := 140.0  # px/s of push when fully overlapping a neighbor
+## Crowd separation is recomputed every this many physics steps (staggered
+## across enemies) and reused in between: invisible at 60 steps a second,
+## and it keeps hundreds of enemies cheap.
+const SEPARATION_EVERY := 4
 const ELITE_HP_MULT := 4.0
 const ELITE_ATK_MULT := 1.5
 const ELITE_SIZE_MULT := 1.5
@@ -26,6 +30,7 @@ const ELITE_KNOCKBACK_MULT := 0.5
 const ELITE_RING := Color(1, 0.85, 0.3)
 const ELITE_TINT := Color(1.35, 1.15, 0.7)
 const HIT_FLASH := Color(2.5, 2.5, 2.5)
+const HIT_FLASH_TIME := 0.1
 ## Elite traits: id -> [name, ring color].
 ## - swift: much faster. - armored: takes half damage.
 ## - splitting: bursts into three of its kind. - vampiric: heals on every hit.
@@ -39,7 +44,12 @@ const SWIFT_SPEED := 1.3
 const ARMORED_TAKEN := 0.5
 const VAMPIRIC_HEAL := 0.2  # of max HP per hit landed
 const BURN_TICK := 0.5
+const RUN_ANIMS := ["run_right", "run_left", "run_down", "run_up"]
 const BURN_COLOR := Color(1.0, 0.45, 0.1)
+## Burning tints the sprite instead of drawing a glow under it: a drawn
+## shape per enemy breaks sprite batching, which costs hundreds of draw
+## calls when a whole crowd is alight.
+const BURN_TINT := Color(1.5, 0.75, 0.45)
 
 # swarm
 const FLANK_ANGLE := 0.6  # max radians off the direct line
@@ -79,6 +89,10 @@ var _flank := 0.0  # this swarm member's approach angle
 var _dash_target := Vector2.ZERO
 var _directional := false
 var _next_number := 0
+var _separation := Vector2.ZERO
+var _hit_flash := 0.0
+var _step := 0
+var _dir := -1
 var _burn_dps := 0.0
 var _burn_time := 0.0
 var _burn_tick := 0.0
@@ -105,6 +119,7 @@ func _ready() -> void:
 	shape.radius = radius
 	$CollisionShape2D.shape = shape
 	_flank = randf_range(-FLANK_ANGLE, FLANK_ANGLE)
+	_step = randi() % SEPARATION_EVERY  # spread the work across steps
 	_cooldown = randf_range(0.5, POUNCE_COOLDOWN)  # don't all pounce in sync
 	if data.sprite_frames:
 		sprite.sprite_frames = data.sprite_frames
@@ -142,7 +157,10 @@ func _physics_process(delta: float) -> void:
 		_:
 			desired = global_position.direction_to(target.global_position) * move_speed()
 	if state != State.DASH and not data.boss:
-		desired += Crowd.separation(self) * SEPARATION
+		_step += 1
+		if _step % SEPARATION_EVERY == 0:
+			_separation = Crowd.separation(self) * SEPARATION
+		desired += _separation
 	_update_burn(delta)
 	if not alive():
 		return
@@ -151,6 +169,13 @@ func _physics_process(delta: float) -> void:
 	position += (_velocity + _knockback) * delta
 	position = Obstacles.push_out(position, radius * 0.8)
 	_knockback = _knockback.move_toward(Vector2.ZERO, KNOCKBACK_DECAY * delta)
+	if _hit_flash > 0.0:
+		_hit_flash -= delta
+		if _hit_flash <= 0.0:
+			if data.sprite_frames:
+				sprite.modulate = Color.WHITE
+			else:
+				self_modulate = Color.WHITE
 	_animate()
 
 
@@ -163,10 +188,11 @@ func burn(dps: float, duration: float) -> void:
 	if not alive():
 		return
 	if _burn_time <= 0.0:
-		_burn_tick = BURN_TICK
+		_burn_tick = randf_range(0.1, BURN_TICK)  # a lash ignites crowds; don't tick in sync
+	if _burn_time <= 0.0 and data.sprite_frames:
+		sprite.self_modulate = _base_tint() * BURN_TINT
 	_burn_dps = maxf(_burn_dps, dps)
 	_burn_time = maxf(_burn_time, duration)
-	queue_redraw()
 
 
 func _update_burn(delta: float) -> void:
@@ -179,7 +205,12 @@ func _update_burn(delta: float) -> void:
 		take_damage(_burn_dps * BURN_TICK, Vector2.ZERO, "")
 	if _burn_time <= 0.0:
 		_burn_dps = 0.0
-	queue_redraw()
+		if data.sprite_frames:
+			sprite.self_modulate = _base_tint()
+
+
+func _base_tint() -> Color:
+	return ELITE_TINT if elite else Color.WHITE
 
 
 ## Called when its touch damaged the player.
@@ -196,9 +227,18 @@ func _animate() -> void:
 	if data.sprite_frames == null or _velocity.length() < 5.0:
 		return
 	if _directional:
-		sprite.play("run_" + Game.facing(_velocity))
+		var dir := _facing_index(_velocity)
+		if dir != _dir:  # only when the facing changes
+			_dir = dir
+			sprite.play(RUN_ANIMS[dir])
 	else:
 		sprite.flip_h = _velocity.x < 0.0
+
+
+static func _facing_index(v: Vector2) -> int:
+	if absf(v.x) > absf(v.y):
+		return 0 if v.x > 0.0 else 1
+	return 2 if v.y > 0.0 else 3
 
 
 func _set_state(next: State) -> void:
@@ -292,7 +332,7 @@ func take_damage(amount: float, knockback := Vector2.ZERO, hit_sfx := "enemy_hit
 	var flash_target: CanvasItem = sprite if data.sprite_frames else self
 	var flash_property := "modulate" if data.sprite_frames else "self_modulate"
 	flash_target.set(flash_property, HIT_FLASH)
-	create_tween().tween_property(flash_target, flash_property, Color.WHITE, 0.1)
+	_hit_flash = HIT_FLASH_TIME
 	if hit_sfx != "":
 		Game.sfx(hit_sfx)
 	if not alive():
@@ -304,9 +344,12 @@ func _die() -> void:
 	if data.sprite_frames:
 		Game.kill_pop(sprite)
 	Game.splat(global_position, data.color, radius * (1.4 if elite else 1.0))
-	Game.fx("smoke", global_position, 2.5 if elite else 1.5)
-	Game.burst(global_position, data.color.lightened(0.2), 18 if elite else 8)
+	# The pop and the splat sell an ordinary death; elites get smoke and a
+	# burst too (creating those for every kill was the costliest part of a
+	# big fight).
 	if elite:
+		Game.fx("smoke", global_position, 2.5)
+		Game.burst(global_position, data.color.lightened(0.2), 18)
 		Game.shake(0.25)
 	Game.enemy_killed.emit(self)
 	queue_free()
@@ -320,9 +363,8 @@ func _draw() -> void:
 		var ring: Color = TRAITS[affix][1] if affix != "" else ELITE_RING
 		draw_circle(Vector2(0, radius * 0.6), radius * 0.9, Color(ring, 0.25))
 		draw_arc(Vector2(0, radius * 0.6), radius * 0.9, 0.0, TAU, 32, ring, 2.0 if affix == "" else 3.0)
-	if _burn_time > 0.0:
-		var flicker := 0.25 + 0.1 * sin(Time.get_ticks_msec() / 60.0)
-		draw_circle(Vector2(0, -radius * 0.3), radius * 0.75, Color(BURN_COLOR, flicker))
+	if _burn_time > 0.0 and data.sprite_frames == null:
+		draw_circle(Vector2.ZERO, radius * 0.75, Color(BURN_COLOR, 0.35))
 	if state == State.WINDUP:
 		if data.behavior == "pounce":
 			# The aim line brightens as the pounce is about to fire.

@@ -84,16 +84,18 @@ var unshaded: CanvasItemMaterial
 const CHIME_STEPS := [0, 2, 4, 7, 9, 12, 14, 16, 19, 21, 24]
 const CHIME_RESET := 0.6  # seconds without a gem before the scale restarts
 var _chime_step := 0
+## Adaptive effects: when frames run slow (a weaker PC, a huge pile-up),
+## purely cosmetic extras (kill pops, splats, damage numbers, particle
+## bursts) thin out, and come back once it's smooth. 1 = everything.
+const FX_FULL_MS := 14.0  # smoothed frame time at or below this: all effects
+const FX_LEAN_MS := 24.0  # at or above this: FX_MIN of them
+const FX_MIN := 0.25
+var fx_quality := 1.0
+var frame_ms := 16.7  # smoothed frame time
 var _chime_last := 0.0
-const MAX_SPLATS := 140
-var _splats: Array = []
-const MAX_POPS := 50
-var _pops := 0
 var _last_played := {}
 var _hit_stop_active := false
 var _fx_frames := {}
-const MAX_DAMAGE_NUMBERS := 40
-var _damage_numbers := 0
 var _glow_texture: GradientTexture2D
 var _glow_material: CanvasItemMaterial
 
@@ -165,6 +167,16 @@ static func expand(files: Array) -> Array[String]:
 	return out
 
 
+func _process(delta: float) -> void:
+	frame_ms = lerpf(frame_ms, delta * 1000.0, 0.05)
+	fx_quality = remap(clampf(frame_ms, FX_FULL_MS, FX_LEAN_MS), FX_FULL_MS, FX_LEAN_MS, 1.0, FX_MIN)
+
+
+## Whether to spawn one optional cosmetic effect right now (see fx_quality).
+func fx_allowed() -> bool:
+	return fx_quality >= 1.0 or randf() < fx_quality
+
+
 ## A gem collected: each one in a quick chain rings a note higher.
 func gem_chime() -> void:
 	var now := Time.get_ticks_msec() / 1000.0
@@ -190,44 +202,25 @@ func shockwave(at: Vector2, color: Color, radius := 140.0, duration := 0.45) -> 
 	parent.add_child(ring)
 
 
-## Dark ichor on the ground, in the monster's color. Only the newest stay.
+## Dark ichor on the ground, in the monster's color (SplatLayer keeps the
+## newest few hundred and draws them all as one node).
 func splat(at: Vector2, color: Color, size := 14.0) -> void:
-	var parent := get_tree().get_first_node_in_group("effects")
-	if parent == null:
+	if not fx_allowed():
 		return
-	var blot := Splat.new()
-	blot.position = at
-	blot.color = Color(color.darkened(0.45), 0.75)
-	blot.size = size
-	parent.add_child(blot)
-	_splats.append(blot)
-	while _splats.size() > MAX_SPLATS:
-		var oldest: Variant = _splats.pop_front()  # may already have faded and freed itself
-		if is_instance_valid(oldest):
-			oldest.queue_free()
+	var layer := get_tree().get_first_node_in_group("splat_layer") as SplatLayer
+	if layer:
+		layer.add(at, Color(color.darkened(0.45), 0.75), size)
 
 
-## A dying monster's last frame swells and flashes out as it bursts.
+## A dying monster's last frame swells and flashes out as it bursts
+## (pooled in PopLayer; skipped when every pop is busy).
 func kill_pop(sprite: AnimatedSprite2D) -> void:
-	var parent := get_tree().get_first_node_in_group("effects")
-	if parent == null or _pops >= MAX_POPS or sprite.sprite_frames == null:
+	var layer := get_tree().get_first_node_in_group("pop_layer") as PopLayer
+	if layer == null or sprite.sprite_frames == null or not fx_allowed():
 		return
-	_pops += 1
-	var ghost := Sprite2D.new()
-	ghost.texture = sprite.sprite_frames.get_frame_texture(sprite.animation, sprite.frame)
-	ghost.global_position = sprite.global_position
-	ghost.scale = sprite.global_scale
-	ghost.flip_h = sprite.flip_h
-	ghost.material = unshaded
 	var flash := 1.6 if Settings.data.get("reduce_flashing", false) else 3.0
-	ghost.modulate = Color(flash, flash, flash, 0.9)
-	parent.add_child(ghost)
-	var tween := ghost.create_tween().set_parallel()
-	tween.tween_property(ghost, "scale", ghost.scale * 1.4, 0.16).set_ease(Tween.EASE_OUT)
-	tween.tween_property(ghost, "modulate", Color(1, 1, 1, 0), 0.16)
-	tween.chain().tween_callback(func() -> void:
-		_pops -= 1
-		ghost.queue_free())
+	layer.pop(sprite.sprite_frames.get_frame_texture(sprite.animation, sprite.frame),
+		sprite.global_position, sprite.global_scale, sprite.flip_h, flash)
 
 
 ## Which way a sprite should face for a movement direction: the pack's
@@ -269,7 +262,7 @@ func burst(at: Vector2, color: Color, amount := 10, speed := 140.0) -> void:
 	particles.emitting = false
 	particles.one_shot = true
 	particles.explosiveness = 1.0
-	particles.amount = amount
+	particles.amount = maxi(2, roundi(amount * fx_quality))
 	particles.lifetime = 0.45
 	particles.spread = 180.0
 	particles.gravity = Vector2.ZERO
@@ -332,31 +325,14 @@ func make_glow(color: Color, radius: float) -> Sprite2D:
 	return glow
 
 
-## A small pixel number popping off a hit enemy. Capped, since a swarm can
-## take hundreds of hits a second; main sources skip tiny hits.
+## A small pixel number popping off a hit enemy. Pooled in PopLayer (at
+## most 40 at once); main sources skip tiny hits.
 func damage_number(at: Vector2, amount: float, color := Color.WHITE) -> void:
-	if _damage_numbers >= MAX_DAMAGE_NUMBERS or not Settings.data.damage_numbers:
+	if not Settings.data.damage_numbers or not fx_allowed():
 		return
-	var parent := get_tree().get_first_node_in_group("effects")
-	if parent == null:
-		return
-	_damage_numbers += 1
-	var label := Label.new()
-	label.material = unshaded
-	label.text = str(roundi(amount))
-	label.add_theme_font_size_override("font_size", 20)
-	label.add_theme_color_override("font_color", color)
-	label.add_theme_color_override("font_outline_color", Color.BLACK)
-	label.add_theme_constant_override("outline_size", 4)
-	label.position = at + Vector2(randf_range(-12, 4), -28)
-	label.z_index = 20
-	parent.add_child(label)
-	var tween := label.create_tween().set_parallel()
-	tween.tween_property(label, "position:y", label.position.y - 18.0, 0.45).set_ease(Tween.EASE_OUT)
-	tween.tween_property(label, "modulate:a", 0.0, 0.2).set_delay(0.3)
-	tween.chain().tween_callback(func() -> void:
-		_damage_numbers -= 1
-		label.queue_free())
+	var layer := get_tree().get_first_node_in_group("pop_layer") as PopLayer
+	if layer:
+		layer.number(at, str(roundi(amount)), color)
 
 
 ## A short line of text that floats up and fades, e.g. "+30 HP".

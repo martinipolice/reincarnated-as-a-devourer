@@ -228,6 +228,40 @@ in tables at the top of `chunk_world.gd`. Hitboxes are sized from `radius`,
 not the sprite, so new art never changes the balance. Sounds are mapped by name in
 `scripts/autoload/game.gd` (`SFX`).
 
+## Performance
+
+`tools/stress_test.gd` is a repeatable worst case: an unkillable hero on Day 15 with four
+evolved weapons, burning and biting a horde kept at 500 enemies, vsync off. It reports
+average fps, the 99th-percentile and worst frame, and where the time goes; options switch
+subsystems off to price each one.
+
+```
+godot --path . --resolution 1280x720 -s res://tools/stress_test.gd -- 500
+```
+
+Budget: at least 60 fps average and a 99th-percentile frame of 20 ms or less at 500
+enemies. Measured in the editor build (October 2026): about 90-100 fps average (10-11 ms a
+frame), p99 about 20 ms; 300 enemies run at over 200 fps. Before the performance pass the
+same scene ran at 6 fps. What made the difference:
+
+- **One texture for the battlefield.** The hero and all monsters share an atlas
+  (`tools/pack_atlas.py`), so hundreds of y-sorted sprites batch instead of costing a draw
+  call each.
+- **Effects drawn in bulk.** All ichor splats are textured quads drawn by one node; kill
+  pops and damage numbers are pooled and animated by one manager; burning tints the sprite
+  rather than drawing a glow under it; hit flashes use a timer, not a tween per hit.
+- **Lean deaths.** Ordinary kills get the pop and the splat; smoke and particle bursts are
+  saved for elites.
+- **Cheaper crowds.** Separation stops after 20 neighbors (no new arrays per lookup), and each enemy
+  refreshes it every 4th physics step; animations only change when the facing does.
+- **One HUD update per frame**, however many kills land in it; burn ticks are staggered.
+- **No death spiral.** At most 3 physics catch-up steps per frame (Godot's default is 8), so
+  a heavy moment slows briefly instead of snowballing.
+- **Adaptive effects.** If frames still run slow (a weaker PC, a huge pile-up), splats, pops,
+  damage numbers and particles thin out until it's smooth again.
+
+"Show FPS" in Settings shows frame rate, frame time and the enemy count while you play.
+
 ## Balance testing
 
 `tools/balance_sim.gd` plays a whole run headlessly with a bot, standing still (`afk`),

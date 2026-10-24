@@ -197,6 +197,8 @@ func _ready() -> void:
 	add_child(pause_menu)
 	chest_reel = CHEST_REEL.new()
 	add_child(chest_reel)
+	add_child(SplatLayer.new())
+	add_child(PopLayer.new())
 	atmosphere = Atmosphere.new()
 	player.add_child(atmosphere)
 	var vignette := VIGNETTE.new()

@@ -131,6 +131,9 @@ def main() -> None:
         copy(pack, rel, OUT / "images" / f"{name}.png")
     print(f"assets/ninja/images: {len(STATIC)} images")
     copy(pack, "LICENSE.txt", OUT / "LICENSE.txt")
+    # The hero and monsters share one texture so crowds batch (see pack_atlas.py).
+    import pack_atlas
+    pack_atlas.main()
 
 
 if __name__ == "__main__":

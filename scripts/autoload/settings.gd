@@ -16,6 +16,7 @@ static func defaults() -> Dictionary:
 		"shake": 1.0,  # 0..1, scales every screen shake
 		"damage_numbers": true,
 		"reduce_flashing": false,
+		"show_fps": false,
 		"fullscreen": false,
 		"hints": true,
 		"seen_hints": [],
