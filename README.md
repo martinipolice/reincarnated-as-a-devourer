@@ -12,6 +12,11 @@ as a real-time game.
 
 ## Play / run
 
+Version 0.1.0 ([changelog](CHANGELOG.md)). Builds for Windows and the web come from the
+export presets (**Project → Export**); the itch.io page kit is in [docs/itch](docs/itch/README.md).
+
+To run from source:
+
 1. Install [Godot 4.7+](https://godotengine.org/download) (standard build, not .NET).
 2. In the Project Manager choose **Import**, then select this folder's `project.godot`.
 3. Press **F5**.
