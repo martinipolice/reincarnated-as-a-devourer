@@ -34,7 +34,9 @@ func _ready() -> void:
 
 ## Headless tools run under their own MainLoop: they never touch the file.
 func persistent() -> bool:
-	return get_tree().get_script() == null
+	# Benchmarks (scripts/debug/benchmark.gd) play scripted runs: never let
+	# them touch the player's real settings.
+	return get_tree().get_script() == null and Benchmark.requested() == 0
 
 
 func set_value(key: String, value: Variant) -> void:

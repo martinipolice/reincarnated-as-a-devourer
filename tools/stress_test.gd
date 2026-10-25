@@ -15,7 +15,9 @@ extends SceneTree
 #   onestep    one physics step per frame: the true cost of a frame, without
 #              Godot's catch-up steps blurring it
 # Budget (60 fps): avg >= 60 fps and p99 frame <= 20 ms at 500 enemies.
-# Last measured (editor build, Oct 2026): ~90-100 fps avg, p99 ~20-22 ms.
+# Last measured (Oct 2026): editor ~90-100 fps avg, p99 ~20 ms; release
+# Windows build (scripts/debug/benchmark.gd, --bench=500) ~100-120 fps,
+# p99 ~15-16 ms. Web build: see README (Performance).
 # Untyped on purpose: -s compiles this before autoloads exist.
 
 const WARMUP := 4.0
@@ -54,6 +56,7 @@ func _run() -> void:
 	p.hp = 1e9
 	p._invuln = 1e9
 	main.elapsed = 14 * 60.0 + 5.0
+	p.level = 32  # a Day 15 hero; at level 1 the horde would trigger a level-up screen every few frames
 	if "nolight" in options:
 		main.atmosphere.light.enabled = false
 	if not "noweapons" in options:

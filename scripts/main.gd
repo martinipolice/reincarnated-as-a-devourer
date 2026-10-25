@@ -233,6 +233,10 @@ func _ready() -> void:
 	if covenant == "":
 		set_covenant("")  # clears a multiplier left from a previous run
 	hud.bind(player, self)
+	if Benchmark.requested() > 0:
+		var bench := Benchmark.new()
+		bench.count = Benchmark.requested()
+		add_child(bench)
 	gold = gold  # announce the starting gold and revive price
 	_last_day = 0
 	moments.area_card("The Fallen Ruins" if day() >= RUINS_FROM_DAY else "The Whispering Forest")

@@ -255,10 +255,19 @@ subsystems off to price each one.
 godot --path . --resolution 1280x720 -s res://tools/stress_test.gd -- 500
 ```
 
+The same scene runs inside exported builds too (`scripts/debug/benchmark.gd`): start the
+Windows build with `-- --bench=500`, or open the web build with `?bench=500`; switch costs
+off with `--bench-opts=` / `&opts=` (`nolight`, `novignette`, `nomotes`, `lowfx`, `hide`,
+`tick30`). Benchmarks never write your save or settings.
+
 Budget: at least 60 fps average and a 99th-percentile frame of 20 ms or less at 500
-enemies. Measured in the editor build (October 2026): about 90-100 fps average (10-11 ms a
+enemies on desktop; on the web, 60 fps average at the Day 19 peak of a real journey
+(about 110 enemies; typical play is 20-60). Measured in the editor build (October 2026): about 90-100 fps average (10-11 ms a
 frame), p99 about 20 ms; 300 enemies run at over 200 fps. Before the performance pass the
-same scene ran at 6 fps. What made the difference:
+same scene ran at 6 fps. The release Windows build: 100-120 fps, p99 15-16 ms. The web build
+(single-threaded WebAssembly, measured in Chrome on an Intel UHD laptop GPU): 74 fps at 63
+enemies, 64 fps at 113, 32 fps at 200; it is CPU-bound, so for the biggest fights the
+Windows download is the smoother way to play. What made the difference:
 
 - **One texture for the battlefield.** The hero and all monsters share an atlas
   (`tools/pack_atlas.py`), so hundreds of y-sorted sprites batch instead of costing a draw

@@ -15,6 +15,10 @@ var _menu: PauseMenu
 
 
 func _ready() -> void:
+	if Benchmark.requested() > 0:  # performance test: straight into a run
+		Save.resume = false
+		get_tree().change_scene_to_file.call_deferred(RUN_SCENE)
+		return
 	var name_label: Label = $Center/VBox/Name
 	name_label.add_theme_font_override("font", UITheme.title_font())
 	name_label.add_theme_font_size_override("font_size", 60)

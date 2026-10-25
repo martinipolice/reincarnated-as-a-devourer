@@ -116,6 +116,8 @@ const FX_LEAN := 1.8  # at or above this: FX_MIN of them
 const FX_MIN := 0.25
 const SLOWEST_BASE_MS := 1000.0 / 60.0  # never stricter than a 60 Hz frame
 var fx_quality := 1.0
+## Upper limit for fx_quality (lowered on web builds and by benchmarks).
+var fx_ceiling := 1.0
 var frame_ms := 16.7  # smoothed frame time
 var _refresh_ms := SLOWEST_BASE_MS
 var _chime_last := 0.0
@@ -212,7 +214,7 @@ func _process(delta: float) -> void:
 	frame_ms = lerpf(frame_ms, delta * 1000.0, 0.05)
 	var full := _refresh_ms * FX_FULL
 	var lean := _refresh_ms * FX_LEAN
-	fx_quality = remap(clampf(frame_ms, full, lean), full, lean, 1.0, FX_MIN)
+	fx_quality = minf(remap(clampf(frame_ms, full, lean), full, lean, 1.0, FX_MIN), fx_ceiling)
 
 
 ## Whether to spawn one optional cosmetic effect right now (see fx_quality).

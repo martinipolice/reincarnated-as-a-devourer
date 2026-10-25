@@ -40,7 +40,9 @@ func defaults() -> Dictionary:
 ## Headless tools (tools/balance_sim.gd) run under their own MainLoop script;
 ## they always start from a fresh save and never write the player's file.
 func persistent() -> bool:
-	return get_tree().get_script() == null
+	# Benchmarks (scripts/debug/benchmark.gd) play scripted runs: never let
+	# them touch the player's real save.
+	return get_tree().get_script() == null and Benchmark.requested() == 0
 
 
 func load_game() -> void:
