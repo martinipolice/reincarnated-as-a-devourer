@@ -16,14 +16,18 @@ as a real-time game.
 2. In the Project Manager choose **Import**, then select this folder's `project.godot`.
 3. Press **F5**.
 
-| Action | Keys |
-|---|---|
-| Move | WASD / arrow keys |
-| Devour (hold on an essence) | E / Space |
-| Drink the Goddess's Tears (heal) | Q |
-| Pause: your build, how to play, settings | Esc / P |
-| Pick a level-up | Click, 1-3, or arrows + Enter |
-| New journey after the end | R |
+| Action | Keyboard | Controller |
+|---|---|---|
+| Move | WASD / arrow keys | Left stick / d-pad |
+| Devour (hold on an essence) | E / Space | A |
+| Drink the Goddess's Tears (heal) | Q | X |
+| Pause: your build, how to play, settings | Esc / P | Start |
+| Pick a level-up | Click, 1-3, or arrows + Enter | D-pad + A |
+| Back in menus | Esc | B |
+| New journey after the end | R | Y |
+
+Prompts on screen follow whichever device you last touched. Controllers rumble on hits,
+deaths, the boss's slam and big moments (Settings: Controller vibration).
 
 **Testing shortcuts** (only when running from the editor, never in an exported build):
 
@@ -75,6 +79,13 @@ red slam marked on the ground under you with a ring of dark orbs (watch for the 
 glow), and summons a few minions now and then. Below half HP he enrages: faster, wider
 slams and double rings. Kill him to win the run.
 
+### The ending
+
+Fell the Demon King and he kneels to say his last words, closing the story the goddess told
+at her shrines. Then you choose: **spare him**, and the goddess finally comes for him
+(*Reunion*), or **Devour him** and take his place (*The New Demon King*). The title screen
+remembers which endings you've reached.
+
 ### Style, traits and covenants
 
 - **Style rank.** A Devil May Cry-style rank, D (Dull) to SSS (Soul Devourer), climbs as you
@@ -88,9 +99,12 @@ slams and double rings. Kill him to win the run.
   it lasts until her next shrine: **Blood** (enemies hit harder, much more gold), **the
   Horde** (more enemies, more XP and gold), **Frailty** (less max HP, more damage) or
   **Thirst** (your Tears emptied, a second blessing now).
-- **Evolutions.** Each new weapon evolves at Lv 3 after Devouring 3 of an essence, like the
-  Blade: the Maw with Dreadlings (Abyssal Maw), the Chains with Plaguewings (Chains of the
-  Damned).
+- **Evolutions.** Every weapon has one. The Blade, Maw and Chains evolve at Lv 3 after
+  Devouring 3 of an essence (Vexclaw Rend, Abyssal Maw, Chains of the Damned). Goddess Light
+  and Aegis evolve at Lv 3 with a passive at Lv 3: Light + Vigor becomes **Goddess's Grace**
+  (a wider volley whose hits heal you, up to 3 HP a second), and Aegis + Guard becomes the
+  **Bulwark of Dawn** (five blades; each cuts a Plaguewing glob out of the air, then
+  recharges for 1.2 s).
 
 ### Souls-like UI
 
@@ -172,7 +186,9 @@ revives, so every purchase is a gamble. Refuse, or run out of gold, and the jour
 the next one starts fresh, keeping only your records (journeys, victories, best day).
 
 The journey **saves at every shrine**: quit any time and continue from the title screen,
-at the start of the day you last met the goddess. Saves live in `user://save.json`
+at the start of the day you last met the goddess. Quitting before the first shrine ends the
+journey. A death is saved the moment it happens: closing the game on the death screen
+doesn't undo it. Saves live in `user://save.json`
 (on Windows: `%APPDATA%/Godot/app_userdata/Reincarnated as a Devourer`).
 
 ## Design in one paragraph

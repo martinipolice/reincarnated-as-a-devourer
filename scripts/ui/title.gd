@@ -4,6 +4,7 @@ extends Control
 ## reincarnates once, so a new journey replaces any saved one.
 
 const RUN_SCENE := "res://scenes/main.tscn"
+const ENDING := preload("res://scripts/ui/ending.gd")
 
 var _menu: PauseMenu
 
@@ -44,6 +45,11 @@ func _ready() -> void:
 		new_button.grab_focus()
 	stats_label.text = "Journeys %d   ·   Victories %d   ·   Best day %d" % [
 		int(Save.data.journeys), int(Save.data.wins), int(Save.data.best_day)]
+	var seen := []
+	for id: String in ["spare", "devour"]:
+		seen.append(ENDING.ENDINGS[id].title if id in Save.data.endings else "???")
+	stats_label.text += "\nEndings: %s" % "   ·   ".join(seen)
+	stats_label.text += "\nv%s" % ProjectSettings.get_setting("application/config/version", "dev")
 
 
 func _open_menu() -> void:

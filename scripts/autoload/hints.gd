@@ -11,6 +11,7 @@ var _queue: Array[String] = []
 var _box: PanelContainer
 var _label: Label
 var _busy := false
+var _tween: Tween
 
 
 func _ready() -> void:
@@ -45,13 +46,19 @@ func show_hint(id: String, text: String) -> void:
 		return
 	seen.append(id)
 	Settings.save()
-	_queue.append(text)
+	_queue.append(text)  # "{action}" prompts are filled in when shown
 	if not _busy:
 		_next()
 
 
+## Drops queued hints and hides the one showing (e.g. when leaving a run).
 func clear() -> void:
 	_queue.clear()
+	if _tween:
+		_tween.kill()
+	_busy = false
+	_box.hide()
+	_box.modulate.a = 0.0
 
 
 func _next() -> void:
@@ -60,11 +67,11 @@ func _next() -> void:
 		_box.hide()
 		return
 	_busy = true
-	_label.text = _queue.pop_front()
+	_label.text = Game.prompts(_queue.pop_front())
 	_box.reset_size()
 	_box.show()
-	var tween := create_tween()
-	tween.tween_property(_box, "modulate:a", 1.0, FADE)
-	tween.tween_interval(SHOW_TIME)
-	tween.tween_property(_box, "modulate:a", 0.0, FADE)
-	tween.tween_callback(_next)
+	_tween = create_tween()
+	_tween.tween_property(_box, "modulate:a", 1.0, FADE)
+	_tween.tween_interval(SHOW_TIME)
+	_tween.tween_property(_box, "modulate:a", 0.0, FADE)
+	_tween.tween_callback(_next)

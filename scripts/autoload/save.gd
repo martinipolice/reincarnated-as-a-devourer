@@ -29,6 +29,11 @@ func defaults() -> Dictionary:
 		"journeys": 0,
 		"wins": 0,
 		"best_day": 0,
+		"endings": [],  # endings seen: "spare", "devour"
+		# Set the moment the hero falls, cleared by a revive. Still set at
+		# the next launch means the game closed on the death screen: the
+		# journey is over (one life), not continued from the last shrine.
+		"fallen_day": 0,
 	}
 
 
@@ -50,6 +55,8 @@ func load_game() -> void:
 		push_warning("Save file was unreadable; copied to save.json.bad and started fresh.")
 		return
 	data = _migrate(parsed)
+	if int(data.fallen_day) > 0:
+		end_journey(int(data.fallen_day), false)
 
 
 func save_game() -> void:
@@ -90,9 +97,27 @@ func save_journey(snapshot: Dictionary) -> void:
 	save_game()
 
 
+## The hero has fallen; until a revive, the journey counts as lost.
+func mark_fallen(day: int) -> void:
+	data.fallen_day = day
+	save_game()
+
+
+func clear_fallen() -> void:
+	data.fallen_day = 0
+	save_game()
+
+
+func record_ending(id: String) -> void:
+	if not id in data.endings:
+		data.endings.append(id)
+		save_game()
+
+
 ## The journey is over: record it and clear the checkpoint.
 func end_journey(day: int, won: bool) -> void:
 	data.journey = null
+	data.fallen_day = 0
 	data.journeys = int(data.journeys) + 1
 	if won:
 		data.wins = int(data.wins) + 1

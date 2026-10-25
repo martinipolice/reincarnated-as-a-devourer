@@ -96,6 +96,7 @@ func _spin(slot: TextureRect, icons: Array, result: Texture2D) -> void:
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	Game.sfx("loot", 0.0)
 	Game.shake(0.15)
+	Game.rumble(0.15, 0.3, 0.12)
 	if not _skip:
 		await get_tree().create_timer(HOLD * 0.6, true, false, true).timeout
 

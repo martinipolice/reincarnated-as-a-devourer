@@ -60,6 +60,7 @@ const MOOD := {
 	"temple": Color(0.42, 0.28, 0.34),
 }
 const CHEST_REEL := preload("res://scripts/ui/chest_reel.gd")
+const ENDING := preload("res://scripts/ui/ending.gd")
 const VIGNETTE := preload("res://scripts/ui/vignette.gd")
 ## The camera pulls back from 1.0 toward this as you level (30 levels).
 const MIN_ZOOM := 0.86
@@ -147,6 +148,11 @@ var training_ranks := {}
 var shrine: CanvasLayer
 var pause_menu: CanvasLayer
 var chest_reel: CanvasLayer
+var ending: CanvasLayer
+## Chests waiting for their ceremony, [rewards, golden, at]: two can be
+## opened in one frame (a Mimic's golden chest beside another).
+var _chest_queue: Array = []
+var _revealing := false
 var atmosphere: Atmosphere
 @onready var camera: Camera2D = $Player/Camera2D
 var _shrines_done := []
@@ -197,6 +203,8 @@ func _ready() -> void:
 	add_child(pause_menu)
 	chest_reel = CHEST_REEL.new()
 	add_child(chest_reel)
+	ending = ENDING.new()
+	add_child(ending)
 	add_child(SplatLayer.new())
 	add_child(PopLayer.new())
 	atmosphere = Atmosphere.new()
@@ -228,8 +236,8 @@ func _ready() -> void:
 	gold = gold  # announce the starting gold and revive price
 	_last_day = 0
 	moments.area_card("The Fallen Ruins" if day() >= RUINS_FROM_DAY else "The Whispering Forest")
-	Hints.show_hint("move", "Move with WASD or the arrow keys. Your weapons attack on their own: focus on staying alive.")
-	Hints.show_hint("pause", "Press Esc any time to pause, check your build, read how to play, or change settings.")
+	Hints.show_hint("move", "Move with {move}. Your weapons attack on their own: focus on staying alive.")
+	Hints.show_hint("pause", "Press {pause} any time to pause, check your build, read how to play, or change settings.")
 
 
 func day() -> int:
@@ -255,7 +263,7 @@ func _process(delta: float) -> void:
 		if next_shrine_day() == day() + 1:
 			Hints.show_hint("shrine_soon", "The goddess finds you tomorrow. At her shrine, gold buys training. Gold also pays for a revive if you fall, so don't spend it all.")
 	if not _over and player.hp < player.stat("max_hp") * FLASK_HINT_HP and player.flask_charges > 0:
-		Hints.show_hint("flask", "You're hurt! Press Q to drink the Goddess's Tears. She refills them at every shrine, so use them.")
+		Hints.show_hint("flask", "You're hurt! Press {flask} to drink the Goddess's Tears. She refills them at every shrine, so use them.")
 	if day() in SHRINE_DAYS and not day() in _shrines_done and not level_up.visible:
 		_shrines_done.append(day())
 		shrine.open(day(), self)
@@ -285,6 +293,7 @@ func _physics_process(_delta: float) -> void:
 
 func _exit_tree() -> void:
 	Crowd.clear()
+	Hints.clear()  # however the run is left: quit, title or a new journey
 
 
 func _spawn_waves(delta: float) -> void:
@@ -589,19 +598,34 @@ func _on_chest_opened(chest: LootChest) -> void:
 	var rewards := [Loot.roll(hurt)]
 	if golden:
 		rewards.append(Loot.roll(hurt, rewards[0].id))
-	# The ceremony: the run pauses while the reel spins, then the loot lands.
-	get_tree().paused = true
-	await chest_reel.reveal(rewards, golden)
-	if _over or _awaiting_revive:
-		return
-	get_tree().paused = false
-	Game.burst(at, Color(1, 0.85, 0.35), 50 if golden else 25, 260.0)
-	Game.shockwave(at, Color(1, 0.85, 0.35), 120.0 if golden else 90.0)
-	var lines := []
-	for i in rewards.size():
-		lines.append(_grant_loot(rewards[i], at + Vector2(24 * i, 0)))
-	var title := "GOLDEN CHEST\n" if golden else ""
-	show_banner(title + "\n".join(lines), 2.5 if golden else 2.0)
+	_chest_queue.append([rewards, golden, at])
+	if not _revealing:
+		_reveal_chests()
+
+
+# The ceremony: the run pauses while the reel spins, then the loot lands.
+# Chests opened together take turns.
+func _reveal_chests() -> void:
+	_revealing = true
+	while not _chest_queue.is_empty():
+		var entry: Array = _chest_queue.pop_front()
+		var rewards: Array = entry[0]
+		var golden: bool = entry[1]
+		var at: Vector2 = entry[2]
+		get_tree().paused = true
+		await chest_reel.reveal(rewards, golden)
+		if _over or _awaiting_revive:
+			break
+		get_tree().paused = false
+		Game.burst(at, Color(1, 0.85, 0.35), 50 if golden else 25, 260.0)
+		Game.shockwave(at, Color(1, 0.85, 0.35), 120.0 if golden else 90.0)
+		var lines := []
+		for i in rewards.size():
+			lines.append(_grant_loot(rewards[i], at + Vector2(24 * i, 0)))
+		var title := "GOLDEN CHEST\n" if golden else ""
+		show_banner(title + "\n".join(lines), 2.5 if golden else 2.0)
+	_chest_queue.clear()
+	_revealing = false
 
 
 func _spring_mimic(at: Vector2) -> void:
@@ -640,6 +664,7 @@ func _grant_loot(entry: Dictionary, at: Vector2) -> String:
 			player.add_timed_modifier({"stat": "haste", "add": FERVOR_HASTE}, FERVOR_DURATION)
 		"bomb":
 			Game.sfx("bomb", 0.0)
+			Game.rumble(0.5, 0.8, 0.4)
 			Game.shake(0.6)
 			Game.fx("explosion", player.global_position, 4.0)
 			Game.burst(player.global_position, Color(1, 0.6, 0.2), 60, 450.0)
@@ -699,7 +724,7 @@ func _on_enemy_killed(enemy: Enemy) -> void:
 	if enemy.data.drops_golden_chest:
 		_place_chest.call_deferred(enemy.global_position, LootChest.Kind.GOLDEN)
 	if enemy.data.boss:
-		_end_run("VICTORY\n\nThe Demon King falls to his knees...\n\"Finally... Tell her... I waited.\"", true)
+		_end_run("VICTORY", true)
 		return
 	Hints.show_hint("gems", "Walk near the green gems to collect XP. Each level lets you pick a new weapon or upgrade.")
 	var gem := GEM_SCENE.instantiate() as XPGem
@@ -711,7 +736,7 @@ func _on_enemy_killed(enemy: Enemy) -> void:
 		corpse.setup(enemy.data.essence)
 		corpse.position = enemy.global_position
 		pickups.add_child.call_deferred(corpse)
-		Hints.show_hint("devour", "An elite has fallen! Follow the colored arrow, stand on its glowing essence and hold E or Space to Devour it: a lasting power that costs a little max HP.")
+		Hints.show_hint("devour", "An elite has fallen! Follow the colored arrow, stand on its glowing essence and hold {devour} to Devour it: a lasting power that costs a little max HP.")
 
 
 func _on_player_devoured(essence: EssenceData) -> void:
@@ -722,6 +747,7 @@ func _on_player_devoured(essence: EssenceData) -> void:
 
 func _on_weapon_evolved(weapon: Weapon) -> void:
 	Game.sfx("evolve", 0.0)
+	Game.rumble(0.3, 0.6, 0.35)
 	Game.shake(0.5)
 	camera.punch(0.1, 0.9)
 	Game.shockwave(player.global_position, Color(0.8, 0.5, 1.0), 220.0, 0.6)
@@ -857,9 +883,11 @@ func _restore(journey: Dictionary) -> void:
 func _on_player_died() -> void:
 	# The goddess can pull you back, for a price that doubles every time.
 	_awaiting_revive = true
+	Save.mark_fallen(day())  # closing the game now can't undo it
 	primary_button.disabled = true  # until the offer is on screen
 	secondary_button.disabled = true
 	get_tree().paused = true
+	Game.rumble(0.6, 1.0, 0.6)
 	Game.sfx("defeat", 0.0)
 	Game.sfx("doom", 0.0)
 	Game.sfx("toll", 0.0)
@@ -883,6 +911,7 @@ func _revive() -> void:
 	if gold < cost:
 		return
 	_awaiting_revive = false
+	Save.clear_fallen()
 	revives += 1
 	gold -= cost  # after revives changes, so the HUD shows the next price
 	end_menu.hide()
@@ -917,9 +946,15 @@ func _end_run(message: String, won := false) -> void:
 	end_menu.hide()
 	if won:
 		await moments.felled("Demon King Felled")
+		await get_tree().create_timer(1.2).timeout
+		moments.clear()
+		var choice: String = await ending.play()
+		Save.record_ending(choice)
+		var chosen: Dictionary = ending.ENDINGS[choice]
+		message = "%s\n%s" % [chosen.title, chosen.subtitle]
 	end_text.text = "%s\n\nDay %d  ·  Level %d  ·  %d kills  ·  %d devoured  ·  %d revives" % [
 		message, day(), player.level, kills, player.devour_count(), revives]
-	primary_button.text = "Begin a new journey  (R)"
+	primary_button.text = Game.prompts("Begin a new journey  ({restart})")
 	secondary_button.text = "Title screen"
 	secondary_button.show()
 	_show_end_menu(primary_button)

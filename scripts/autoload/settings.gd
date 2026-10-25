@@ -17,6 +17,7 @@ static func defaults() -> Dictionary:
 		"damage_numbers": true,
 		"reduce_flashing": false,
 		"show_fps": false,
+		"vibration": true,
 		"fullscreen": false,
 		"hints": true,
 		"seen_hints": [],

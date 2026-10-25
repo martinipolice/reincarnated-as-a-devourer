@@ -28,6 +28,7 @@ func open(main: Node = null) -> void:
 	_main = main
 	_quit_armed = false
 	for child in _nav.get_children():
+		_nav.remove_child(child)  # now, so get_child(0) below is a new button
 		child.queue_free()
 	if _main:
 		_nav_button("Resume", close)
@@ -59,7 +60,7 @@ func close() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if visible and event.is_action_pressed("pause"):
+	if visible and (event.is_action_pressed("pause") or event.is_action_pressed("ui_cancel")):
 		get_viewport().set_input_as_handled()
 		close()
 
@@ -164,6 +165,7 @@ func _show_settings() -> void:
 	_toggle("Damage numbers", "damage_numbers")
 	_toggle("Reduce flashing", "reduce_flashing")
 	_toggle("Show FPS", "show_fps")
+	_toggle("Controller vibration", "vibration")
 	_toggle("Fullscreen", "fullscreen")
 	_toggle("Beginner hints", "hints")
 	var reset := Button.new()
@@ -213,12 +215,16 @@ func _toggle(text: String, key: String) -> void:
 func _quit() -> void:
 	if not _quit_armed:
 		_quit_armed = true
-		var since: String = "the start of this journey"
+		# A journey saves at the goddess's shrines; before the first one,
+		# quitting ends it.
 		if Save.has_journey():
-			since = "Day %d" % int(Save.data.journey.day)
-		_quit_button.text = "Sure? Back to %s" % since
+			_quit_button.text = "Sure? Back to Day %d" % int(Save.data.journey.day)
+		else:
+			_quit_button.text = "Sure? This journey ends"
 		Game.sfx("denied", 0.0)
 		return
+	if not Save.has_journey():
+		Save.end_journey(_main.day(), false)  # counts in your records
 	get_tree().paused = false
 	Music.muffle(false)
 	Hints.clear()

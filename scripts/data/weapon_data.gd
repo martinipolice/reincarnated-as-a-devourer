@@ -15,7 +15,10 @@ extends Resource
 @export var icon: Texture2D
 
 @export_group("Evolution")
-## Devour this many of this essence with the weapon maxed to evolve it.
+## With the weapon maxed, it evolves once its requirements are met: Devour
+## `evolve_count` of the `evolve_with` essence, and/or hold the
+## `evolve_with_item` passive at its max level. Unset ones aren't required.
 @export var evolve_with: EssenceData
 @export var evolve_count := 3
+@export var evolve_with_item: ItemData
 @export var evolved_name := ""

@@ -37,7 +37,7 @@ func open(offers: Array, player: Player) -> void:
 	show()
 	get_tree().paused = true
 	(options.get_child(0) as Button).grab_focus()
-	Hints.show_hint("level_up", "Pick one with a click, the number keys 1-3, or the arrow keys and Enter. Esc shows your current build.")
+	Hints.show_hint("level_up", "Pick one with {pick}. {pause} shows your current build.")
 
 
 func _input(event: InputEvent) -> void:

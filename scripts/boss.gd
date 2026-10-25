@@ -113,6 +113,7 @@ func _update_slam(delta: float) -> void:
 		return
 	_flash = SLAM_FLASH
 	Game.sfx("boss_slam")
+	Game.rumble(0.5, 0.9, 0.35)
 	Game.shake(0.7)
 	var player := target as Player
 	if player and player.global_position.distance_to(slam_at) <= slam_radius:

@@ -40,6 +40,7 @@ var _style_bar: ProgressBar
 ## Newest values from frequent signals, applied once per frame.
 var _pending := {}
 var _xp_flare := 0.0
+var _last_level := 0
 var _run: Node
 var _perf: Label
 var _perf_timer := 0.0
@@ -149,7 +150,8 @@ func _on_xp_changed(xp: int, needed: int, level: int) -> void:
 
 
 func _apply_xp(xp: int, needed: int, level: int) -> void:
-	var leveled := _level.text != "Lv %d" % level and _level.text != ""
+	var leveled := _last_level > 0 and level > _last_level  # not on the first update (a loaded save)
+	_last_level = level
 	_xp_bar.max_value = needed
 	_xp_bar.value = xp
 	_level.text = "Lv %d" % level
@@ -266,7 +268,11 @@ func _build() -> void:
 	flask_row.add_child(flask_text)
 	_flask = _label("", 30, UITheme.BONE)
 	flask_text.add_child(_flask)
-	flask_text.add_child(_label("Goddess's Tears  [Q]", 20, UITheme.ASH))
+	var flask_key := _label("", 20, UITheme.ASH)
+	flask_text.add_child(flask_key)
+	var relabel := func(_pad: bool) -> void: flask_key.text = Game.prompts("Goddess's Tears  [{flask}]")
+	relabel.call(false)
+	Game.device_changed.connect(relabel)
 
 	# Bottom-right: gold and the next revive.
 	var bottom_right := _corner(Control.PRESET_BOTTOM_RIGHT)

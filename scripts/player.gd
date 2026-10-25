@@ -127,6 +127,7 @@ func take_damage(atk: float, ignore_invuln := false) -> void:
 	hp -= Game.damage(atk, stat("defense"))
 	_invuln = HIT_INVULN
 	hurt.emit()
+	Game.rumble(0.25, 0.45, 0.15)
 	Game.sfx("player_hurt")
 	Game.shake(0.35)
 	Game.hit_stop(0.06)
@@ -326,11 +327,16 @@ func _nearest_corpse() -> DevourCorpse:
 func _check_evolutions() -> void:
 	for weapon: Weapon in weapons.get_children():
 		var data := weapon.data
-		if weapon.evolved or data.evolve_with == null:
+		if weapon.evolved or (data.evolve_with == null and data.evolve_with_item == null):
 			continue
-		if weapon.level >= data.max_level and essences.get(data.evolve_with, 0) >= data.evolve_count:
-			weapon.evolve()
-			weapon_evolved.emit(weapon)
+		if weapon.level < data.max_level:
+			continue
+		if data.evolve_with and essences.get(data.evolve_with, 0) < data.evolve_count:
+			continue
+		if data.evolve_with_item and upgrade_level(data.evolve_with_item) < data.evolve_with_item.max_level:
+			continue
+		weapon.evolve()
+		weapon_evolved.emit(weapon)
 
 
 func _animate(input: Vector2) -> void:

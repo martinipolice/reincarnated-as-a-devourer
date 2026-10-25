@@ -4,6 +4,24 @@ extends Node
 
 ## Emitted just before the enemy frees itself; read what you need right away.
 signal enemy_killed(enemy: Enemy)
+## The player switched between keyboard/mouse and a controller; prompts
+## (HUD, hints, menus) listen and relabel themselves.
+signal device_changed(gamepad: bool)
+
+## What to call each action's controls, per device: [keyboard, controller].
+## Text anywhere can name an action as "{action}" and go through prompts().
+const PROMPTS := {
+	"move": ["WASD or the arrow keys", "the left stick"],
+	"devour": ["E or Space", "A"],
+	"flask": ["Q", "X"],
+	"pause": ["Esc", "Start"],
+	"restart": ["R", "Y"],
+	"pick": ["a click, the number keys 1-3, or the arrow keys and Enter", "the d-pad and A"],
+	"menus": ["Arrows / Tab + Enter, Esc to go back", "D-pad or stick + A, B to go back"],
+	"accept": ["Enter", "A"],
+}
+## Below this, stick movement is ignored (worn sticks drift).
+const STICK_DEADZONE := 0.25
 
 ## Two voice pools: combat sounds (hits, swings, gems, steps) can fill
 ## theirs completely without ever cutting off a level-up, a toll or a click.
@@ -84,14 +102,22 @@ var unshaded: CanvasItemMaterial
 const CHIME_STEPS := [0, 2, 4, 7, 9, 12, 14, 16, 19, 21, 24]
 const CHIME_RESET := 0.6  # seconds without a gem before the scale restarts
 var _chime_step := 0
+## True while the player is using a controller (the last device touched).
+var gamepad := false
+var _joy_device := 0
 ## Adaptive effects: when frames run slow (a weaker PC, a huge pile-up),
 ## purely cosmetic extras (kill pops, splats, damage numbers, particle
 ## bursts) thin out, and come back once it's smooth. 1 = everything.
-const FX_FULL_MS := 14.0  # smoothed frame time at or below this: all effects
-const FX_LEAN_MS := 24.0  # at or above this: FX_MIN of them
+## Measured against the display's own frame: with vsync a healthy game's
+## frame time *is* the refresh interval (16.7 ms at 60 Hz), so thresholds
+## below it would thin effects on a game running perfectly.
+const FX_FULL := 1.15  # frame time up to this x the refresh interval: all effects
+const FX_LEAN := 1.8  # at or above this: FX_MIN of them
 const FX_MIN := 0.25
+const SLOWEST_BASE_MS := 1000.0 / 60.0  # never stricter than a 60 Hz frame
 var fx_quality := 1.0
 var frame_ms := 16.7  # smoothed frame time
+var _refresh_ms := SLOWEST_BASE_MS
 var _chime_last := 0.0
 var _last_played := {}
 var _hit_stop_active := false
@@ -102,6 +128,8 @@ var _glow_material: CanvasItemMaterial
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS  # UI sounds play while paused
+	var hz := DisplayServer.screen_get_refresh_rate()  # -1 when unknown (web)
+	_refresh_ms = maxf(1000.0 / hz, SLOWEST_BASE_MS) if hz > 0.0 else SLOWEST_BASE_MS
 	unshaded = CanvasItemMaterial.new()
 	unshaded.light_mode = CanvasItemMaterial.LIGHT_MODE_UNSHADED
 	_bind("move_left", [KEY_A, KEY_LEFT])
@@ -110,6 +138,17 @@ func _ready() -> void:
 	_bind("move_down", [KEY_S, KEY_DOWN])
 	_bind("devour", [KEY_E, KEY_SPACE])
 	_bind("flask", [KEY_Q])
+	# Controllers: left stick and d-pad move; A Devours, X drinks, Start
+	# pauses, Y restarts after a journey. Menus use Godot's built-in ui_*
+	# actions: those include the d-pad and stick, but not A/B, so add them.
+	_bind_pad("move_left", [JOY_BUTTON_DPAD_LEFT], JOY_AXIS_LEFT_X, -1.0)
+	_bind_pad("move_right", [JOY_BUTTON_DPAD_RIGHT], JOY_AXIS_LEFT_X, 1.0)
+	_bind_pad("move_up", [JOY_BUTTON_DPAD_UP], JOY_AXIS_LEFT_Y, -1.0)
+	_bind_pad("move_down", [JOY_BUTTON_DPAD_DOWN], JOY_AXIS_LEFT_Y, 1.0)
+	_bind_pad("devour", [JOY_BUTTON_A])
+	_bind_pad("flask", [JOY_BUTTON_X])
+	_bind_pad("ui_accept", [JOY_BUTTON_A])
+	_bind_pad("ui_cancel", [JOY_BUTTON_B])
 	# Into the default theme too: controls under a CanvasLayer don't inherit
 	# the root window's theme, and the HUD and overlays all live in one.
 	var theme := UITheme.build()
@@ -117,6 +156,8 @@ func _ready() -> void:
 	ThemeDB.get_default_theme().merge_with(theme)
 	_bind("restart", [KEY_R])
 	_bind("pause", [KEY_ESCAPE, KEY_P])
+	_bind_pad("pause", [JOY_BUTTON_START])
+	_bind_pad("restart", [JOY_BUTTON_Y])
 	for sfx_name in SFX:
 		var streams := []
 		for file: String in expand(SFX[sfx_name][0]):
@@ -169,7 +210,9 @@ static func expand(files: Array) -> Array[String]:
 
 func _process(delta: float) -> void:
 	frame_ms = lerpf(frame_ms, delta * 1000.0, 0.05)
-	fx_quality = remap(clampf(frame_ms, FX_FULL_MS, FX_LEAN_MS), FX_FULL_MS, FX_LEAN_MS, 1.0, FX_MIN)
+	var full := _refresh_ms * FX_FULL
+	var lean := _refresh_ms * FX_LEAN
+	fx_quality = remap(clampf(frame_ms, full, lean), full, lean, 1.0, FX_MIN)
 
 
 ## Whether to spawn one optional cosmetic effect right now (see fx_quality).
@@ -357,6 +400,51 @@ func float_text(at: Vector2, text: String, color: Color) -> void:
 
 # Actions are registered in code so they can be rebound later without
 # hand-editing project.godot.
+# Adds controller buttons (and optionally one stick direction) to an action.
+func _bind_pad(action: StringName, buttons: Array, axis := -1, direction := 0.0) -> void:
+	for button: int in buttons:
+		var event := InputEventJoypadButton.new()
+		event.button_index = button
+		InputMap.action_add_event(action, event)
+	if axis >= 0:
+		var motion := InputEventJoypadMotion.new()
+		motion.axis = axis
+		motion.axis_value = direction
+		InputMap.action_add_event(action, motion)
+		InputMap.action_set_deadzone(action, STICK_DEADZONE)
+
+
+## Whichever device the player last touched decides the prompts.
+func _input(event: InputEvent) -> void:
+	var pad := gamepad
+	if event is InputEventJoypadButton or (event is InputEventJoypadMotion and absf(event.axis_value) > 0.5):
+		pad = true
+		_joy_device = event.device
+	elif event is InputEventKey or event is InputEventMouseButton:
+		pad = false
+	if pad != gamepad:
+		gamepad = pad
+		device_changed.emit(gamepad)
+
+
+## How to do `action` on the current device, e.g. "E or Space" or "A".
+func prompt(action: String) -> String:
+	return PROMPTS[action][1 if gamepad else 0]
+
+
+## `text` with every "{action}" replaced by its current prompt.
+func prompts(text: String) -> String:
+	for action: String in PROMPTS:
+		text = text.replace("{%s}" % action, prompt(action))
+	return text
+
+
+## Controller rumble, only while one is in use and Vibration is on.
+func rumble(weak: float, strong: float, seconds: float) -> void:
+	if gamepad and Settings.data.get("vibration", true):
+		Input.start_joy_vibration(_joy_device, weak, strong, seconds)
+
+
 func _bind(action: StringName, keys: Array) -> void:
 	if InputMap.has_action(action):
 		return

@@ -86,6 +86,7 @@ func open(day: int, main: Node) -> void:
 	_build_blessings()
 	_refresh()
 	visible = true
+	_focus_first_blessing.call_deferred()
 	get_tree().paused = true
 	Game.sfx("level_up", 0.0)
 
@@ -200,6 +201,12 @@ func _build_blessings() -> void:
 		_blessing_box.add_child(button)
 
 
+# Controllers and keyboards need something focused from the start.
+func _focus_first_blessing() -> void:
+	if _blessing_box.get_child_count() > 0:
+		(_blessing_box.get_child(0) as Button).grab_focus()
+
+
 func _bless(upgrade: Resource) -> void:
 	_blessings_left -= 1
 	_blessed = _blessings_left <= 0
@@ -207,6 +214,7 @@ func _bless(upgrade: Resource) -> void:
 	Game.sfx("pick", 0.0)
 	if not _blessed:
 		_build_blessings()  # Thirst: pick again from a fresh three
+		_focus_first_blessing.call_deferred()
 	_refresh()
 	if _blessed:
 		_continue.grab_focus()
