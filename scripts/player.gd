@@ -335,14 +335,16 @@ func hunger_tier() -> int:
 func add_essence(essence: EssenceData, alternative := false) -> void:
 	var tier_before := hunger_tier()
 	essences[essence] = essences.get(essence, 0) + 1
+	var potency := Mutations.potency(essences[essence])
 	if alternative:
 		var mutation := Mutations.of(essence)
 		mutations[essence] = mutations.get(essence, 0) + 1
 		for mod: Dictionary in mutation[2]:
-			modifiers.append(mod.duplicate())
+			modifiers.append({"stat": mod.stat, "add": float(mod.get("add", 0.0)) * potency,
+				"mult": float(mod.get("mult", 0.0)) * potency})
 		modifiers.append({"stat": "max_hp", "add": -float(mutation[3])})
 	else:
-		modifiers.append({"stat": essence.stat, "add": essence.add, "mult": essence.mult})
+		modifiers.append({"stat": essence.stat, "add": essence.add * potency, "mult": essence.mult * potency})
 		modifiers.append({"stat": "max_hp", "add": -essence.max_hp_cost})
 	_update_hunger()
 	hp = minf(hp, stat("max_hp"))

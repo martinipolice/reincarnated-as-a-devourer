@@ -5,6 +5,11 @@ class_name Mutations
 ## evolutions and Resonances.
 ## essence -> [name, description, modifiers, max HP cost]
 
+## Potency of the nth essence of one kind: the first two in full, then less,
+## so stacking one essence stops snowballing. By kind, so a restored journey
+## rebuilds the same stats in any order.
+const STACK := [1.0, 1.0, 0.7, 0.5, 0.4]
+
 const TABLE := {
 	"res://data/essences/dreadling_essence.tres": ["Phantom Hide", "+15 defense",
 		[{"stat": "defense", "add": 15.0}], 5.0],
@@ -17,6 +22,10 @@ const TABLE := {
 	"res://data/essences/warden_essence.tres": ["Iron Hide", "+20 defense",
 		[{"stat": "defense", "add": 20.0}], 8.0],
 }
+
+
+static func potency(nth: int) -> float:
+	return STACK[clampi(nth - 1, 0, STACK.size() - 1)]
 
 
 ## [name, description, modifiers, max HP cost] for `essence`'s alternative.

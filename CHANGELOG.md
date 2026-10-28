@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- **Devouring is a decision:** each essence offers its classic boost or a mutation, and the
+  Hunger rises with every Devour, trading power for weaker heals, more elites and a
+  stingier goddess.
+- **Level-up control:** reroll, banish and skip, with more sold at the shrine.
+- **Branching weapons:** every weapon chooses one of two branches at Lv 3 and grows to Lv 5.
+- **Balance:** a third and later essence of the same kind are weaker (70%, 50%, 40%);
+  Vexclaw essence +22% might (was +30%), Plaguewing +20 defense (was +25); overlapping
+  plague puddles hurt once per tick and less. Bots: kite 5/8, light Devour 5/8, heavy
+  Devour about 5/8.
+
 - Balance: the Warden's shield is 120 (was 180), and Hunger is only offered once you've
   Devoured. Bots: not Devouring wins about 4 runs in 8 again, Devouring about 7 in 8.
 - Title screen: the game's forest at night drifts behind a crest (the name with an ember

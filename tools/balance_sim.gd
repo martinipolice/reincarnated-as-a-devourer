@@ -5,7 +5,10 @@ extends SceneTree
 # Modes: afk (stands still), kite (dodges, collects gems, never Devours),
 #        devour (kite, plus Devours nearby corpses above 60% HP when the area is
 #               clear, stopping once max HP drops below 80),
+#        light (devour, but stops before the Hunger rises: at most 3 essences),
 #        greedy (kite, plus Devours every corpse it can reach, no matter what).
+# Devouring bots take a random mutation of the two; level-ups and blessings
+# are random picks (branches included), and rerolls and banishes go unused.
 # With "cov", the bot seals a random offered covenant at every shrine.
 # Untyped on purpose: -s compiles this before autoloads exist.
 
@@ -42,6 +45,9 @@ func _process(_delta: float) -> bool:
 		return false
 	if main.shrine.visible:
 		_use_shrine()
+		return false
+	if main.devour_choice.visible:
+		main.devour_choice.pick(randi() % 2)
 		return false
 	if main.revive_offer_open():
 		if not main.revive():  # revive whenever it can pay
@@ -230,9 +236,11 @@ func _steer() -> void:
 func _wants_corpse(corpse) -> bool:
 	if mode == "greedy":
 		return true
-	if mode != "devour":
+	if mode != "devour" and mode != "light":
 		return false
 	var p = main.player
+	if mode == "light" and p.hunger_tier() > 0 or mode == "light" and p.devour_count() >= 3:
+		return false
 	if p.hp < p.stat("max_hp") * 0.6 or p.stat("max_hp") < 80.0:
 		return false
 	for e in main.enemies.get_children():

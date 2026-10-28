@@ -484,6 +484,7 @@ func _on_resonated(resonance: String, description: String) -> void:
 
 
 func _on_hunger_rose(tier: int) -> void:
+	gold = gold  # the HUD's revive price follows the Hunger
 	if _restoring:
 		return
 	Game.sfx("doom", 0.0, 1.3)
@@ -594,7 +595,7 @@ func _zoom_for_level() -> float:
 
 
 func revive_cost() -> int:
-	return REVIVE_BASE_COST * (1 << revives)
+	return roundi(REVIVE_BASE_COST * (1 << revives) * Hunger.REVIVE[player.hunger_tier()])
 
 
 ## Training bought at a shrine: its modifiers last the rest of the journey.

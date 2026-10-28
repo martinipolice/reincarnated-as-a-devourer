@@ -52,7 +52,7 @@ func _on_body_entered(body: Node2D) -> void:
 
 func _land() -> void:
 	var puddle := PUDDLE_SCENE.instantiate() as PlaguePuddle
-	puddle.setup(_damage * 0.25)
+	puddle.setup(_damage * 0.18)
 	puddle.position = global_position
 	get_parent().add_child.call_deferred(puddle)
 	queue_free()

@@ -5,9 +5,9 @@
 [resource]
 script = ExtResource("1")
 display_name = "Plaguewing Essence"
-description = "+25 defense"
+description = "+20 defense"
 stat = "defense"
-add = 25.0
+add = 20.0
 mult = 0.0
 max_hp_cost = 34.0
 color = Color(0.45, 0.8, 0.35, 1)

@@ -121,6 +121,16 @@ remembers which endings you've reached.
   (a wider volley whose hits heal you, up to 3 HP a second), and Aegis + Guard becomes the
   **Bulwark of Dawn** (five blades; each cuts a Plaguewing glob out of the air, then
   recharges for 1.2 s). The Doom Bell becomes the **Death Knell** after 3 Hexeye essences.
+- **Devouring is a decision.** Each Devour offers two cards: the essence's classic boost or
+  a mutation with its own max-HP cost (Vexclaw: +22% might, or *Feral Reflexes*, attack and
+  move speed). Every Devour also feeds the **Hunger**: Sated, Hungry (4), Ravenous (8),
+  Insatiable (12). Each tier adds damage, but Devours heal less, elites come more often,
+  the goddess offers fewer blessings and her Tears weaken.
+- **Level-up control.** Reroll the hand (2 per journey), Banish a card for the rest of the
+  journey (1), or Skip for gold. The goddess sells more as threads of fate.
+- **Branching weapons.** At Lv 3 each weapon offers two branches, Hades-hammer style; take
+  one and it grows to Lv 5 (the Blade's *Whirlwind* reach or *Rending Edge* bleed, the
+  Doom Bell's *Peal* or *Knell*, and so on).
 - **Resonances.** Hold 2 or more of each of two certain essences and they resonate: a
   lasting bonus on top of the essences (five pairs, e.g. Vexclaw + Dreadling is *Predator's
   Pace*, +10% damage and +8% move speed). The build screen lists yours.
@@ -368,8 +378,10 @@ Localization > Translations**. Re-run the extractor whenever text changes.
 ## Balance testing
 
 `tools/balance_sim.gd` plays a whole run headlessly with a bot, standing still (`afk`),
-dodging and collecting gems (`kite`), or also Devouring (`devour` when safe, `greedy`
-always). It prints progress every other day, the boss fight's result and gold earned. It
+dodging and collecting gems (`kite`), or also Devouring (`light` stops before the Hunger
+rises, `devour` when safe, `greedy` always). Devouring bots take a random mutation; level-ups
+are random picks, branches included. It prints progress every other day, the boss fight's
+result, gold earned, damage taken by source and each weapon's damage dealt. It
 always starts from a fresh save and never writes yours:
 
 ```
@@ -385,8 +397,9 @@ gold for its next revive, and revives whenever it can pay):
 | Bot | Result |
 |---|---|
 | `afk` | dies in 20-40 s |
-| `kite` (never Devours) | wins about 3 in 4 journeys, often with 0-2 revives, mostly at style D-B |
-| `devour` (Devours when safe, keeps max HP above 80) | wins 5-6 in 8; reaches higher style ranks |
+| `kite` (never Devours) | wins about 5 in 8, often with 0-2 revives, mostly at style D-B |
+| `light` (Devours up to 3 essences, staying Sated) | wins about 5 in 8 |
+| `devour` (Devours when safe, keeps max HP above 80) | wins about 5 in 8 (8 of 12), reaching Ravenous or Insatiable; reaches higher style ranks |
 | `devour ... cov` (also seals a random covenant at every shrine) | wins a little more often: covenants pay, but hurt |
 | `greedy` (Devours everything) | dies by Day 7-14 even after paying for revives |
 

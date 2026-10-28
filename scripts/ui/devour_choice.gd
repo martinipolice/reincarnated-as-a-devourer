@@ -54,6 +54,11 @@ func open(essence: EssenceData, player: Player) -> void:
 		card.pressed.connect(pick.bind(i))
 		_cards.add_child(card)
 		card.deal(0.08 * i)
+	var potency := Mutations.potency(int(player.essences.get(essence, 0)) + 1)
+	if potency < 1.0:
+		for card: ChoiceCard in [classic, alternative]:
+			var body := card.get_child(0).get_child(card.get_child(0).get_child_count() - 1) as Label
+			body.text += "\n" + tr("At %d%%: you already hold %d") % [roundi(potency * 100.0), player.essences[essence]]
 	var tier := player.hunger_tier()
 	var next := Hunger.tier(player.devour_count() + 1)
 	_hunger.text = tr("Hunger: %s") % tr(Hunger.NAMES[tier])

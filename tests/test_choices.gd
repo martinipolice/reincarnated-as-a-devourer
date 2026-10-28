@@ -195,6 +195,7 @@ func test_hunger_tiers_cost_and_pay() -> void:
 	main.shrine.open(5, main)
 	await tree.process_frame
 	check_eq(main.shrine.blessing_choices().size(), Hunger.BLESSINGS[3], "the goddess offers less")
+	check_eq(main.revive_cost(), main.REVIVE_BASE_COST * 2, "and her revives cost double")
 	main.shrine.skip()
 	await end_run(main)
 
@@ -210,4 +211,17 @@ func test_mutations_save() -> void:
 	main = await start_run(true)
 	check_eq(int(main.player.mutations.get(warden, 0)), 1, "one mutation restored")
 	check_near(main.player.stat("defense"), defense, 0.001, "same stats")
+	await end_run(main)
+
+
+func test_stacking_one_essence_weakens() -> void:
+	var main: Node = await start_run()
+	var player: Player = main.player
+	var vexclaw: EssenceData = load("res://data/essences/vexclaw_essence.tres")
+	var gains := []
+	for i in 5:
+		var before: float = player.stat("might") - Hunger.MIGHT[player.hunger_tier()]
+		player.add_essence(vexclaw)
+		gains.append(snappedf(player.stat("might") - Hunger.MIGHT[player.hunger_tier()] - before, 0.001))
+	check_eq(gains, [0.22, 0.22, 0.154, 0.11, 0.088], "full, full, 70%, 50%, 40%")
 	await end_run(main)

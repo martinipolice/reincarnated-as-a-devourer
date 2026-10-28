@@ -10,6 +10,9 @@ const TICK := 0.5
 const COLOR := Color(0.45, 0.8, 0.25)
 
 var _damage := 0.0
+## The physics frame any puddle last hurt the player: shared, so standing in
+## overlapping puddles hurts once per TICK, not once per puddle.
+static var _last_hurt := -9999
 var _life := LIFETIME
 var _tick := 0.0
 
@@ -33,7 +36,10 @@ func _physics_process(delta: float) -> void:
 	var player := get_tree().get_first_node_in_group("player") as Player
 	if player and _tick <= 0.0 and global_position.distance_to(player.global_position) < RADIUS:
 		_tick = TICK
-		player.take_damage(_damage)
+		var frame := Engine.get_physics_frames()
+		if frame - _last_hurt >= TICK * Engine.physics_ticks_per_second:
+			_last_hurt = frame
+			player.take_damage(_damage)
 	queue_redraw()
 
 
