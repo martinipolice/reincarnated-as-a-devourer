@@ -65,6 +65,8 @@ var _drinking := 0.0
 var pending_level_ups := 0
 ## WeaponData / ItemData -> how many times it has been picked.
 var upgrade_levels := {}
+## WeaponData -> the branch it took at Lv 3 ("a" or "b"; Branches).
+var branches := {}
 ## EssenceData -> how many have been Devoured this run.
 var essences := {}
 ## Resonances awakened this run, by name.
@@ -205,22 +207,36 @@ func _update_flask(delta: float) -> void:
 		flask_changed.emit(flask_charges, flask_max)
 
 
-## Upgrades from `pool` that aren't at max level yet.
-## A new weapon is only offered while you carry fewer than MAX_WEAPONS.
+## Upgrades from `pool` that aren't at max level yet. A new weapon is only
+## offered while you carry fewer than MAX_WEAPONS; a weapon at Lv 3 offers
+## both its branches, then the one it took until Lv 5.
 func available_upgrades(pool: Array) -> Array:
 	var weapons_held := upgrade_levels.keys().filter(func(u: Resource) -> bool: return u is WeaponData).size()
-	return pool.filter(func(upgrade: Resource) -> bool:
+	var offers := []
+	for upgrade: Resource in pool:
 		var level: int = upgrade_levels.get(upgrade, 0)
 		if upgrade is WeaponData and level == 0 and weapons_held >= MAX_WEAPONS:
-			return false
-		return level < upgrade.max_level)
+			continue
+		if level < upgrade.max_level:
+			offers.append(upgrade)
+		elif upgrade is WeaponData and Branches.has(upgrade) and level < Branches.MAX_LEVEL:
+			if branches.has(upgrade):
+				offers.append(Branches.get_branch(upgrade, branches[upgrade]))
+			else:
+				offers.append_array(Branches.of(upgrade))
+	return offers
 
 
 func upgrade_level(upgrade: Resource) -> int:
+	if upgrade is BranchData:
+		return upgrade_levels.get((upgrade as BranchData).weapon, 0)
 	return upgrade_levels.get(upgrade, 0)
 
 
 func apply_upgrade(upgrade: Resource) -> void:
+	if upgrade is BranchData:
+		_take_branch(upgrade)
+		return
 	var new_level := upgrade_level(upgrade) + 1
 	upgrade_levels[upgrade] = new_level
 	if upgrade is WeaponData:
@@ -233,6 +249,17 @@ func apply_upgrade(upgrade: Resource) -> void:
 		hp += maxf(0.0, stat("max_hp") - old_max)
 		hp = minf(stat("max_hp"), hp + stat("max_hp") * item.heal_fraction)
 	_check_evolutions()
+	stats_changed.emit()
+
+
+func _take_branch(branch: BranchData) -> void:
+	var new_level := upgrade_level(branch) + 1
+	upgrade_levels[branch.weapon] = new_level
+	branches[branch.weapon] = branch.id
+	for weapon: Weapon in weapons.get_children():
+		if weapon.data == branch.weapon:
+			weapon.branch = branch.id
+			weapon.set_level(new_level)
 	stats_changed.emit()
 
 

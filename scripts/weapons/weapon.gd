@@ -9,6 +9,8 @@ var player: Player
 var level := 1
 ## Set by evolve() once the weapon is maxed and enough essences are Devoured.
 var evolved := false
+## The branch taken at Lv 3 ("a" or "b"; Branches), "" before.
+var branch := ""
 
 
 func set_level(value: int) -> void:
@@ -24,6 +26,11 @@ func evolve() -> void:
 ## Override to rebuild hitboxes, counts, etc. when the level or evolution changes.
 func _on_level_changed() -> void:
 	pass
+
+
+## 1 at Lv 4 and 2 at Lv 5 on branch `id`, else 0.
+func branch_rank(id: String) -> int:
+	return level - data.max_level if branch == id else 0
 
 
 ## Picks this level's entry from a per-level table like [30, 42, 56].

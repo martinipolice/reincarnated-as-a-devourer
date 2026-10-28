@@ -28,7 +28,8 @@ var _bells: Array = []
 func _physics_process(delta: float) -> void:
 	_timer -= delta
 	if _timer <= 0.0:
-		var targets := nearest_enemies(EVOLVED_BELLS if evolved else per_level(BELLS), RANGE)
+		var bells: int = (EVOLVED_BELLS if evolved else per_level(BELLS)) + branch_rank("a")
+		var targets := nearest_enemies(bells, RANGE)
 		if not targets.is_empty():
 			_timer = per_level(COOLDOWN) / player.stat("haste")
 			for enemy in targets:
@@ -42,9 +43,9 @@ func _physics_process(delta: float) -> void:
 
 
 func _toll(at: Vector2) -> void:
-	var radius: float = EVOLVED_RADIUS if evolved else per_level(RADIUS)
+	var radius := _radius()
 	var amount := damage(EVOLVED_DAMAGE if evolved else per_level(DAMAGE))
-	var slow := EVOLVED_SLOW if evolved else SLOW
+	var slow := (EVOLVED_SLOW if evolved else SLOW) - 0.1 * branch_rank("b")
 	Game.sfx("bell", 0.1)
 	Game.shockwave(at, EVOLVED_COLOR if evolved else COLOR, radius, 0.35)
 	for node in get_tree().get_nodes_in_group("enemies"):
@@ -54,10 +55,15 @@ func _toll(at: Vector2) -> void:
 			enemy.slow(slow, SLOW_TIME)
 
 
+func _radius() -> float:
+	var base: float = EVOLVED_RADIUS if evolved else per_level(RADIUS)
+	return base * (1.0 + 0.15 * branch_rank("b"))  # Knell
+
+
 # Each bell: a ring on the ground (where it will toll) and the bell above it.
 func _draw() -> void:
 	var color := EVOLVED_COLOR if evolved else COLOR
-	var radius: float = EVOLVED_RADIUS if evolved else per_level(RADIUS)
+	var radius := _radius()
 	for bell: Array in _bells:
 		var at := to_local(bell[0])
 		var t: float = 1.0 - bell[1] / DELAY

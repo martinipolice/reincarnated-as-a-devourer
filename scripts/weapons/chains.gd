@@ -38,10 +38,13 @@ func _physics_process(delta: float) -> void:
 func _strike() -> void:
 	var aim := player.aim
 	_aims.assign([aim, -aim] if evolved else [aim])
-	var length: float = per_level(LENGTH)
-	var half: float = per_level(ARC) / 2.0
+	var lash := 1.0 + 0.2 * branch_rank("b")
+	var length: float = per_level(LENGTH) * lash
+	var half: float = per_level(ARC) * lash / 2.0
 	var amount := damage(EVOLVED_DAMAGE if evolved else per_level(DAMAGE))
-	var burn: float = per_level(BURN_DPS) * (EVOLVED_BURN_MULT if evolved else 1.0) * player.stat("might")
+	var inferno := branch_rank("a")
+	var burn: float = per_level(BURN_DPS) * (EVOLVED_BURN_MULT if evolved else 1.0) * player.stat("might") * (1.0 + 0.5 * inferno)
+	var burn_time := BURN_TIME + inferno
 	var hit := false
 	for node in get_tree().get_nodes_in_group("enemies"):
 		var enemy := node as Enemy
@@ -53,7 +56,7 @@ func _strike() -> void:
 		for dir: Vector2 in _aims:
 			if absf(dir.angle_to(offset)) <= half:
 				enemy.take_damage(amount, offset.normalized() * KNOCKBACK, "chains_hit", source())
-				enemy.burn(burn, BURN_TIME)
+				enemy.burn(burn, burn_time)
 				hit = true
 				break
 	Game.sfx("chains", 0.1)
@@ -69,8 +72,8 @@ func _draw() -> void:
 		return
 	var t := clampf(_lash / LASH_TIME, 0.0, 1.0)
 	var eased := 1.0 - pow(1.0 - t, 3.0)
-	var length: float = per_level(LENGTH)
-	var half: float = per_level(ARC) / 2.0
+	var length: float = per_level(LENGTH) * (1.0 + 0.2 * branch_rank("b"))
+	var half: float = per_level(ARC) * (1.0 + 0.2 * branch_rank("b")) / 2.0
 	var color := EVOLVED_COLOR if evolved else COLOR
 	var fade := 1.0 - maxf(0.0, t - 0.6) / 0.4
 	for dir: Vector2 in _aims:

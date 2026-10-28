@@ -140,8 +140,11 @@ func _show_build() -> void:
 		row.add_child(icon)
 		var level: int = player.upgrade_levels[upgrade]
 		var text: String = upgrade.display_name
+		if upgrade in player.branches:
+			text += ": " + tr(Branches.get_branch(upgrade, player.branches[upgrade]).display_name)
 		if upgrade.max_level < 100:
-			text += tr("  Lv %d / %d") % [level, upgrade.max_level]
+			var top: int = Branches.MAX_LEVEL if upgrade is WeaponData and Branches.has(upgrade) else upgrade.max_level
+			text += tr("  Lv %d / %d") % [level, top]
 		row.add_child(_line(text))
 		items.add_child(row)
 	_page.add_child(items)

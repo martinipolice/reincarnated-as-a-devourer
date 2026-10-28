@@ -13,6 +13,9 @@ const EVOLVED_DAMAGE := 90.0
 const EVOLVED_RADIUS := 120.0
 const EVOLVED_COOLDOWN := 0.6
 const KNOCKBACK := 140.0
+const WHIRLWIND_REACH := 0.2  # per branch rank
+const BLEED_SHARE := 0.25  # of the hit, per second, per rank of Rending Edge
+const BLEED_TIME := 2.0
 const SWEEP_TIME := 0.2  # one full circle
 const FADE_TIME := 0.08  # the tail catching up after the head finishes
 const TRAIL := 2.2  # radians of trail behind the leading edge
@@ -37,7 +40,8 @@ func _on_level_changed() -> void:
 
 
 func _radius() -> float:
-	return EVOLVED_RADIUS if evolved else per_level(RADIUS)
+	var reach: float = EVOLVED_RADIUS if evolved else per_level(RADIUS)
+	return reach * (1.0 + WHIRLWIND_REACH * branch_rank("a"))
 
 
 func _physics_process(delta: float) -> void:
@@ -58,9 +62,12 @@ func _swing() -> void:
 	var targets := enemies_in(_hitbox)
 	if not targets.is_empty():
 		Game.sfx("blade")
+	var bleed := damage(amount) * BLEED_SHARE * branch_rank("b")
 	for enemy in targets:
 		var push := global_position.direction_to(enemy.global_position) * KNOCKBACK
 		enemy.take_damage(damage(amount), push, "blade_hit", source())
+		if bleed > 0.0:
+			enemy.burn(bleed, BLEED_TIME, source())
 	_sweep = 0.0
 	_start_angle = randf() * TAU
 

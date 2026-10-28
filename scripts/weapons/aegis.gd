@@ -44,7 +44,7 @@ func _on_level_changed() -> void:
 	for shield in _shields:
 		shield.queue_free()
 	_shields.clear()
-	var count: int = EVOLVED_SHIELDS if evolved else per_level(SHIELDS)
+	var count: int = (EVOLVED_SHIELDS if evolved else per_level(SHIELDS)) + branch_rank("a")
 	var orbit := EVOLVED_ORBIT if evolved else ORBIT_RADIUS
 	for i in count:
 		var angle := TAU * i / count
@@ -86,8 +86,10 @@ func _physics_process(delta: float) -> void:
 			if _time < _next_hit.get(id, 0.0):
 				continue
 			_next_hit[id] = _time + HIT_COOLDOWN
-			var push := global_position.direction_to(enemy.global_position) * KNOCKBACK
-			enemy.take_damage(damage(EVOLVED_DAMAGE if evolved else per_level(DAMAGE)), push, "aegis_hit", source())
+			var retribution := branch_rank("b")
+			var push := global_position.direction_to(enemy.global_position) * KNOCKBACK * (1.0 + 0.5 * retribution)
+			var amount: float = (EVOLVED_DAMAGE if evolved else per_level(DAMAGE)) * (1.0 + 0.3 * retribution)
+			enemy.take_damage(damage(amount), push, "aegis_hit", source())
 	if evolved:
 		_block_shots()
 	if _next_hit.size() > 256:

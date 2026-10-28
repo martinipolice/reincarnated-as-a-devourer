@@ -121,6 +121,7 @@ var _dir := -1
 var _burn_dps := 0.0
 var _burn_time := 0.0
 var _burn_tick := 0.0
+var _burn_source := ""  # whose fire (or bleed) it is, for the damage log
 
 @onready var sprite: AnimatedSprite2D = $AnimatedSprite2D
 
@@ -223,14 +224,17 @@ func slow(factor: float, duration: float) -> void:
 	_slow_time = maxf(_slow_time, duration)
 
 
-## Sets it alight: `dps` for `duration` seconds (the stronger burn wins).
-func burn(dps: float, duration: float) -> void:
+## Sets it alight (or bleeding): `dps` for `duration` seconds; the stronger
+## burn wins, and its `source` gets the credit.
+func burn(dps: float, duration: float, source := "Hellfire Chains") -> void:
 	if not alive():
 		return
 	if _burn_time <= 0.0:
 		_burn_tick = randf_range(0.1, BURN_TICK)  # a lash ignites crowds; don't tick in sync
 	if _burn_time <= 0.0 and data.sprite_frames:
 		sprite.self_modulate = _base_tint() * BURN_TINT
+	if dps >= _burn_dps:
+		_burn_source = source
 	_burn_dps = maxf(_burn_dps, dps)
 	_burn_time = maxf(_burn_time, duration)
 
@@ -242,7 +246,7 @@ func _update_burn(delta: float) -> void:
 	_burn_tick -= delta
 	if _burn_tick <= 0.0:
 		_burn_tick = BURN_TICK
-		take_damage(_burn_dps * BURN_TICK, Vector2.ZERO, "", "Hellfire Chains")  # the only igniter
+		take_damage(_burn_dps * BURN_TICK, Vector2.ZERO, "", _burn_source)
 	if _burn_time <= 0.0:
 		_burn_dps = 0.0
 		if data.sprite_frames:

@@ -21,6 +21,7 @@ const NEW_WEAPON := Color(1.0, 0.78, 0.35)
 const NEW_PASSIVE := Color(0.45, 0.78, 1.0)
 const UPGRADE := Color(0.82, 0.58, 0.36)
 const FINAL := Color(0.78, 0.55, 1.0)  # a weapon's last level: evolution next
+const BRANCH := Color(0.4, 0.92, 0.78)  # a weapon's path past Lv 3
 
 static var _body: FontFile
 static var _title: FontFile

@@ -117,6 +117,12 @@ func _toggle_banish() -> void:
 
 ## The card for taking `upgrade` next (also the goddess's blessings).
 static func card_for(upgrade: Resource, player: Player, hotkey := "", compact := false) -> ChoiceCard:
+	if upgrade is BranchData:
+		var branch := upgrade as BranchData
+		var rank := player.upgrade_level(branch) + 1
+		var tag: String = TranslationServer.translate("BRANCH") if rank == 4 else TranslationServer.translate("LV %d") % rank
+		return ChoiceCard.new(branch.icon, branch.weapon.display_name, tag, branch.display_name,
+			branch.level_descriptions[rank - 1], UITheme.BRANCH, hotkey, compact)
 	var next_level := player.upgrade_level(upgrade) + 1
 	var is_weapon := upgrade is WeaponData
 	var subtitle := ""

@@ -525,7 +525,7 @@ func _offer_next_level_up() -> void:
 func _deal_offers(keep: Array = []) -> Array:
 	var offers := keep.duplicate()
 	var fresh := player.available_upgrades(upgrade_pool()).filter(func(u: Resource) -> bool:
-		return not u in keep)
+		return not u in keep and not u in banished)
 	fresh.shuffle()
 	offers.append_array(fresh.slice(0, OFFERS_PER_LEVEL - offers.size()))
 	if offers.is_empty():

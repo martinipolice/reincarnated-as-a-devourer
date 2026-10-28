@@ -41,7 +41,10 @@ static func snapshot(main: Node) -> Dictionary:
 		"flask_max": player.flask_max, "flask_heal": player.flask_heal, "covenant": main.covenant,
 		"damage": Enemy.damage_log.duplicate(), "best_rank": main.best_rank,
 		"rerolls": main.rerolls, "banishes": main.banishes,
-		"banished": main.banished.map(func(u: Resource) -> String: return u.resource_path),
+		"banished": main.banished.map(func(u: Resource) -> String:
+			return (u as BranchData).key() if u is BranchData else u.resource_path),
+		"branches": player.branches.keys().map(func(w: WeaponData) -> Array:
+			return [w.resource_path, player.branches[w]]),
 	}
 
 
@@ -60,12 +63,18 @@ static func restore(main: Node, journey: Dictionary) -> int:
 	main.rerolls = int(journey.get("rerolls", main.START_REROLLS))
 	main.banishes = int(journey.get("banishes", main.START_BANISHES))
 	for path: String in journey.get("banished", []):
-		main.banished.append(load(path))
+		main.banished.append(Branches.from_key(path) if "#" in path else load(path))
 	player.level = int(journey.level)
 	player.xp = int(journey.xp)
+	var taken := {}
+	for entry: Array in journey.get("branches", []):
+		taken[entry[0]] = entry[1]
 	for entry: Array in journey.upgrades:
-		for i in int(entry[1]):
-			player.apply_upgrade(load(entry[0]))
+		var upgrade: Resource = load(entry[0])
+		for i in mini(int(entry[1]), upgrade.max_level):
+			player.apply_upgrade(upgrade)
+		for i in int(entry[1]) - upgrade.max_level:  # Lv 4-5: the branch it took
+			player.apply_upgrade(Branches.get_branch(upgrade, taken[entry[0]]))
 	for entry: Array in journey.essences:
 		for i in int(entry[1]):
 			player.add_essence(load(entry[0]))

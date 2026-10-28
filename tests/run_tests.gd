@@ -54,7 +54,12 @@ func _run() -> void:
 	var failed: Array[String] = []
 	var started := Time.get_ticks_msec()
 	for file: String in files:
-		var case = load("res://tests/" + file).new()
+		var script = load("res://tests/" + file)
+		if script == null or not script.can_instantiate():
+			failed_tests += 1
+			failed.append("%s: does not load (%s)" % [file, ", ".join(catcher.take())])
+			continue
+		var case = script.new()
 		case.tree = self
 		var names := []
 		for method: Dictionary in case.get_method_list():

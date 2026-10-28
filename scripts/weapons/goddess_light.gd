@@ -30,12 +30,14 @@ func _physics_process(delta: float) -> void:
 	_timer -= delta
 	if _timer > 0.0:
 		return
-	var targets := nearest_enemies(EVOLVED_BOLTS if evolved else per_level(BOLTS), RANGE)
+	var bolts: int = (EVOLVED_BOLTS if evolved else per_level(BOLTS)) + branch_rank("a")
+	var targets := nearest_enemies(bolts, RANGE)
 	if targets.is_empty():
 		return  # stay ready; fire as soon as something is in range
 	_timer = (EVOLVED_COOLDOWN if evolved else per_level(COOLDOWN)) / player.stat("haste")
-	var amount := damage(EVOLVED_DAMAGE if evolved else per_level(DAMAGE))
-	var pierce: int = EVOLVED_PIERCE if evolved else per_level(PIERCE)
+	var lance := branch_rank("b")
+	var amount := damage(EVOLVED_DAMAGE if evolved else per_level(DAMAGE)) * (1.0 + 0.25 * lance)
+	var pierce: int = (EVOLVED_PIERCE if evolved else per_level(PIERCE)) + 2 * lance
 	for enemy in targets:
 		Game.sfx("light_cast", 0.12)
 		var bolt := BOLT_SCENE.instantiate() as LightBolt

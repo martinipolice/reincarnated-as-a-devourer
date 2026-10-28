@@ -25,9 +25,11 @@ var _bites: Array = []
 func _physics_process(delta: float) -> void:
 	_timer -= delta
 	if _timer <= 0.0:
-		var targets := nearest_enemies(EVOLVED_BITES if evolved else per_level(BITES), per_level(REACH))
+		var frenzy := branch_rank("b")
+		var reach: float = per_level(REACH) + 15.0 * frenzy
+		var targets := nearest_enemies(EVOLVED_BITES if evolved else per_level(BITES), reach)
 		if not targets.is_empty():
-			_timer = per_level(COOLDOWN) / player.stat("haste")
+			_timer = per_level(COOLDOWN) * (1.0 - 0.15 * frenzy) / player.stat("haste")
 			_bite(targets)
 	for bite: Array in _bites:
 		bite[1] += delta
@@ -45,7 +47,7 @@ func _bite(targets: Array[Enemy]) -> void:
 		if evolved:
 			healed += amount * EVOLVED_LIFESTEAL
 		if not enemy.alive():
-			healed += per_level(KILL_HEAL)
+			healed += per_level(KILL_HEAL) * (1 + branch_rank("a"))  # Gorge
 	if healed > 0.0 and player.hp > 0.0:
 		player.hp = minf(player.stat("max_hp"), player.hp + healed)
 
