@@ -311,7 +311,7 @@ func _update_status() -> void:
 	if covenant != "":
 		parts.append(COVENANTS[covenant][0])
 	if elapsed < loot.fervor_until:
-		parts.append("Goddess's Fervor  %ds" % ceili(loot.fervor_until - elapsed))
+		parts.append(tr("Goddess's Fervor  %ds") % ceili(loot.fervor_until - elapsed))
 	for essence: EssenceData in player.essences:
 		parts.append("%s x%d" % [essence.display_name.get_slice(" ", 0), player.essences[essence]])
 	hud.set_status("   ".join(parts))
@@ -358,7 +358,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 # A mid-journey guardian: its own attack cycle, a bar and a title card.
 func _on_mini_boss_arrived(guardian: Boss, data: EnemyData) -> void:
-	guardian.enraged.connect(func() -> void: show_banner("%s is enraged!" % data.display_name, 2.0))
+	guardian.enraged.connect(func() -> void: show_banner(tr("%s is enraged!") % data.display_name, 2.0))
 	hud.show_boss(guardian, data.display_name)
 	moments.area_card(data.display_name)
 	Game.sfx("doom", 0.0)
@@ -379,7 +379,7 @@ func _on_mini_boss_killed(enemy: Enemy) -> void:
 	corpse.setup((SpawnDirector.KINDS.pick_random() as EnemyData).essence)
 	corpse.position = at + Vector2(40, 0)
 	pickups.add_child.call_deferred(corpse)
-	moments.felled("%s Felled" % enemy.data.display_name)
+	moments.felled(tr("%s Felled") % enemy.data.display_name)
 	get_tree().create_timer(2.5).timeout.connect(moments.clear)
 	camera.punch(0.1, 0.9)
 	show_banner("A golden chest, gold, and an essence remain.", 2.5)
@@ -403,7 +403,7 @@ func _spawn_boss() -> void:
 	player.hp = player.stat("max_hp")
 	Game.fx("spark", player.global_position, 3.0, Color(1, 0.95, 0.6))
 	if healed >= 1.0:
-		Game.float_text(player.global_position, "+%d HP" % roundi(healed), Color(1, 0.95, 0.6))
+		Game.float_text(player.global_position, tr("+%d HP") % roundi(healed), Color(1, 0.95, 0.6))
 	create_tween().tween_property(mood, "color", MOOD.temple, 2.0)
 	atmosphere.set_area("temple")
 	camera.punch(0.15, 1.6)
@@ -447,7 +447,7 @@ func _on_enemy_killed(enemy: Enemy) -> void:
 func _on_player_devoured(essence: EssenceData) -> void:
 	Save.count_devour()
 	style.add(StyleMeter.DEVOUR_POINTS)
-	show_banner("Devoured %s\n%s   -%d max HP" % [
+	show_banner(tr("Devoured %s\n%s   -%d max HP") % [
 		essence.display_name, essence.description, essence.max_hp_cost])
 
 
@@ -456,7 +456,7 @@ func _on_resonated(resonance: String, description: String) -> void:
 		return
 	Game.sfx("evolve", 0.0, 0.8)
 	Game.shockwave(player.global_position, Color(0.6, 0.9, 1.0), 200.0, 0.6)
-	show_banner("Resonance: %s\n%s" % [resonance, description], 3.0)
+	show_banner(tr("Resonance: %s\n%s") % [resonance, description], 3.0)
 	style.add(StyleMeter.DEVOUR_POINTS)
 	Hints.show_hint("resonance", "Two essences resonated! Holding 2 or more of certain pairs awakens a lasting bonus. Your build screen (pause) lists them.")
 
@@ -467,7 +467,7 @@ func _on_weapon_evolved(weapon: Weapon) -> void:
 	Game.shake(0.5)
 	camera.punch(0.1, 0.9)
 	Game.shockwave(player.global_position, Color(0.8, 0.5, 1.0), 220.0, 0.6)
-	show_banner("%s EVOLVED\n%s" % [weapon.data.display_name.to_upper(), weapon.data.evolved_name], 3.0)
+	show_banner(tr("%s EVOLVED\n%s") % [weapon.data.display_name.to_upper(), weapon.data.evolved_name], 3.0)
 
 
 func _on_player_leveled_up() -> void:
@@ -484,7 +484,7 @@ func _on_upgrade_chosen(upgrade: Resource) -> void:
 	var tiers: PackedStringArray = upgrade.tier_names
 	var title: String = tiers[level - 1] if level <= tiers.size() else upgrade.display_name
 	if upgrade.max_level < 100:
-		title += "  ·  Lv %d" % level
+		title += tr("  ·  Lv %d") % level
 	show_banner(title, 1.2)
 	Game.fx("spark", player.global_position, 2.5, Color(1, 0.9, 0.5))
 	Game.burst(player.global_position, Color(1, 0.85, 0.35), 24, 220.0)
@@ -561,7 +561,7 @@ func _restore(journey: Dictionary) -> void:
 		world.biome = "ruins"
 		mood.color = MOOD.ruins
 	spawner.grace()
-	show_banner("Day %d. Your journey continues." % saved_day, 2.5)
+	show_banner(tr("Day %d. Your journey continues.") % saved_day, 2.5)
 
 
 func _on_player_died() -> void:
@@ -582,8 +582,8 @@ func _on_player_died() -> void:
 		return
 	var cost := revive_cost()
 	var can_pay := gold >= cost
-	end_text.text = "The goddess reaches for you. She can pull you back,\nbut her light grows weaker each time.\n\nRevive: %d gold   (you have %d)" % [cost, gold]
-	primary_button.text = "Revive  (%dg)" % cost
+	end_text.text = tr("The goddess reaches for you. She can pull you back,\nbut her light grows weaker each time.\n\nRevive: %d gold   (you have %d)") % [cost, gold]
+	primary_button.text = tr("Revive  (%dg)") % cost
 	secondary_button.text = "Accept your fate"
 	secondary_button.show()
 	_show_end_menu(primary_button if can_pay else secondary_button)

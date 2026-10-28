@@ -56,7 +56,7 @@ func open(main: Node, won: bool, title: String, subtitle: String, unlocked: Arra
 	for path: String in unlocked:
 		var weapon: WeaponData = load(path)
 		var line := Label.new()
-		line.text = "New starting weapon: %s" % weapon.display_name
+		line.text = tr("New starting weapon: %s") % weapon.display_name
 		line.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		line.add_theme_color_override("font_color", UITheme.GOLD)
 		column.add_child(line)
@@ -104,7 +104,7 @@ func _journey_stats(main: Node, player: Player) -> Control:
 	grid.add_theme_constant_override("v_separation", 2)
 	var rank: int = main.best_rank
 	var rows := [
-		["Day reached", "%d of 20" % main.day()],
+		["Day reached", tr("%d of 20") % main.day()],
 		["Level", str(player.level)],
 		["Kills", str(main.kills)],
 		["Essences devoured", str(player.devour_count())],

@@ -475,11 +475,12 @@ func _input(event: InputEvent) -> void:
 
 ## How to do `action` on the current device, e.g. "E or Space" or "A".
 func prompt(action: String) -> String:
-	return PROMPTS[action][1 if gamepad else 0]
+	return tr(PROMPTS[action][1 if gamepad else 0])
 
 
 ## `text` with every "{action}" replaced by its current prompt.
 func prompts(text: String) -> String:
+	text = tr(text)  # the template first, with its {action} marks intact
 	for action: String in PROMPTS:
 		text = text.replace("{%s}" % action, prompt(action))
 	return text

@@ -106,7 +106,7 @@ func _show_how_to_play() -> void:
 func _show_build() -> void:
 	_clear_page()
 	var player: Player = _main.player
-	_page.add_child(_heading("Level %d  ·  Day %d" % [player.level, _main.day()]))
+	_page.add_child(_heading(tr("Level %d  ·  Day %d") % [player.level, _main.day()]))
 	var stats := GridContainer.new()
 	stats.columns = 4
 	stats.add_theme_constant_override("h_separation", 24)
@@ -117,8 +117,8 @@ func _show_build() -> void:
 		["Attack speed", "%d%%" % roundi(player.stat("haste") * 100.0)],
 		["Move speed", "%d" % roundi(player.stat("move_speed"))],
 		["Pickup range", "%d" % roundi(player.stat("pickup_radius"))],
-		["Regen", "%.1f HP/s" % player.stat("regen")],
-		["Tears", "%d / %d  ·  %d%% heal" % [player.flask_charges, player.flask_max, roundi(player.flask_heal * 100.0)]],
+		["Regen", tr("%.1f HP/s") % player.stat("regen")],
+		["Tears", tr("%d / %d  ·  %d%% heal") % [player.flask_charges, player.flask_max, roundi(player.flask_heal * 100.0)]],
 	]
 	for row: Array in rows:
 		stats.add_child(_line(row[0], UITheme.ASH))
@@ -140,7 +140,7 @@ func _show_build() -> void:
 		var level: int = player.upgrade_levels[upgrade]
 		var text: String = upgrade.display_name
 		if upgrade.max_level < 100:
-			text += "  Lv %d / %d" % [level, upgrade.max_level]
+			text += tr("  Lv %d / %d") % [level, upgrade.max_level]
 		row.add_child(_line(text))
 		items.add_child(row)
 	_page.add_child(items)

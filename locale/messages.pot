@@ -1,0 +1,1612 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+
+#: scripts/ui/chest_reel.gd:47
+msgid "Golden Chest"
+msgstr ""
+
+#: scripts/ui/chest_reel.gd:47
+msgid "Treasure"
+msgstr ""
+
+#: scripts/ui/codex.gd:36
+msgid "Walks you down."
+msgstr ""
+
+#: scripts/ui/codex.gd:37
+msgid "Comes in packs, and fast."
+msgstr ""
+
+#: scripts/ui/codex.gd:38
+msgid "Crouches, then leaps at you. Step aside."
+msgstr ""
+
+#: scripts/ui/codex.gd:39
+msgid "Keeps its distance and lobs plague where you stand."
+msgstr ""
+
+#: scripts/ui/codex.gd:40
+msgid "Keeps its distance and fires hexes along a line it shows first."
+msgstr ""
+
+#: scripts/ui/codex.gd:41
+msgid "Shielded: the shield soaks most of each hit until it breaks."
+msgstr ""
+
+#: scripts/ui/codex.gd:44 scripts/data/unlocks.gd:27 data/enemies/ruin_guardian.tres
+msgid "Ruin Guardian"
+msgstr ""
+
+#: scripts/ui/codex.gd:44
+msgid "Mini-boss of Day 10. Charges in a straight line after a wind-up, and slams."
+msgstr ""
+
+#: scripts/ui/codex.gd:45 scripts/data/unlocks.gd:29 data/enemies/hollow_spirit.tres
+msgid "Hollow Spirit"
+msgstr ""
+
+#: scripts/ui/codex.gd:45
+msgid "Mini-boss of Day 15. Blinks beside you, slams, and fires volleys."
+msgstr ""
+
+#: scripts/ui/codex.gd:46 data/enemies/demon_king.tres
+msgid "Demon King"
+msgstr ""
+
+#: scripts/ui/codex.gd:46
+msgid "Day 20. Slams, fires volleys, summons, and grows enraged."
+msgstr ""
+
+#: scripts/ui/codex.gd:48 scripts/ui/codex.gd:137
+msgid "Bestiary"
+msgstr ""
+
+#: scripts/ui/codex.gd:48 scripts/ui/codex.gd:139
+msgid "Arsenal"
+msgstr ""
+
+#: scripts/ui/codex.gd:48 scripts/ui/codex.gd:141
+msgid "Essences"
+msgstr ""
+
+#: scripts/ui/codex.gd:48 scripts/ui/codex.gd:143 scripts/ui/pause_menu.gd:153 scripts/ui/results.gd:111
+msgid "Resonances"
+msgstr ""
+
+#: scripts/ui/codex.gd:152
+msgid "Not yet met."
+msgstr ""
+
+#: scripts/ui/codex.gd:154
+msgid "HP %d  ·  Attack %d  ·  Defense %d"
+msgstr ""
+
+#: scripts/ui/codex.gd:156
+msgid "  ·  Shield %d"
+msgstr ""
+
+#: scripts/ui/codex.gd:158
+msgid "\nElites leave a %s."
+msgstr ""
+
+#: scripts/ui/codex.gd:164
+msgid "Weapons"
+msgstr ""
+
+#: scripts/ui/codex.gd:169
+msgid "Starting weapon"
+msgstr ""
+
+#: scripts/ui/codex.gd:169
+msgid "Start with it: %s"
+msgstr ""
+
+#: scripts/ui/codex.gd:171
+msgid "Not yet wielded.  ·  %s"
+msgstr ""
+
+#: scripts/ui/codex.gd:175
+msgid "Evolves into %s: Lv %d and %d %s essences Devoured."
+msgstr ""
+
+#: scripts/ui/codex.gd:176
+msgid " Essence"
+msgstr ""
+
+#: scripts/ui/codex.gd:178
+msgid "Evolves into %s: Lv %d with %s at its max level."
+msgstr ""
+
+#: scripts/ui/codex.gd:181
+msgid "Passives"
+msgstr ""
+
+#: scripts/ui/codex.gd:187
+msgid "Not yet found."
+msgstr ""
+
+#: scripts/ui/codex.gd:197
+msgid "Not yet Devoured."
+msgstr ""
+
+#: scripts/ui/codex.gd:202
+msgid "Hold %d or more of each of two essences and they resonate."
+msgstr ""
+
+#: scripts/ui/codex.gd:284 scripts/ui/title.gd:109
+msgid "Codex"
+msgstr ""
+
+#: scripts/ui/codex.gd:299 scripts/ui/pause_menu.gd:45
+msgid "Back"
+msgstr ""
+
+#: scripts/ui/confirm_dialog.gd:10
+msgid "Yes"
+msgstr ""
+
+#: scripts/ui/confirm_dialog.gd:10
+msgid "No"
+msgstr ""
+
+#: scripts/ui/credits.gd:13
+msgid "Reincarnated as a Devourer"
+msgstr ""
+
+#: scripts/ui/credits.gd:15
+msgid "Design and Programming"
+msgstr ""
+
+#: scripts/ui/credits.gd:16
+msgid "Charles Santos"
+msgstr ""
+
+#: scripts/ui/credits.gd:18
+msgid "Art"
+msgstr ""
+
+#: scripts/ui/credits.gd:19
+msgid "Ninja Adventure Asset Pack: Pixel-Boy and AAA (CC0)"
+msgstr ""
+
+#: scripts/ui/credits.gd:21 scripts/ui/pause_menu.gd:172
+msgid "Music"
+msgstr ""
+
+#: scripts/ui/credits.gd:22
+msgid "Evil temple Ambiance loop: Brandon Morris (CC0)"
+msgstr ""
+
+#: scripts/ui/credits.gd:23
+msgid "Heavy Battle 2, Heavy Dungeon, Heavy Boss Battle 1: MintoDog (CC0)"
+msgstr ""
+
+#: scripts/ui/credits.gd:24
+msgid "Boss Battle #9 [Metal], Boss Battle #2 [Symphonic Metal]: nene (CC0)"
+msgstr ""
+
+#: scripts/ui/credits.gd:25
+msgid "Heavenly Loop: isaiah658 (CC0)"
+msgstr ""
+
+#: scripts/ui/credits.gd:27
+msgid "Sound"
+msgstr ""
+
+#: scripts/ui/credits.gd:28
+msgid "RPG, Impact, Interface and Digital Audio: Kenney (CC0)"
+msgstr ""
+
+#: scripts/ui/credits.gd:30
+msgid "Fonts"
+msgstr ""
+
+#: scripts/ui/credits.gd:31
+msgid "Jacquard 12 and Jersey 10: Sarah Cadigan-Fried (SIL OFL 1.1)"
+msgstr ""
+
+#: scripts/ui/credits.gd:33
+msgid "Engine"
+msgstr ""
+
+#: scripts/ui/credits.gd:34
+msgid "Godot Engine (MIT)"
+msgstr ""
+
+#: scripts/ui/credits.gd:37
+msgid "Thank you for playing."
+msgstr ""
+
+#: scripts/ui/ending.gd:20
+msgid "The Demon King sinks to his knees. The red sky dims above him."
+msgstr ""
+
+#: scripts/ui/ending.gd:21
+msgid "\"So she sent another... the way she sent the ones before you.\""
+msgstr ""
+
+#: scripts/ui/ending.gd:22
+msgid "\"We were bound once, she and I, before the sky turned red.\""
+msgstr ""
+
+#: scripts/ui/ending.gd:23
+msgid "\"She asked me to end this world's hunger. I became it instead.\""
+msgstr ""
+
+#: scripts/ui/ending.gd:24
+msgid "\"Finally... Tell her... I waited.\""
+msgstr ""
+
+#: scripts/ui/ending.gd:28
+msgid "Reunion"
+msgstr ""
+
+#: scripts/ui/ending.gd:29
+msgid "The cycle is broken."
+msgstr ""
+
+#: scripts/ui/ending.gd:32
+msgid "You stay your hunger."
+msgstr ""
+
+#: scripts/ui/ending.gd:33
+msgid "Light spills through the broken sky. The goddess kneels beside him."
+msgstr ""
+
+#: scripts/ui/ending.gd:34
+msgid "Goddess: \"I came. Forgive me for taking so long.\""
+msgstr ""
+
+#: scripts/ui/ending.gd:35
+msgid "Together they fade into the dawn, and the red sky breaks."
+msgstr ""
+
+#: scripts/ui/ending.gd:39
+msgid "The New Demon King"
+msgstr ""
+
+#: scripts/ui/ending.gd:40
+msgid "The cycle continues."
+msgstr ""
+
+#: scripts/ui/ending.gd:43
+msgid "You Devour the Demon King."
+msgstr ""
+
+#: scripts/ui/ending.gd:44
+msgid "His power floods you: endless, and starving."
+msgstr ""
+
+#: scripts/ui/ending.gd:45
+msgid "Goddess, from very far away: \"No... not you too.\""
+msgstr ""
+
+#: scripts/ui/ending.gd:46
+msgid "The sky stays red. Somewhere, a new hero is reincarnated."
+msgstr ""
+
+#: scripts/ui/ending.gd:158
+msgid "His essence flickers before you. What will you do?"
+msgstr ""
+
+#: scripts/ui/ending.gd:221
+msgid "Spare him"
+msgstr ""
+
+#: scripts/ui/ending.gd:221
+msgid "Devour him"
+msgstr ""
+
+#: scripts/ui/how_to_play.gd:7
+msgid "Move"
+msgstr ""
+
+#: scripts/ui/how_to_play.gd:8
+msgid "Attack"
+msgstr ""
+
+#: scripts/ui/how_to_play.gd:8
+msgid "Automatic"
+msgstr ""
+
+#: scripts/ui/how_to_play.gd:9
+msgid "Devour (hold on an essence)"
+msgstr ""
+
+#: scripts/ui/how_to_play.gd:10
+msgid "Drink the Goddess's Tears"
+msgstr ""
+
+#: scripts/ui/how_to_play.gd:11
+msgid "Pause, build, settings"
+msgstr ""
+
+#: scripts/ui/how_to_play.gd:12
+msgid "Pick a level-up"
+msgstr ""
+
+#: scripts/ui/how_to_play.gd:13
+msgid "Navigate menus"
+msgstr ""
+
+#: scripts/ui/how_to_play.gd:17
+msgid "Survive 20 days, one minute each. On Day 20 the Demon King comes for you."
+msgstr ""
+
+#: scripts/ui/how_to_play.gd:18
+msgid "Collect the green gems to level up, then choose a new weapon or upgrade. You can carry four weapons at a time."
+msgstr ""
+
+#: scripts/ui/how_to_play.gd:19
+msgid "Elites drop a glowing essence. Hold {devour} on it to Devour: a lasting power, at the cost of some max HP."
+msgstr ""
+
+#: scripts/ui/how_to_play.gd:20
+msgid "Golden arrows at the screen's edge point to chests; colored ones to essences."
+msgstr ""
+
+#: scripts/ui/how_to_play.gd:21
+msgid "Your style rank (D to SSS) climbs as you kill and drops two ranks when you're hit. Higher ranks pay more gold and XP."
+msgstr ""
+
+#: scripts/ui/how_to_play.gd:22
+msgid "From Day 5, elites can carry a trait: Swift, Armored, Splitting or Vampiric. They pay double gold."
+msgstr ""
+
+#: scripts/ui/how_to_play.gd:23
+msgid "The goddess finds you on Days 5, 10, 15 and 19. She refills your Tears, gives a free blessing, and sells training for gold. The journey saves there."
+msgstr ""
+
+#: scripts/ui/how_to_play.gd:24
+msgid "At her shrine you may seal one covenant: a curse until the next shrine, for a reward."
+msgstr ""
+
+#: scripts/ui/how_to_play.gd:25
+msgid "You live only once. If you fall, she can pull you back for gold, and the price doubles each time. Keep some gold in reserve."
+msgstr ""
+
+#: scripts/ui/how_to_play.gd:26
+msgid "Goddess Light and Aegis evolve with a passive at Lv 3 (Vigor and Guard); the other weapons with Devoured essences."
+msgstr ""
+
+#: scripts/ui/how_to_play.gd:27
+msgid "Hold 2 or more of each of two certain essences and they resonate: a lasting bonus. The Codex lists the pairs you've found."
+msgstr ""
+
+#: scripts/ui/how_to_play.gd:28
+msgid "On Days 10 and 15 a mini-boss stalks the ruins. Fell it for gold, a golden chest and an essence."
+msgstr ""
+
+#: scripts/ui/how_to_play.gd:29
+msgid "Going further unlocks new starting weapons, chosen when you begin a journey."
+msgstr ""
+
+#: scripts/ui/how_to_play.gd:36
+msgid "Controls"
+msgstr ""
+
+#: scripts/ui/how_to_play.gd:53
+msgid "Your Journey"
+msgstr ""
+
+#: scripts/ui/hud.gd:117
+msgid "  ·  effects %d%%"
+msgstr ""
+
+#: scripts/ui/hud.gd:157
+msgid "Lv %d"
+msgstr ""
+
+#: scripts/ui/hud.gd:179
+msgid "Revive  %d"
+msgstr ""
+
+#: scripts/ui/hud.gd:184
+msgid "Day %d"
+msgstr ""
+
+#: scripts/ui/hud.gd:186
+msgid "of %d   ·   the goddess on Day %d"
+msgstr ""
+
+#: scripts/ui/hud.gd:188
+msgid "of %d"
+msgstr ""
+
+#: scripts/ui/hud.gd:200
+msgid "Lv 1"
+msgstr ""
+
+#: scripts/ui/hud.gd:223
+msgid "Day 1"
+msgstr ""
+
+#: scripts/ui/hud.gd:273
+msgid "Goddess's Tears  [{flask}]"
+msgstr ""
+
+#: scripts/ui/level_up.gd:39
+msgid "Level %d"
+msgstr ""
+
+#: scripts/ui/level_up.gd:40
+msgid "Choose one  ·  {pause} shows your build"
+msgstr ""
+
+#: scripts/ui/level_up.gd:45
+msgid "Pick one with {pick}. {pause} shows your current build."
+msgstr ""
+
+#: scripts/ui/level_up.gd:74
+msgid "LV %d"
+msgstr ""
+
+#: scripts/ui/level_up.gd:80
+msgid "NEW WEAPON"
+msgstr ""
+
+#: scripts/ui/level_up.gd:80
+msgid "NEW"
+msgstr ""
+
+#: scripts/ui/level_up.gd:82
+msgid "MAX"
+msgstr ""
+
+#: scripts/ui/moments.gd:68
+msgid "You Died"
+msgstr ""
+
+#: scripts/ui/pause_menu.gd:28 scripts/ui/pause_menu.gd:40 scripts/ui/title.gd:110 scripts/ui/title.gd:110
+msgid "How to Play"
+msgstr ""
+
+#: scripts/ui/pause_menu.gd:35 scripts/ui/pause_menu.gd:264
+msgid "Paused"
+msgstr ""
+
+#: scripts/ui/pause_menu.gd:36
+msgid "Resume"
+msgstr ""
+
+#: scripts/ui/pause_menu.gd:37
+msgid "Your Build"
+msgstr ""
+
+#: scripts/ui/pause_menu.gd:39
+msgid "Menu"
+msgstr ""
+
+#: scripts/ui/pause_menu.gd:41 scripts/ui/pause_menu.gd:46 scripts/ui/pause_menu.gd:52 scripts/ui/pause_menu.gd:170
+msgid "Settings"
+msgstr ""
+
+#: scripts/ui/pause_menu.gd:43
+msgid "Quit to Title"
+msgstr ""
+
+#: scripts/ui/pause_menu.gd:109
+msgid "Level %d  ·  Day %d"
+msgstr ""
+
+#: scripts/ui/pause_menu.gd:114
+msgid "HP"
+msgstr ""
+
+#: scripts/ui/pause_menu.gd:115
+msgid "Damage"
+msgstr ""
+
+#: scripts/ui/pause_menu.gd:116
+msgid "Defense"
+msgstr ""
+
+#: scripts/ui/pause_menu.gd:117
+msgid "Attack speed"
+msgstr ""
+
+#: scripts/ui/pause_menu.gd:118
+msgid "Move speed"
+msgstr ""
+
+#: scripts/ui/pause_menu.gd:119
+msgid "Pickup range"
+msgstr ""
+
+#: scripts/ui/pause_menu.gd:120
+msgid "Regen"
+msgstr ""
+
+#: scripts/ui/pause_menu.gd:121
+msgid "Tears"
+msgstr ""
+
+#: scripts/ui/pause_menu.gd:128
+msgid "Weapons and Upgrades"
+msgstr ""
+
+#: scripts/ui/pause_menu.gd:143
+msgid "  Lv %d / %d"
+msgstr ""
+
+#: scripts/ui/pause_menu.gd:151
+msgid "Devoured"
+msgstr ""
+
+#: scripts/ui/pause_menu.gd:152
+msgid "Nothing yet. Elites drop essences."
+msgstr ""
+
+#: scripts/ui/pause_menu.gd:155
+msgid "None yet. Hold 2 of each of certain essence pairs."
+msgstr ""
+
+#: scripts/ui/pause_menu.gd:164 scripts/ui/shrine.gd:90 scripts/ui/shrine.gd:377
+msgid "Training"
+msgstr ""
+
+#: scripts/ui/pause_menu.gd:165
+msgid "None yet. The goddess teaches it at her shrine."
+msgstr ""
+
+#: scripts/ui/pause_menu.gd:171
+msgid "Master volume"
+msgstr ""
+
+#: scripts/ui/pause_menu.gd:173
+msgid "Sound effects"
+msgstr ""
+
+#: scripts/ui/pause_menu.gd:174
+msgid "Screen shake"
+msgstr ""
+
+#: scripts/ui/pause_menu.gd:175
+msgid "Damage numbers"
+msgstr ""
+
+#: scripts/ui/pause_menu.gd:176
+msgid "Reduce flashing"
+msgstr ""
+
+#: scripts/ui/pause_menu.gd:177
+msgid "Show FPS"
+msgstr ""
+
+#: scripts/ui/pause_menu.gd:178
+msgid "Controller vibration"
+msgstr ""
+
+#: scripts/ui/pause_menu.gd:179
+msgid "Fullscreen"
+msgstr ""
+
+#: scripts/ui/pause_menu.gd:180
+msgid "Beginner hints"
+msgstr ""
+
+#: scripts/ui/pause_menu.gd:182
+msgid "Show all hints again"
+msgstr ""
+
+#: scripts/ui/pause_menu.gd:188
+msgid "Hints will show again"
+msgstr ""
+
+#: scripts/ui/pause_menu.gd:229
+msgid " % int(Save.data.journey.day) 		if Save.has_journey() else "
+msgstr ""
+
+#: scripts/ui/pause_menu.gd:232 scripts/ui/title.gd:114
+msgid "Quit"
+msgstr ""
+
+#: scripts/ui/pause_menu.gd:232
+msgid "Stay"
+msgstr ""
+
+#: scripts/ui/results.gd:53
+msgid "The Journey"
+msgstr ""
+
+#: scripts/ui/results.gd:54
+msgid "Damage Dealt"
+msgstr ""
+
+#: scripts/ui/results.gd:59
+msgid "New starting weapon: %s"
+msgstr ""
+
+#: scripts/ui/results.gd:67
+msgid "New Journey  ({restart})"
+msgstr ""
+
+#: scripts/ui/results.gd:67
+msgid "Title Screen"
+msgstr ""
+
+#: scripts/ui/results.gd:107
+msgid "Day reached"
+msgstr ""
+
+#: scripts/ui/results.gd:108
+msgid "Level"
+msgstr ""
+
+#: scripts/ui/results.gd:109
+msgid "Kills"
+msgstr ""
+
+#: scripts/ui/results.gd:110
+msgid "Essences devoured"
+msgstr ""
+
+#: scripts/ui/results.gd:112
+msgid "Gold left"
+msgstr ""
+
+#: scripts/ui/results.gd:113
+msgid "Revives"
+msgstr ""
+
+#: scripts/ui/results.gd:114 scripts/ui/results.gd:124
+msgid "Best style"
+msgstr ""
+
+#: scripts/ui/results.gd:140
+msgid "Nothing fell to your hand."
+msgstr ""
+
+#: scripts/ui/results.gd:160 scripts/run/loot_director.gd:155 scripts/loot.gd:13
+msgid "Bomb"
+msgstr ""
+
+#: scripts/ui/shrine.gd:22
+msgid "Tear Vessel"
+msgstr ""
+
+#: scripts/ui/shrine.gd:22
+msgid "+1 flask charge"
+msgstr ""
+
+#: scripts/ui/shrine.gd:23
+msgid "Blessed Tears"
+msgstr ""
+
+#: scripts/ui/shrine.gd:23
+msgid "Each sip heals 10% more"
+msgstr ""
+
+#: scripts/ui/shrine.gd:31
+msgid "You dream of the goddess watching from afar."
+msgstr ""
+
+#: scripts/ui/shrine.gd:32
+msgid "Goddess: \"Do not fear this world. This is just the beginning.\""
+msgstr ""
+
+#: scripts/ui/shrine.gd:33
+msgid "A vision fills your mind. You see the goddess beside a shadow under a red sky."
+msgstr ""
+
+#: scripts/ui/shrine.gd:34
+msgid "Her voice trembles: \"Forgive me.\""
+msgstr ""
+
+#: scripts/ui/shrine.gd:35
+msgid "Carvings in the ruins show a goddess and a dark figure side by side."
+msgstr ""
+
+#: scripts/ui/shrine.gd:36
+msgid "Ghostly voice: \"They once loved each other. Love turned to ruin.\""
+msgstr ""
+
+#: scripts/ui/shrine.gd:37
+msgid "Goddess: \"Do not question fate. Finish what was started.\""
+msgstr ""
+
+#: scripts/ui/shrine.gd:38
+msgid "The goddess appears, fading fast."
+msgstr ""
+
+#: scripts/ui/shrine.gd:39
+msgid "Goddess: \"He waits for me still... End his suffering, please.\""
+msgstr ""
+
+#: scripts/ui/shrine.gd:85
+msgid "Her blessing is free: pick one first. Then spend gold on training, which lasts all journey. Keep enough gold for a revive."
+msgstr ""
+
+#: scripts/ui/shrine.gd:87
+msgid "The Goddess  ·  Day %d"
+msgstr ""
+
+#: scripts/ui/shrine.gd:87
+msgid "The Goddess's Farewell  ·  Day 19"
+msgstr ""
+
+#: scripts/ui/shrine.gd:125
+msgid "Gold: %d"
+msgstr ""
+
+#: scripts/ui/shrine.gd:126
+msgid "Next revive: %d gold"
+msgstr ""
+
+#: scripts/ui/shrine.gd:127
+msgid "Her blessing: choose one"
+msgstr ""
+
+#: scripts/ui/shrine.gd:127
+msgid "Her blessing is with you."
+msgstr ""
+
+#: scripts/ui/shrine.gd:170
+msgid "  (sealed)"
+msgstr ""
+
+#: scripts/ui/shrine.gd:175
+msgid "Rise and continue"
+msgstr ""
+
+#: scripts/ui/shrine.gd:175
+msgid "Choose her blessing"
+msgstr ""
+
+#: scripts/ui/shrine.gd:193
+msgid "Mastered"
+msgstr ""
+
+#: scripts/ui/shrine.gd:197
+msgid "Train  %dg"
+msgstr ""
+
+#: scripts/ui/shrine.gd:377
+msgid "Lasts the whole journey. Gold also buys revives."
+msgstr ""
+
+#: scripts/ui/shrine.gd:378
+msgid "Goddess's Tears"
+msgstr ""
+
+#: scripts/ui/shrine.gd:378
+msgid "Your flask, refilled at every shrine."
+msgstr ""
+
+#: scripts/ui/shrine.gd:379 scripts/ui/shrine.gd:384
+msgid "Covenant"
+msgstr ""
+
+#: scripts/ui/shrine.gd:379
+msgid "Optional and final: a curse and a reward until her next shrine."
+msgstr ""
+
+#: scripts/ui/title.gd:101
+msgid "Continue"
+msgstr ""
+
+#: scripts/ui/title.gd:103
+msgid "Day %d  ·  Level %d"
+msgstr ""
+
+#: scripts/ui/title.gd:108
+msgid "New Journey"
+msgstr ""
+
+#: scripts/ui/title.gd:112
+msgid "Credits"
+msgstr ""
+
+#: scripts/ui/title.gd:134
+msgid "A hero reincarnates only once.\nBeginning anew abandons your journey on Day %d."
+msgstr ""
+
+#: scripts/ui/title.gd:135
+msgid "Abandon it"
+msgstr ""
+
+#: scripts/ui/title.gd:135
+msgid "Keep it"
+msgstr ""
+
+#: scripts/ui/title.gd:167
+msgid "Your First Weapon"
+msgstr ""
+
+#: scripts/ui/title.gd:180
+msgid "LAST"
+msgstr ""
+
+#: scripts/ui/title.gd:191
+msgid "Locked\n"
+msgstr ""
+
+#: scripts/ui/title.gd:193
+msgid "Earn more by going further  ·  {back} to return"
+msgstr ""
+
+#: scripts/ui/title.gd:239
+msgid "Press any button"
+msgstr ""
+
+#: scripts/ui/title.gd:263
+msgid "Journeys %d   ·   Victories %d   ·   Best day %d   ·   Endings: %s\nv%s"
+msgstr ""
+
+#: scripts/ui/title.gd:281
+msgid "REINCARNATED  AS  A"
+msgstr ""
+
+#: scripts/ui/title.gd:295
+msgid "Devourer"
+msgstr ""
+
+#: scripts/ui/title.gd:315
+msgid "One life. Twenty days. Devour, or be devoured."
+msgstr ""
+
+#: scripts/ui/ui_theme.gd:47
+msgid "PanelContainer"
+msgstr ""
+
+#: scripts/ui/ui_theme.gd:48
+msgid "Panel"
+msgstr ""
+
+#: scripts/ui/ui_theme.gd:58 scripts/ui/ui_theme.gd:59 scripts/ui/ui_theme.gd:60 scripts/ui/ui_theme.gd:61
+msgid "Button"
+msgstr ""
+
+#: scripts/ui/ui_theme.gd:64 scripts/ui/ui_theme.gd:65 scripts/ui/ui_theme.gd:66
+msgid "Label"
+msgstr ""
+
+#: scripts/ui/ui_theme.gd:70 scripts/ui/ui_theme.gd:71
+msgid "ProgressBar"
+msgstr ""
+
+#: scripts/ui/ui_theme.gd:79 scripts/ui/ui_theme.gd:80 scripts/ui/ui_theme.gd:96 scripts/ui/ui_theme.gd:97
+msgid "MenuItem"
+msgstr ""
+
+#: scripts/run/loot_director.gd:71
+msgid "A chest appeared! Follow the golden arrow at the edge of the screen to find it."
+msgstr ""
+
+#: scripts/run/loot_director.gd:79
+msgid "It was a Mimic!\nKill it for its treasure."
+msgstr ""
+
+#: scripts/run/loot_director.gd:114
+msgid "GOLDEN CHEST\n"
+msgstr ""
+
+#: scripts/run/spawn_director.gd:158
+msgid "A Hexeye: it keeps its distance and aims a blue line before it fires. Step off the line."
+msgstr ""
+
+#: scripts/run/spawn_director.gd:160
+msgid "A Warden: its shield soaks most of your damage until it breaks. Burns and bites wear it down too."
+msgstr ""
+
+#: scripts/run/spawn_director.gd:162
+msgid "Elites can carry a trait, named over their head: Swift, Armored, Splitting (bursts into three) or Vampiric (heals when it hits you). They pay double gold."
+msgstr ""
+
+#: scripts/run/spawn_director.gd:164
+msgid "An elite is coming: bigger and tougher. Kill it and it drops an essence you can Devour."
+msgstr ""
+
+#: scripts/run/spawn_director.gd:225
+msgid "They're surrounding you!"
+msgstr ""
+
+#: scripts/run/spawn_director.gd:226
+msgid "A Vexclaw pack is hunting you!"
+msgstr ""
+
+#: scripts/run/spawn_director.gd:227
+msgid "A plague tide rises..."
+msgstr ""
+
+#: scripts/data/enemy_data.gd:30
+msgid "Visuals"
+msgstr ""
+
+#: scripts/data/resonances.gd:9
+msgid "Predator's Pace"
+msgstr ""
+
+#: scripts/data/resonances.gd:10
+msgid "+10% damage and +8% move speed"
+msgstr ""
+
+#: scripts/data/resonances.gd:12
+msgid "Iron Rot"
+msgstr ""
+
+#: scripts/data/resonances.gd:13
+msgid "+20 defense"
+msgstr ""
+
+#: scripts/data/resonances.gd:15
+msgid "Hunter's Eye"
+msgstr ""
+
+#: scripts/data/resonances.gd:16
+msgid "+10% attack speed and +30 pickup range"
+msgstr ""
+
+#: scripts/data/resonances.gd:18
+msgid "Phantom Veil"
+msgstr ""
+
+#: scripts/data/resonances.gd:19
+msgid "+12% move speed and +1 HP regeneration"
+msgstr ""
+
+#: scripts/data/resonances.gd:21
+msgid "Bulwark Heart"
+msgstr ""
+
+#: scripts/data/resonances.gd:22
+msgid "+25 max HP and +10 defense"
+msgstr ""
+
+#: scripts/data/unlocks.gd:7
+msgid "Always yours"
+msgstr ""
+
+#: scripts/data/unlocks.gd:8
+msgid "Reach Day 10"
+msgstr ""
+
+#: scripts/data/unlocks.gd:9
+msgid "Reach the goddess's farewell (Day 19)"
+msgstr ""
+
+#: scripts/data/unlocks.gd:10
+msgid "Devour 15 essences, across journeys"
+msgstr ""
+
+#: scripts/data/unlocks.gd:11
+msgid "Fell the Ruin Guardian"
+msgstr ""
+
+#: scripts/data/unlocks.gd:12
+msgid "Fell the Hollow Spirit"
+msgstr ""
+
+#: scripts/data/weapon_data.gd:17
+msgid "Evolution"
+msgstr ""
+
+#: scripts/enemy.gd:41
+msgid "Swift"
+msgstr ""
+
+#: scripts/enemy.gd:42
+msgid "Armored"
+msgstr ""
+
+#: scripts/enemy.gd:43
+msgid "Splitting"
+msgstr ""
+
+#: scripts/enemy.gd:44
+msgid "Vampiric"
+msgstr ""
+
+#: scripts/enemy.gd:245 data/weapons/chains.tres
+msgid "Hellfire Chains"
+msgstr ""
+
+#: scripts/loot.gd:6
+msgid "Common Potion"
+msgstr ""
+
+#: scripts/loot.gd:6
+msgid "Restored 30% HP"
+msgstr ""
+
+#: scripts/loot.gd:7
+msgid "High Potion"
+msgstr ""
+
+#: scripts/loot.gd:7
+msgid "Restored 60% HP"
+msgstr ""
+
+#: scripts/loot.gd:8 data/items/panacea.tres
+msgid "Flask of Rejuvenation"
+msgstr ""
+
+#: scripts/loot.gd:8
+msgid "Fully healed"
+msgstr ""
+
+#: scripts/loot.gd:9
+msgid "Flask of Attraction"
+msgstr ""
+
+#: scripts/loot.gd:9
+msgid "All XP flies to you"
+msgstr ""
+
+#: scripts/loot.gd:10
+msgid "Goddess's Blessing"
+msgstr ""
+
+#: scripts/loot.gd:10
+msgid "Level up!"
+msgstr ""
+
+#: scripts/loot.gd:11
+msgid "Goddess's Fervor"
+msgstr ""
+
+#: scripts/loot.gd:11
+msgid "Weapons 50% faster for 15 s"
+msgstr ""
+
+#: scripts/loot.gd:12
+msgid "Gold Pouch"
+msgstr ""
+
+#: scripts/loot.gd:12
+msgid "+%d gold"
+msgstr ""
+
+#: scripts/loot.gd:13
+msgid "Everything nearby is blasted"
+msgstr ""
+
+#: scripts/main.gd:42
+msgid "Covenant of Blood"
+msgstr ""
+
+#: scripts/main.gd:42
+msgid "Enemies hit 35% harder"
+msgstr ""
+
+#: scripts/main.gd:42
+msgid "Gold x1.5"
+msgstr ""
+
+#: scripts/main.gd:43
+msgid "Covenant of the Horde"
+msgstr ""
+
+#: scripts/main.gd:43
+msgid "40% more enemies"
+msgstr ""
+
+#: scripts/main.gd:43
+msgid "XP and gold x1.3"
+msgstr ""
+
+#: scripts/main.gd:44
+msgid "Covenant of Frailty"
+msgstr ""
+
+#: scripts/main.gd:44
+msgid "Max HP -30%"
+msgstr ""
+
+#: scripts/main.gd:44
+msgid "Damage +40%"
+msgstr ""
+
+#: scripts/main.gd:45
+msgid "Covenant of Thirst"
+msgstr ""
+
+#: scripts/main.gd:45
+msgid "Your Tears are emptied"
+msgstr ""
+
+#: scripts/main.gd:45
+msgid "A second blessing, now"
+msgstr ""
+
+#: scripts/main.gd:205 scripts/main.gd:239
+msgid "The Fallen Ruins"
+msgstr ""
+
+#: scripts/main.gd:205
+msgid "The Whispering Forest"
+msgstr ""
+
+#: scripts/main.gd:206
+msgid "Move with {move}. Your weapons attack on their own: focus on staying alive."
+msgstr ""
+
+#: scripts/main.gd:207
+msgid "Press {pause} any time to pause, check your build, read how to play, or change settings."
+msgstr ""
+
+#: scripts/main.gd:229
+msgid "The goddess finds you tomorrow. At her shrine, gold buys training. Gold also pays for a revive if you fall, so don't spend it all."
+msgstr ""
+
+#: scripts/main.gd:231
+msgid "You're hurt! Press {flask} to drink the Goddess's Tears. She refills them at every shrine, so use them."
+msgstr ""
+
+#: scripts/main.gd:263
+msgid "Your style rank (D to SSS) climbs as you kill and drops when you're hit. Higher ranks pay more gold and XP."
+msgstr ""
+
+#: scripts/main.gd:314
+msgid "Goddess's Fervor  %ds"
+msgstr ""
+
+#: scripts/main.gd:348
+msgid "[debug] Elite spawned"
+msgstr ""
+
+#: scripts/main.gd:356
+msgid "[debug] Healed"
+msgstr ""
+
+#: scripts/main.gd:368
+msgid "A guardian of this land! Red markings show where it will strike: step out of them, then hit back. Waves thin out while it lives."
+msgstr ""
+
+#: scripts/main.gd:385
+msgid "A golden chest, gold, and an essence remain."
+msgstr ""
+
+#: scripts/main.gd:392
+msgid "The Demon King is enraged!"
+msgstr ""
+
+#: scripts/main.gd:406 scripts/player.gd:199 scripts/player.gd:321
+msgid "+%d HP"
+msgstr ""
+
+#: scripts/main.gd:413
+msgid "Temple of the Demon King"
+msgstr ""
+
+#: scripts/main.gd:414
+msgid "The sky darkens... The Demon King descends."
+msgstr ""
+
+#: scripts/main.gd:415
+msgid "A red mark on the ground shows where he will slam: step out of it. Dodge his rings of dark orbs, and drink your Tears when low."
+msgstr ""
+
+#: scripts/main.gd:429
+msgid "VICTORY"
+msgstr ""
+
+#: scripts/main.gd:434
+msgid "Walk near the green gems to collect XP. Each level lets you pick a new weapon or upgrade."
+msgstr ""
+
+#: scripts/main.gd:444
+msgid "An elite has fallen! Follow the colored arrow, stand on its glowing essence and hold {devour} to Devour it: a lasting power that costs a little max HP."
+msgstr ""
+
+#: scripts/main.gd:450
+msgid "Devoured %s\n%s   -%d max HP"
+msgstr ""
+
+#: scripts/main.gd:459
+msgid "Resonance: %s\n%s"
+msgstr ""
+
+#: scripts/main.gd:461
+msgid "Two essences resonated! Holding 2 or more of certain pairs awakens a lasting bonus. Your build screen (pause) lists them."
+msgstr ""
+
+#: scripts/main.gd:487
+msgid "  ·  Lv %d"
+msgstr ""
+
+#: scripts/main.gd:548
+msgid "Tomorrow, the Demon King."
+msgstr ""
+
+#: scripts/main.gd:550
+msgid "Your journey continues... (saved)"
+msgstr ""
+
+#: scripts/main.gd:564
+msgid "Day %d. Your journey continues."
+msgstr ""
+
+#: scripts/main.gd:585
+msgid "The goddess reaches for you. She can pull you back,\nbut her light grows weaker each time.\n\nRevive: %d gold   (you have %d)"
+msgstr ""
+
+#: scripts/main.gd:586
+msgid "Revive  (%dg)"
+msgstr ""
+
+#: scripts/main.gd:587
+msgid "Accept your fate"
+msgstr ""
+
+#: scripts/main.gd:622
+msgid "The goddess pulls you back...\nher light grows weaker."
+msgstr ""
+
+#: scripts/main.gd:631
+msgid "You have fallen in battle...\nThe cycle remains unbroken."
+msgstr ""
+
+#: scripts/main.gd:648
+msgid "Demon King Felled"
+msgstr ""
+
+#: scripts/main.gd:656
+msgid "Victory"
+msgstr ""
+
+#: scripts/main.gd:656
+msgid "Your Journey Ends"
+msgstr ""
+
+#: scripts/style_meter.gd:12
+msgid "SS"
+msgstr ""
+
+#: scripts/style_meter.gd:12
+msgid "SSS"
+msgstr ""
+
+#: scripts/style_meter.gd:13
+msgid "Dull"
+msgstr ""
+
+#: scripts/style_meter.gd:13
+msgid "Cruel"
+msgstr ""
+
+#: scripts/style_meter.gd:13
+msgid "Brutal"
+msgstr ""
+
+#: scripts/style_meter.gd:13
+msgid "Atrocious"
+msgstr ""
+
+#: scripts/style_meter.gd:13
+msgid "Savage"
+msgstr ""
+
+#: scripts/style_meter.gd:13
+msgid "Sinful"
+msgstr ""
+
+#: scripts/style_meter.gd:13
+msgid "Soul Devourer"
+msgstr ""
+
+#: data/enemies/dreadling.tres
+msgid "Dreadling"
+msgstr ""
+
+#: data/enemies/hexeye.tres
+msgid "Hexeye"
+msgstr ""
+
+#: data/enemies/mimic.tres
+msgid "Mimic"
+msgstr ""
+
+#: data/enemies/plaguewing.tres
+msgid "Plaguewing"
+msgstr ""
+
+#: data/enemies/vexclaw.tres
+msgid "Vexclaw"
+msgstr ""
+
+#: data/enemies/warden.tres
+msgid "Warden"
+msgstr ""
+
+#: data/essences/dreadling_essence.tres
+msgid "Dreadling Essence"
+msgstr ""
+
+#: data/essences/dreadling_essence.tres
+msgid "+12% move speed"
+msgstr ""
+
+#: data/essences/hexeye_essence.tres
+msgid "Hexeye Essence"
+msgstr ""
+
+#: data/essences/hexeye_essence.tres
+msgid "+12% attack speed"
+msgstr ""
+
+#: data/essences/plaguewing_essence.tres
+msgid "Plaguewing Essence"
+msgstr ""
+
+#: data/essences/plaguewing_essence.tres
+msgid "+25 defense"
+msgstr ""
+
+#: data/essences/vexclaw_essence.tres
+msgid "Vexclaw Essence"
+msgstr ""
+
+#: data/essences/vexclaw_essence.tres
+msgid "+30% might"
+msgstr ""
+
+#: data/essences/warden_essence.tres
+msgid "Warden Essence"
+msgstr ""
+
+#: data/essences/warden_essence.tres
+msgid "+1.5 HP regeneration"
+msgstr ""
+
+#: data/items/fury.tres
+msgid "Fury"
+msgstr ""
+
+#: data/items/fury.tres
+msgid "Weapons attack and spin 15% faster."
+msgstr ""
+
+#: data/items/hunger.tres
+msgid "Hunger"
+msgstr ""
+
+#: data/items/hunger.tres
+msgid "Devour 30% faster, and each Devour heals 10% more."
+msgstr ""
+
+#: data/items/leather_treads.tres
+msgid "Treads"
+msgstr ""
+
+#: data/items/leather_treads.tres
+msgid "Move 12% faster."
+msgstr ""
+
+#: data/items/leather_treads.tres
+msgid "Leather Treads"
+msgstr ""
+
+#: data/items/leather_treads.tres
+msgid "Padded Footguards"
+msgstr ""
+
+#: data/items/leather_treads.tres
+msgid "Swiftstride Boots"
+msgstr ""
+
+#: data/items/magnet_charm.tres
+msgid "Magnet Charm"
+msgstr ""
+
+#: data/items/magnet_charm.tres
+msgid "Pick up XP from 50% farther away."
+msgstr ""
+
+#: data/items/panacea.tres
+msgid "Restore all HP. Offered once everything else is maxed."
+msgstr ""
+
+#: data/items/stamina.tres data/training/stamina.tres
+msgid "Stamina Training"
+msgstr ""
+
+#: data/items/stamina.tres
+msgid "+30 max HP, and heal that much."
+msgstr ""
+
+#: data/items/vigor.tres
+msgid "Vigor"
+msgstr ""
+
+#: data/items/vigor.tres
+msgid "Regenerate 1 HP per second."
+msgstr ""
+
+#: data/items/wooden_guard.tres
+msgid "Guard"
+msgstr ""
+
+#: data/items/wooden_guard.tres
+msgid "+12 defense: take about 10% less damage."
+msgstr ""
+
+#: data/items/wooden_guard.tres
+msgid "Wooden Guard"
+msgstr ""
+
+#: data/items/wooden_guard.tres
+msgid "Steel Shield"
+msgstr ""
+
+#: data/items/wooden_guard.tres
+msgid "Aegis Guard"
+msgstr ""
+
+#: data/training/dexterity.tres
+msgid "Dexterity Training"
+msgstr ""
+
+#: data/training/dexterity.tres
+msgid "+4% move speed"
+msgstr ""
+
+#: data/training/guts.tres
+msgid "Guts Training"
+msgstr ""
+
+#: data/training/guts.tres
+msgid "A little of everything"
+msgstr ""
+
+#: data/training/resilience.tres
+msgid "Resilience Training"
+msgstr ""
+
+#: data/training/resilience.tres
+msgid "+3 defense"
+msgstr ""
+
+#: data/training/stamina.tres
+msgid "+10 max HP"
+msgstr ""
+
+#: data/training/strength.tres
+msgid "Strength Training"
+msgstr ""
+
+#: data/training/strength.tres
+msgid "+6% weapon damage"
+msgstr ""
+
+#: data/weapons/aegis.tres
+msgid "Aegis"
+msgstr ""
+
+#: data/weapons/aegis.tres
+msgid "Golden blades orbit you, striking and shoving enemies away."
+msgstr ""
+
+#: data/weapons/aegis.tres
+msgid "A golden blade orbits you, striking and shoving enemies."
+msgstr ""
+
+#: data/weapons/aegis.tres
+msgid "2 blades, damage 14 -> 20"
+msgstr ""
+
+#: data/weapons/aegis.tres
+msgid "3 blades, damage 20 -> 28. With Guard at Lv 3, it evolves"
+msgstr ""
+
+#: data/weapons/aegis.tres
+msgid "Bulwark of Dawn"
+msgstr ""
+
+#: data/weapons/blade.tres
+msgid "Blade"
+msgstr ""
+
+#: data/weapons/blade.tres data/weapons/blade.tres
+msgid "Strikes every enemy around you."
+msgstr ""
+
+#: data/weapons/blade.tres
+msgid "Dull Blade"
+msgstr ""
+
+#: data/weapons/blade.tres
+msgid "Standard Greatsword"
+msgstr ""
+
+#: data/weapons/blade.tres
+msgid "Mithril Warblade"
+msgstr ""
+
+#: data/weapons/blade.tres
+msgid "Vexclaw Rend"
+msgstr ""
+
+#: data/weapons/blade.tres
+msgid "Damage 34 -> 50, reach +20%, swings faster"
+msgstr ""
+
+#: data/weapons/blade.tres
+msgid "Damage 50 -> 70, reach +22%, swings faster. Devour 3 Vexclaws to evolve it"
+msgstr ""
+
+#: data/weapons/chains.tres data/weapons/chains.tres
+msgid "A burning chain lashes where you face, setting enemies alight."
+msgstr ""
+
+#: data/weapons/chains.tres
+msgid "Chains of the Damned"
+msgstr ""
+
+#: data/weapons/chains.tres
+msgid "Damage 20 -> 28, a longer, wider lash, burns hotter"
+msgstr ""
+
+#: data/weapons/chains.tres
+msgid "Damage 28 -> 38, a near half-circle lash, burns hottest. Devour 3 Plaguewings to evolve it"
+msgstr ""
+
+#: data/weapons/doom_bell.tres
+msgid "Doom Bell"
+msgstr ""
+
+#: data/weapons/doom_bell.tres data/weapons/doom_bell.tres
+msgid "A spectral bell tolls over the nearest enemy, blasting and slowing all around it."
+msgstr ""
+
+#: data/weapons/doom_bell.tres
+msgid "Death Knell"
+msgstr ""
+
+#: data/weapons/doom_bell.tres
+msgid "Damage 40 -> 58, a wider toll, tolls faster"
+msgstr ""
+
+#: data/weapons/doom_bell.tres
+msgid "2 bells at once, damage 58 -> 80. Devour 3 Hexeyes to evolve it"
+msgstr ""
+
+#: data/weapons/goddess_light.tres
+msgid "Goddess Light"
+msgstr ""
+
+#: data/weapons/goddess_light.tres
+msgid "Fires bolts of light at the nearest enemies."
+msgstr ""
+
+#: data/weapons/goddess_light.tres
+msgid "Fires a bolt of light at the nearest enemy."
+msgstr ""
+
+#: data/weapons/goddess_light.tres
+msgid "2 bolts, damage 22 -> 30, each pierces 1 enemy"
+msgstr ""
+
+#: data/weapons/goddess_light.tres
+msgid "4 bolts, damage 30 -> 40, pierce 3, fires faster. With Vigor at Lv 3, it evolves"
+msgstr ""
+
+#: data/weapons/goddess_light.tres
+msgid "Goddess's Grace"
+msgstr ""
+
+#: data/weapons/maw.tres
+msgid "Devourer's Maw"
+msgstr ""
+
+#: data/weapons/maw.tres
+msgid "Jaws snap shut on the nearest enemy. Each kill heals you."
+msgstr ""
+
+#: data/weapons/maw.tres
+msgid "Abyssal Maw"
+msgstr ""
+
+#: data/weapons/maw.tres
+msgid "Jaws snap shut on the nearest enemy. Each kill heals you 1 HP."
+msgstr ""
+
+#: data/weapons/maw.tres
+msgid "Damage 36 -> 50, bites faster, kills heal 2 HP"
+msgstr ""
+
+#: data/weapons/maw.tres
+msgid "2 bites at once, damage 50 -> 68, kills heal 3 HP. Devour 3 Dreadlings to evolve it"
+msgstr ""
+

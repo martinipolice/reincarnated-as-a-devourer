@@ -84,7 +84,7 @@ func open(day: int, main: Node) -> void:
 	Music.play("shrine", 1.5)
 	Hints.show_hint("shrine", "Her blessing is free: pick one first. Then spend gold on training, which lasts all journey. Keep enough gold for a revive.")
 	_story.text = "\n".join(STORY.get(day, []))
-	_title.text = "The Goddess  ·  Day %d" % day if day != 19 else "The Goddess's Farewell  ·  Day 19"
+	_title.text = tr("The Goddess  ·  Day %d") % day if day != 19 else "The Goddess's Farewell  ·  Day 19"
 	_build_blessings()
 	_refresh()
 	_show_page("Training")
@@ -122,8 +122,8 @@ func close() -> void:
 
 func _refresh() -> void:
 	var player: Player = _main.player
-	_gold_label.text = "Gold: %d" % _main.gold
-	_revive_label.text = "Next revive: %d gold" % _main.revive_cost()
+	_gold_label.text = tr("Gold: %d") % _main.gold
+	_revive_label.text = tr("Next revive: %d gold") % _main.revive_cost()
 	_blessing_title.text = "Her blessing: choose one" if not blessed else "Her blessing is with you."
 	for child in _blessing_box.get_children():
 		(child as Button).disabled = blessed
@@ -146,7 +146,7 @@ func _refresh() -> void:
 		buy.custom_minimum_size = Vector2(0, 52)
 		buy.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		if rank >= upgrade[4]:
-			buy.text = "%s  ·  mastered" % upgrade[1]
+			buy.text = tr("%s  ·  mastered") % upgrade[1]
 			buy.disabled = true
 		else:
 			var cost: int = upgrade[3] << rank
@@ -194,7 +194,7 @@ func _training_row(training: TrainingData) -> Control:
 		buy.disabled = true
 	else:
 		var cost := training.cost(rank)
-		buy.text = "Train  %dg" % cost
+		buy.text = tr("Train  %dg") % cost
 		buy.disabled = _main.gold < cost
 		buy.pressed.connect(buy_training.bind(training))
 	row.add_child(buy)

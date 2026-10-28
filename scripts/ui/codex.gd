@@ -61,7 +61,7 @@ func _ready() -> void:
 
 
 func open() -> void:
-	_count.text = "%d of %d found" % _progress()
+	_count.text = tr("%d of %d found") % _progress()
 	show()
 	Game.sfx("open_menu", 0.0)
 	_show(PAGES[0])
@@ -151,12 +151,12 @@ func _bestiary() -> void:
 		if not _knows_enemy(path):
 			_entry(_enemy_texture(data), "???", "Not yet met.", true)
 			continue
-		var facts := "HP %d  ·  Attack %d  ·  Defense %d" % [data.max_hp, data.atk, data.defense]
+		var facts := tr("HP %d  ·  Attack %d  ·  Defense %d") % [data.max_hp, data.atk, data.defense]
 		if data.shield > 0.0:
-			facts += "  ·  Shield %d" % data.shield
+			facts += tr("  ·  Shield %d") % data.shield
 		var how: String = BOSS_NOTES.get(data.display_name, BEHAVIOR.get(data.behavior, ""))
-		var drop := ("\nElites leave a %s." % data.essence.display_name) if data.essence else ""
-		_entry(_enemy_texture(data), data.display_name, "%s\n%s%s\nSlain: %d" % [
+		var drop := (tr("\nElites leave a %s.") % data.essence.display_name) if data.essence else ""
+		_entry(_enemy_texture(data), data.display_name, tr("%s\n%s%s\nSlain: %d") % [
 			facts, how, drop, int(kills[data.display_name])], false)
 
 
@@ -166,23 +166,23 @@ func _arsenal() -> void:
 	for i in WEAPONS.size():
 		var weapon: WeaponData = load(WEAPONS[i])
 		var how: String = Unlocks.STARTERS[i][1]
-		var start := "Starting weapon" if WEAPONS[i] in unlocked else "Start with it: %s" % how
+		var start := "Starting weapon" if WEAPONS[i] in unlocked else tr("Start with it: %s") % how
 		if not _knows("upgrades", WEAPONS[i]):
-			_entry(weapon.icon, "???", "Not yet wielded.  ·  %s" % start, true)
+			_entry(weapon.icon, "???", tr("Not yet wielded.  ·  %s") % start, true)
 			continue
 		var evolve := ""
 		if weapon.evolve_with:
-			evolve = "Evolves into %s: Lv %d and %d %s essences Devoured." % [
+			evolve = tr("Evolves into %s: Lv %d and %d %s essences Devoured.") % [
 				weapon.evolved_name, weapon.max_level, weapon.evolve_count, weapon.evolve_with.display_name.trim_suffix(" Essence")]
 		elif weapon.evolve_with_item:
-			evolve = "Evolves into %s: Lv %d with %s at its max level." % [
+			evolve = tr("Evolves into %s: Lv %d with %s at its max level.") % [
 				weapon.evolved_name, weapon.max_level, weapon.evolve_with_item.display_name]
 		_entry(weapon.icon, weapon.display_name, "%s\n%s\n%s" % [weapon.description, evolve, start], false)
 	_page.add_child(HowToPlay.heading("Passives"))
 	for path: String in PASSIVES:
 		var item: ItemData = load(path)
 		if _knows("upgrades", path):
-			_entry(item.icon, item.display_name, "%s  (max Lv %d)" % [item.description, item.max_level], false)
+			_entry(item.icon, item.display_name, tr("%s  (max Lv %d)") % [item.description, item.max_level], false)
 		else:
 			_entry(item.icon, "???", "Not yet found.", true)
 
@@ -191,7 +191,7 @@ func _essences() -> void:
 	for path: String in ESSENCES:
 		var essence: EssenceData = load(path)
 		if _knows("essences", path):
-			_entry(null, essence.display_name, "%s\nCosts %d max HP." % [essence.description, essence.max_hp_cost],
+			_entry(null, essence.display_name, tr("%s\nCosts %d max HP.") % [essence.description, essence.max_hp_cost],
 				false, essence.color)
 		else:
 			_entry(null, "???", "Not yet Devoured.", true, essence.color)
@@ -199,7 +199,7 @@ func _essences() -> void:
 
 func _resonances() -> void:
 	var note := Label.new()
-	note.text = "Hold %d or more of each of two essences and they resonate." % Resonances.NEEDED
+	note.text = tr("Hold %d or more of each of two essences and they resonate.") % Resonances.NEEDED
 	note.add_theme_color_override("font_color", UITheme.ASH)
 	_page.add_child(note)
 	for entry: Array in Resonances.TABLE:

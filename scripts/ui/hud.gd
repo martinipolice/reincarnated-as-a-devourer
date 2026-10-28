@@ -114,7 +114,7 @@ func _process(delta: float) -> void:
 			_perf_timer = 0.25
 			var enemies: int = _run.enemies.get_child_count() if _run else 0
 			_perf.text = "%d fps  ·  %.1f ms  ·  %d enemies%s" % [Engine.get_frames_per_second(),
-				Game.frame_ms, enemies, "  ·  effects %d%%" % roundi(Game.fx_quality * 100.0) if Game.fx_quality < 1.0 else ""]
+				Game.frame_ms, enemies, tr("  ·  effects %d%%") % roundi(Game.fx_quality * 100.0) if Game.fx_quality < 1.0 else ""]
 	if _xp_flare > 0.0:
 		_xp_flare = maxf(0.0, _xp_flare - _flare_fade * delta)
 		var f := 1.0 + _xp_flare
@@ -154,7 +154,7 @@ func _apply_xp(xp: int, needed: int, level: int) -> void:
 	_last_level = level
 	_xp_bar.max_value = needed
 	_xp_bar.value = xp
-	_level.text = "Lv %d" % level
+	_level.text = tr("Lv %d") % level
 	# Every gem makes the bar breathe; a level-up flares it and pops the level.
 	_xp_flare = maxf(_xp_flare, 1.4 if leveled else 0.5)
 	_flare_fade = 4.0 if leveled else 7.0
@@ -176,16 +176,16 @@ func _on_gold_changed(gold: int, revive_cost: int) -> void:
 
 func _apply_gold(gold: int, revive_cost: int) -> void:
 	_gold.text = str(gold)
-	_revive.text = "Revive  %d" % revive_cost
+	_revive.text = tr("Revive  %d") % revive_cost
 	_revive.add_theme_color_override("font_color", UITheme.ASH if gold >= revive_cost else UITheme.BLOOD.lightened(0.3))
 
 
 func _on_day_changed(day: int, final_day: int, next_shrine: int) -> void:
-	_day.text = "Day %d" % day
+	_day.text = tr("Day %d") % day
 	if next_shrine > 0:
-		_next_shrine.text = "of %d   ·   the goddess on Day %d" % [final_day, next_shrine]
+		_next_shrine.text = tr("of %d   ·   the goddess on Day %d") % [final_day, next_shrine]
 	else:
-		_next_shrine.text = "of %d" % final_day
+		_next_shrine.text = tr("of %d") % final_day
 
 
 func _build() -> void:

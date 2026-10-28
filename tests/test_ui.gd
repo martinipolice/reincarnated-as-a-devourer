@@ -77,3 +77,25 @@ func test_title_screen_and_codex() -> void:
 	title._codex.close()
 	title.queue_free()
 	await tree.process_frame
+
+
+func test_text_goes_through_translation() -> void:
+	var spanish := Translation.new()
+	spanish.locale = "es"
+	spanish.add_message("Level %d", "Nivel %d")
+	spanish.add_message("Settings", "Ajustes")
+	TranslationServer.add_translation(spanish)
+	var locale := TranslationServer.get_locale()
+	TranslationServer.set_locale("es")
+	var main: Node = await start_run()
+	main.level_up.open(main.player.available_upgrades(main.UPGRADE_POOL).slice(0, 3), main.player)
+	check_eq(main.level_up.title.text, "Nivel %d" % main.player.level, "formatted text is translated")
+	main.level_up.pick(0)
+	var item := UITheme.menu_item("Settings", func() -> void: pass)
+	tree.root.add_child(item)
+	await tree.process_frame
+	check_eq(item.tr(item.text), "Ajustes", "plain labels translate by key")
+	item.queue_free()
+	TranslationServer.set_locale(locale)
+	TranslationServer.remove_translation(spanish)
+	await end_run(main)

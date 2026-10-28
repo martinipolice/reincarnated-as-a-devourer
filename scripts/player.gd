@@ -196,7 +196,7 @@ func _update_flask(delta: float) -> void:
 			hp += healed
 			Game.sfx("flask_heal", 0.0)
 			Game.fx("spark", global_position, 2.5, TEARS_COLOR)
-			Game.float_text(global_position, "+%d HP" % roundi(healed), TEARS_COLOR)
+			Game.float_text(global_position, tr("+%d HP") % roundi(healed), TEARS_COLOR)
 		return
 	if Input.is_action_just_pressed("flask") and flask_charges > 0 and hp > 0.0:
 		flask_charges -= 1
@@ -318,7 +318,7 @@ func devour(essence: EssenceData) -> void:
 	hp += healed
 	Game.fx("spark", global_position, 2.5, Color(0.5, 1, 0.5))
 	if healed >= 1.0:
-		Game.float_text(global_position, "+%d HP" % roundi(healed), Color(0.5, 1, 0.5))
+		Game.float_text(global_position, tr("+%d HP") % roundi(healed), Color(0.5, 1, 0.5))
 	Game.sfx("devour")
 	Game.shake(0.3)
 	devoured.emit(essence)

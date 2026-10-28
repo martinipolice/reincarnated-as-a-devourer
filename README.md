@@ -338,6 +338,21 @@ godot --headless --path . -s res://tests/run_tests.gd
 Add `-- run` (or any part of a file name) to run only matching files. GitHub Actions runs
 the suite on every push and pull request (`.github/workflows/tests.yml`).
 
+## Translating
+
+The text is ready for translation, though only English exists so far. Formatted lines go
+through `tr()`, labels and buttons translate their own text, and `tools/extract_strings.py`
+collects every player-facing string (UI, hints, codex, credits, and the names and
+descriptions in `data/`) into `locale/messages.pot`:
+
+```
+python tools/extract_strings.py
+```
+
+To add a language, open the template in Poedit (or any gettext editor), save it as
+`locale/<code>.po` (for example `es.po`), and add that file under **Project Settings >
+Localization > Translations**. Re-run the extractor whenever text changes.
+
 ## Balance testing
 
 `tools/balance_sim.gd` plays a whole run headlessly with a bot, standing still (`afk`),

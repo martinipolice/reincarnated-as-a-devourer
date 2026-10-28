@@ -36,7 +36,7 @@ func open(choices: Array, player: Player) -> void:
 		card.pressed.connect(pick.bind(i))
 		options.add_child(card)
 		card.deal(0.06 * i)
-	title.text = "Level %d" % player.level
+	title.text = tr("Level %d") % player.level
 	prompt.text = Game.prompts("Choose one  ·  {pause} shows your build")
 	Game.sfx("level_up", 0.0)
 	show()
@@ -71,7 +71,7 @@ static func card_for(upgrade: Resource, player: Player, hotkey := "", compact :=
 	if next_level <= tiers.size():
 		subtitle = tiers[next_level - 1]
 	var accent := UITheme.UPGRADE
-	var tag := "LV %d" % next_level
+	var tag := TranslationServer.translate("LV %d") % next_level
 	if upgrade.max_level > 100:  # the endless fallback
 		accent = UITheme.BONE
 		tag = ""

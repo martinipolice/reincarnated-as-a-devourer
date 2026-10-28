@@ -100,7 +100,7 @@ func _fill_list() -> void:
 		var journey: Dictionary = Save.data.journey
 		_list.add_child(UITheme.menu_item("Continue", _continue, "pick"))
 		var where := Label.new()
-		where.text = "Day %d  ·  Level %d" % [int(journey.day), int(journey.level)]
+		where.text = tr("Day %d  ·  Level %d") % [int(journey.day), int(journey.level)]
 		where.add_theme_color_override("font_color", UITheme.ASH)
 		where.add_theme_font_size_override("font_size", 18)
 		where.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -131,7 +131,7 @@ func _continue() -> void:
 
 func _new_journey() -> void:
 	if Save.has_journey():
-		var message := "A hero reincarnates only once.\nBeginning anew abandons your journey on Day %d." % int(Save.data.journey.day)
+		var message := tr("A hero reincarnates only once.\nBeginning anew abandons your journey on Day %d.") % int(Save.data.journey.day)
 		if not await ConfirmDialog.ask(self, message, "Abandon it", "Keep it"):
 			_focus_list()
 			return
@@ -260,7 +260,7 @@ func _build() -> void:
 	var seen := []
 	for id: String in ["spare", "devour"]:
 		seen.append(ENDING.ENDINGS[id].title if id in Save.data.endings else "???")
-	_footer.text = "Journeys %d   ·   Victories %d   ·   Best day %d   ·   Endings: %s\nv%s" % [
+	_footer.text = tr("Journeys %d   ·   Victories %d   ·   Best day %d   ·   Endings: %s\nv%s") % [
 		int(Save.data.journeys), int(Save.data.wins), int(Save.data.best_day),
 		"  ·  ".join(seen), ProjectSettings.get_setting("application/config/version", "dev")]
 	_footer.hide()
