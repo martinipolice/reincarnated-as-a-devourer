@@ -49,13 +49,15 @@ var _gold_label: Label
 var _blessing_box: HBoxContainer
 var _blessing_title: Label
 var _training_box: VBoxContainer
-var _potion_box: HBoxContainer
-var _covenant_box: HBoxContainer
+var _potion_box: VBoxContainer
+var _covenant_box: VBoxContainer
 var _offered: Array = []
 var _sealed := false
 var _blessings_left := 1
 var _revive_label: Label
 var _continue: Button
+var _nav: VBoxContainer
+var _pages := {}  # nav name -> its page
 
 
 func _ready() -> void:
@@ -85,6 +87,7 @@ func open(day: int, main: Node) -> void:
 	_title.text = "The Goddess  ·  Day %d" % day if day != 19 else "The Goddess's Farewell  ·  Day 19"
 	_build_blessings()
 	_refresh()
+	_show_page("Training")
 	visible = true
 	_focus_first_blessing.call_deferred()
 	get_tree().paused = true
@@ -107,6 +110,8 @@ func _refresh() -> void:
 	_blessing_title.text = "Her blessing: choose one" if not _blessed else "Her blessing is with you."
 	for child in _blessing_box.get_children():
 		(child as Button).disabled = _blessed
+		if _blessed:
+			(child as Control).modulate = Color(0.5, 0.48, 0.55)
 	for child in _training_box.get_children():
 		_training_box.remove_child(child)
 		child.queue_free()
@@ -121,7 +126,8 @@ func _refresh() -> void:
 		buy.icon = TEARS_ICON
 		buy.expand_icon = true
 		buy.add_theme_constant_override("icon_max_width", 26)
-		buy.custom_minimum_size = Vector2(290, 46)
+		buy.custom_minimum_size = Vector2(0, 52)
+		buy.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		if rank >= upgrade[4]:
 			buy.text = "%s  ·  mastered" % upgrade[1]
 			buy.disabled = true
@@ -140,7 +146,8 @@ func _refresh() -> void:
 		seal.icon = COVENANT_ICON
 		seal.expand_icon = true
 		seal.add_theme_constant_override("icon_max_width", 26)
-		seal.custom_minimum_size = Vector2(290, 46)
+		seal.custom_minimum_size = Vector2(0, 52)
+		seal.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		seal.add_theme_color_override("font_color", COVENANT_COLOR)
 		var sealed_this: bool = _main.covenant == id
 		seal.text = "%s%s\n%s  ·  %s" % [entry[0], "  (sealed)" if sealed_this else "", entry[1], entry[2]]
@@ -148,7 +155,7 @@ func _refresh() -> void:
 		seal.pressed.connect(_seal.bind(id))
 		_covenant_box.add_child(seal)
 	_continue.disabled = not _blessed
-	_continue.text = "Continue your journey" if _blessed else "Choose her blessing first"
+	_continue.text = "Rise and continue" if _blessed else "Choose her blessing"
 
 
 func _training_row(training: TrainingData) -> Control:
@@ -187,18 +194,11 @@ func _build_blessings() -> void:
 	offers.resize(mini(3, offers.size()))
 	if offers.is_empty():
 		offers = [_main.FALLBACK_UPGRADE]
-	for upgrade: Resource in offers:
-		var level := player.upgrade_level(upgrade) + 1
-		var button := Button.new()
-		var tag := "NEW" if level == 1 else "Lv %d" % level
-		button.text = "%s  %s" % [upgrade.display_name, tag if upgrade.max_level < 100 else ""]
-		button.tooltip_text = upgrade.description
-		button.icon = upgrade.icon
-		button.expand_icon = true
-		button.add_theme_constant_override("icon_max_width", 36)
-		button.custom_minimum_size = Vector2(190, 56)
-		button.pressed.connect(_bless.bind(upgrade))
-		_blessing_box.add_child(button)
+	for i in offers.size():
+		var card := LevelUp.card_for(offers[i], player, "", true)
+		card.pressed.connect(_bless.bind(offers[i]))
+		_blessing_box.add_child(card)
+		card.deal(0.08 * i)
 
 
 # Controllers and keyboards need something focused from the start.
@@ -270,29 +270,36 @@ func _buy_tears(upgrade: Array) -> void:
 	_refresh()
 
 
-# The whole screen is built in code: a dimmed backdrop, the goddess on the
-# left, and her words, blessing and shop on the right.
+# The whole screen is built in code, like a souls site of grace: the
+# goddess on the left in her light with her words beneath; on the right her
+# blessing as three cards, then a menu list (training, her tears, a covenant,
+# rise) beside the page it opens.
 func _build() -> void:
 	var dim := ColorRect.new()
-	dim.color = Color(0.02, 0.015, 0.03, 0.93)
+	dim.color = Color(0.02, 0.015, 0.03, 0.97)
 	add_child(dim)
 	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var glow := Game.make_glow(Color(1, 0.9, 0.6, 0.55), 170.0)
+	glow.position = Vector2(170, 250)
+	add_child(glow)
 	var goddess := AnimatedSprite2D.new()
 	goddess.sprite_frames = GODDESS_FRAMES
-	goddess.position = Vector2(170, 330)
-	goddess.scale = Vector2(9, 9)
+	goddess.position = Vector2(170, 250)
+	goddess.scale = Vector2(8, 8)
 	goddess.play("run_down")
 	add_child(goddess)
-	var glow := Game.make_glow(Color(1, 0.9, 0.6, 0.6), 150.0)
-	glow.position = Vector2(170, 330)
-	add_child(glow)
-	move_child(glow, 1)
+	_story = _label("", 20, Color(0.82, 0.78, 0.92))
+	_story.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_story.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_story.position = Vector2(24, 420)
+	_story.size = Vector2(300, 260)
+	add_child(_story)
 
 	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 330)
-	margin.add_theme_constant_override("margin_right", 40)
-	margin.add_theme_constant_override("margin_top", 24)
-	margin.add_theme_constant_override("margin_bottom", 24)
+	margin.add_theme_constant_override("margin_left", 350)
+	margin.add_theme_constant_override("margin_right", 36)
+	margin.add_theme_constant_override("margin_top", 18)
+	margin.add_theme_constant_override("margin_bottom", 18)
 	add_child(margin)
 	margin.set_anchors_and_offsets_preset(Control.PRESET_LEFT_WIDE)
 	margin.offset_right = 1280  # keep the 720p layout on wider screens
@@ -300,44 +307,84 @@ func _build() -> void:
 	column.add_theme_constant_override("separation", 6)
 	margin.add_child(column)
 
+	var header := HBoxContainer.new()
+	column.add_child(header)
 	_title = UITheme.title_label("", 48, UITheme.GOLD)
 	_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	column.add_child(_title)
-	_story = _label("", 20, Color(0.85, 0.82, 0.95))
-	_story.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	column.add_child(_story)
-	var money := HBoxContainer.new()
-	money.add_theme_constant_override("separation", 24)
-	column.add_child(money)
-	_gold_label = _label("", 30, Color(1, 0.85, 0.35))
+	_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.add_child(_title)
+	var money := VBoxContainer.new()
+	money.add_theme_constant_override("separation", -4)
+	header.add_child(money)
+	_gold_label = _label("", 30, UITheme.GOLD)
+	_gold_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	money.add_child(_gold_label)
-	_revive_label = _label("", 20, Color(0.75, 0.7, 0.8))
+	_revive_label = _label("", 18, UITheme.ASH)
+	_revive_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	money.add_child(_revive_label)
+	var rule := OrnateRule.new(860.0)
+	column.add_child(rule)
 
-	_blessing_title = _label("", 20, Color.WHITE)
+	_blessing_title = _label("", 22, UITheme.BONE)
+	_blessing_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(_blessing_title)
 	_blessing_box = HBoxContainer.new()
-	_blessing_box.add_theme_constant_override("separation", 10)
+	_blessing_box.alignment = BoxContainer.ALIGNMENT_CENTER
+	_blessing_box.add_theme_constant_override("separation", 18)
 	column.add_child(_blessing_box)
 
-	column.add_child(_label("Training (lasts the whole journey)", 20, Color.WHITE))
+	var lower := PanelContainer.new()
+	lower.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	column.add_child(lower)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 18)
+	lower.add_child(row)
+	_nav = VBoxContainer.new()
+	_nav.add_theme_constant_override("separation", 2)
+	row.add_child(_nav)
+	var divider := ColorRect.new()
+	divider.color = Color(UITheme.BRONZE, 0.5)
+	divider.custom_minimum_size = Vector2(2, 0)
+	row.add_child(divider)
+	var stack := Control.new()
+	stack.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	stack.custom_minimum_size = Vector2(560, 214)
+	row.add_child(stack)
+
 	_training_box = VBoxContainer.new()
-	column.add_child(_training_box)
+	_training_box.add_theme_constant_override("separation", 2)
+	_potion_box = VBoxContainer.new()
+	_potion_box.add_theme_constant_override("separation", 8)
+	_covenant_box = VBoxContainer.new()
+	_covenant_box.add_theme_constant_override("separation", 8)
+	for entry: Array in [["Training", "Lasts the whole journey. Gold also buys revives.", _training_box],
+			["Goddess's Tears", "Your flask, refilled at every shrine.", _potion_box],
+			["Covenant", "Optional and final: a curse and a reward until her next shrine.", _covenant_box]]:
+		var page := VBoxContainer.new()
+		page.add_theme_constant_override("separation", 8)
+		stack.add_child(page)
+		page.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		var note := _label(entry[1], 18, COVENANT_COLOR if entry[0] == "Covenant" else UITheme.ASH)
+		page.add_child(note)
+		page.add_child(entry[2])
+		_pages[entry[0]] = page
+		var item := UITheme.menu_item(entry[0], _show_page.bind(entry[0]))
+		item.custom_minimum_size = Vector2(230, 40)
+		item.add_theme_font_size_override("font_size", 26)
+		item.focus_entered.connect(_show_page.bind(entry[0]))
+		_nav.add_child(item)
+	_continue = UITheme.menu_item("", _close)
+	_continue.custom_minimum_size = Vector2(230, 40)
+	_continue.add_theme_font_size_override("font_size", 26)
+	_nav.add_child(_continue)
 
-	column.add_child(_label("Goddess's Tears (refilled at every shrine)", 20, Color.WHITE))
-	_potion_box = HBoxContainer.new()
-	_potion_box.add_theme_constant_override("separation", 10)
-	column.add_child(_potion_box)
 
-	column.add_child(_label("A covenant until her next shrine (optional, and final)", 20, COVENANT_COLOR))
-	_covenant_box = HBoxContainer.new()
-	_covenant_box.add_theme_constant_override("separation", 10)
-	column.add_child(_covenant_box)
-	_continue = Button.new()
-	_continue.custom_minimum_size = Vector2(0, 44)
-	_continue.add_theme_font_size_override("font_size", 20)
-	_continue.pressed.connect(_close)
-	column.add_child(_continue)
+# The page beside the menu list: the one focused or picked.
+func _show_page(page_name: String) -> void:
+	for key: String in _pages:
+		_pages[key].visible = key == page_name
+	for item: Button in _nav.get_children():
+		item.add_theme_color_override("font_color", UITheme.BONE if item.text == page_name else UITheme.ASH.lightened(0.2))
 
 
 func _label(text: String, size: int, color: Color) -> Label:

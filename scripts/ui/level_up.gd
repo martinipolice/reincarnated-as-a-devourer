@@ -1,19 +1,28 @@
+class_name LevelUp
 extends CanvasLayer
-## Pauses the run and offers up to three upgrades. Pick with a click, the
-## number keys 1-3, or arrow keys + Enter.
+## Pauses the run and deals up to three upgrade cards (ChoiceCard). Pick with
+## a click, the number keys 1-3, or arrows / d-pad + Enter / A. A card's color
+## says what it is: gold a new weapon, blue a new passive, bronze a level,
+## violet a weapon's last level (its evolution comes next).
 
 signal chosen(upgrade: Resource)
 
 var _offers: Array = []
 
 @onready var title: Label = %Title
-@onready var options: VBoxContainer = %Options
+@onready var options: HBoxContainer = %Options
+@onready var prompt: Label = %Prompt
 
 
 func _ready() -> void:
 	title.add_theme_font_override("font", UITheme.title_font())
-	title.add_theme_font_size_override("font_size", 48)
+	title.add_theme_font_size_override("font_size", 60)
 	title.add_theme_color_override("font_color", UITheme.GOLD)
+	title.add_theme_color_override("font_outline_color", Color.BLACK)
+	title.add_theme_constant_override("outline_size", 8)
+	$Center/VBox.add_child(OrnateRule.new(420.0))
+	$Center/VBox.move_child($Center/VBox.get_child(-1), 1)
+	prompt.add_theme_color_override("font_color", UITheme.ASH)
 
 
 func open(offers: Array, player: Player) -> void:
@@ -22,17 +31,12 @@ func open(offers: Array, player: Player) -> void:
 		options.remove_child(child)
 		child.queue_free()
 	for i in offers.size():
-		var button := Button.new()
-		button.text = "%d.  %s" % [i + 1, _describe(offers[i], player)]
-		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		button.custom_minimum_size = Vector2(560, 76)
-		button.icon = offers[i].icon
-		button.expand_icon = true  # the 24 px icons, scaled up to 48 px
-		button.add_theme_constant_override("icon_max_width", 48)
-		button.add_theme_constant_override("h_separation", 14)
-		button.pressed.connect(_pick.bind(i))
-		options.add_child(button)
+		var card := card_for(offers[i], player, str(i + 1))
+		card.pressed.connect(_pick.bind(i))
+		options.add_child(card)
+		card.deal(0.06 * i)
 	title.text = "Level %d" % player.level
+	prompt.text = Game.prompts("Choose one  ·  {pause} shows your build")
 	Game.sfx("level_up", 0.0)
 	show()
 	get_tree().paused = true
@@ -56,17 +60,28 @@ func _pick(index: int) -> void:
 	chosen.emit(_offers[index])
 
 
-func _describe(upgrade: Resource, player: Player) -> String:
+## The card for taking `upgrade` next (also the goddess's blessings).
+static func card_for(upgrade: Resource, player: Player, hotkey := "", compact := false) -> ChoiceCard:
 	var next_level := player.upgrade_level(upgrade) + 1
-	var name: String = upgrade.display_name
+	var is_weapon := upgrade is WeaponData
+	var subtitle := ""
 	var tiers: PackedStringArray = upgrade.tier_names
 	if next_level <= tiers.size():
-		name = "%s: %s" % [name, tiers[next_level - 1]]
-	var tag := "NEW" if next_level == 1 else "Lv %d" % next_level
-	if upgrade.max_level > 100:
+		subtitle = tiers[next_level - 1]
+	var accent := UITheme.UPGRADE
+	var tag := "LV %d" % next_level
+	if upgrade.max_level > 100:  # the endless fallback
+		accent = UITheme.BONE
 		tag = ""
+	elif next_level == 1:
+		accent = UITheme.NEW_WEAPON if is_weapon else UITheme.NEW_PASSIVE
+		tag = "NEW WEAPON" if is_weapon else "NEW"
+	elif next_level == upgrade.max_level:
+		tag = "MAX"
+		if is_weapon and (upgrade.evolve_with or upgrade.evolve_with_item):
+			accent = UITheme.FINAL
 	var details: String = upgrade.description
 	var per_level: PackedStringArray = upgrade.level_descriptions
 	if next_level <= per_level.size() and per_level[next_level - 1] != "":
 		details = per_level[next_level - 1]
-	return "%s   %s\n      %s" % [name, tag, details]
+	return ChoiceCard.new(upgrade.icon, upgrade.display_name, tag, subtitle, details, accent, hotkey, compact)

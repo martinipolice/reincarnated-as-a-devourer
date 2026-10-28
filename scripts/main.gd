@@ -1083,7 +1083,7 @@ func _on_primary() -> void:
 	else:
 		Game.sfx("click", 0.0)
 		Save.resume = false
-		get_tree().reload_current_scene()
+		Game.change_scene()
 
 
 func _on_secondary() -> void:
@@ -1092,4 +1092,4 @@ func _on_secondary() -> void:
 		_end_run("You have fallen in battle...\nThe cycle remains unbroken.")
 	else:
 		Game.sfx("click", 0.0)
-		get_tree().change_scene_to_file(TITLE_SCENE)
+		Game.change_scene(TITLE_SCENE)

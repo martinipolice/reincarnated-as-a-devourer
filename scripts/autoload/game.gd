@@ -19,6 +19,7 @@ const PROMPTS := {
 	"pick": ["a click, the number keys 1-3, or the arrow keys and Enter", "the d-pad and A"],
 	"menus": ["Arrows / Tab + Enter, Esc to go back", "D-pad or stick + A, B to go back"],
 	"accept": ["Enter", "A"],
+	"back": ["Esc", "B"],
 }
 ## Below this, stick movement is ignored (worn sticks drift).
 const STICK_DEADZONE := 0.25
@@ -127,6 +128,11 @@ var _hit_stop_active := false
 var _fx_frames := {}
 var _glow_texture: GradientTexture2D
 var _glow_material: CanvasItemMaterial
+## Scene changes fade through black (change_scene).
+const FADE_OUT := 0.35
+const FADE_IN := 0.5
+var _fade: ColorRect
+var _fading := false
 
 
 func _ready() -> void:
@@ -172,6 +178,38 @@ func _ready() -> void:
 			voice.bus = "SFX"
 			add_child(voice)
 			_pools[combat].append(voice)
+
+
+## Fades to black, changes to `path` (or reloads the current scene when it's
+## empty), and fades back in. The tree is unpaused on the way.
+func change_scene(path := "") -> void:
+	if _fading:
+		return
+	_fading = true
+	if _fade == null:
+		var layer := CanvasLayer.new()
+		layer.layer = 100
+		add_child(layer)
+		_fade = ColorRect.new()
+		_fade.color = Color(0.0, 0.0, 0.0, 0.0)
+		_fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		layer.add_child(_fade)
+		_fade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_fade.mouse_filter = Control.MOUSE_FILTER_STOP  # no clicks mid-fade
+	var out := create_tween()
+	out.tween_property(_fade, "color:a", 1.0, FADE_OUT)
+	await out.finished
+	get_tree().paused = false
+	if path == "":
+		get_tree().reload_current_scene()
+	else:
+		get_tree().change_scene_to_file(path)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	_fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_fading = false
+	var back := create_tween()
+	back.tween_property(_fade, "color:a", 0.0, FADE_IN)
 
 
 ## Ratio mitigation. The terminal game used max(0, ATK - DEF), which drops to

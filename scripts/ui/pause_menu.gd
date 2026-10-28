@@ -12,8 +12,8 @@ const TITLE_SCENE := "res://scenes/ui/title.tscn"
 var _main: Node  # the run, or null on the title screen
 var _nav: VBoxContainer
 var _page: VBoxContainer
-var _quit_armed := false
-var _quit_button: Button
+var _heading_label: Label
+var _confirming := false
 
 
 func _ready() -> void:
@@ -23,31 +23,38 @@ func _ready() -> void:
 	hide()
 
 
-## `main`: the run scene, or null for the title screen's version.
-func open(main: Node = null) -> void:
+## `main`: the run scene, or null for the title screen's version, which
+## opens on `page` ("How to Play" or "Settings").
+func open(main: Node = null, page := "How to Play") -> void:
 	_main = main
-	_quit_armed = false
 	for child in _nav.get_children():
 		_nav.remove_child(child)  # now, so get_child(0) below is a new button
 		child.queue_free()
+	var first: Button
 	if _main:
-		_nav_button("Resume", close)
+		_heading_label.text = "Paused"
+		first = _nav_button("Resume", close)
 		_nav_button("Your Build", _show_build)
-	_nav_button("How to Play", _show_how_to_play)
-	_nav_button("Settings", _show_settings)
+	else:
+		_heading_label.text = "Menu"
+	var help := _nav_button("How to Play", _show_how_to_play)
+	var settings := _nav_button("Settings", _show_settings)
 	if _main:
-		_quit_button = _nav_button("Quit to Title", _quit)
+		_nav_button("Quit to Title", _quit)
 	else:
 		_nav_button("Back", close)
+		first = settings if page == "Settings" else help
 	show()
 	Music.muffle(true)
 	if _main:
 		get_tree().paused = true
 		_show_build()
+	elif page == "Settings":
+		_show_settings()
 	else:
 		_show_how_to_play()
 	Game.sfx("open_menu", 0.0)
-	(_nav.get_child(0) as Button).grab_focus.call_deferred()
+	first.grab_focus.call_deferred()
 
 
 func close() -> void:
@@ -60,18 +67,15 @@ func close() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if visible and (event.is_action_pressed("pause") or event.is_action_pressed("ui_cancel")):
+	if visible and not _confirming and (event.is_action_pressed("pause") or event.is_action_pressed("ui_cancel")):
 		get_viewport().set_input_as_handled()
 		close()
 
 
 func _nav_button(text: String, action: Callable) -> Button:
-	var button := Button.new()
-	button.text = text
-	button.custom_minimum_size = Vector2(220, 44)
-	button.pressed.connect(func() -> void:
-		Game.sfx("click", 0.0)
-		action.call())
+	var button := UITheme.menu_item(text, action)
+	button.custom_minimum_size = Vector2(230, 42)
+	button.add_theme_font_size_override("font_size", 26)
 	_nav.add_child(button)
 	return button
 
@@ -217,29 +221,29 @@ func _toggle(text: String, key: String) -> void:
 	_page.add_child(check)
 
 
-# Quitting loses everything since the last shrine, so it asks twice.
+# Quitting loses everything since the last shrine, so it asks first.
 func _quit() -> void:
-	if not _quit_armed:
-		_quit_armed = true
-		# A journey saves at the goddess's shrines; before the first one,
-		# quitting ends it.
-		if Save.has_journey():
-			_quit_button.text = "Sure? Back to Day %d" % int(Save.data.journey.day)
-		else:
-			_quit_button.text = "Sure? This journey ends"
-		Game.sfx("denied", 0.0)
+	# A journey saves at the goddess's shrines; before the first one,
+	# quitting ends it.
+	var message := "Quit to the title?
+You'll resume on Day %d, at her last shrine." % int(Save.data.journey.day) 		if Save.has_journey() else "Quit to the title?
+No shrine has saved you yet: this journey ends."
+	_confirming = true
+	var yes := await ConfirmDialog.ask(self, message, "Quit", "Stay")
+	_confirming = false
+	if not yes:
+		(_nav.get_child(_nav.get_child_count() - 1) as Button).grab_focus()
 		return
 	if not Save.has_journey():
 		Save.end_journey(_main.day(), false)  # counts in your records
-	get_tree().paused = false
 	Music.muffle(false)
 	Hints.clear()
-	get_tree().change_scene_to_file(TITLE_SCENE)
+	Game.change_scene(TITLE_SCENE)
 
 
 func _build() -> void:
 	var dim := ColorRect.new()
-	dim.color = Color(0.02, 0.015, 0.03, 0.85)
+	dim.color = Color(0.02, 0.015, 0.03, 0.88)
 	add_child(dim)
 	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var center := CenterContainer.new()
@@ -254,9 +258,15 @@ func _build() -> void:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 28)
 	margin.add_child(row)
+	var side := VBoxContainer.new()
+	side.add_theme_constant_override("separation", 6)
+	row.add_child(side)
+	_heading_label = UITheme.title_label("Paused", 48, UITheme.GOLD)
+	side.add_child(_heading_label)
+	side.add_child(OrnateRule.new(200.0))
 	_nav = VBoxContainer.new()
-	_nav.add_theme_constant_override("separation", 8)
-	row.add_child(_nav)
+	_nav.add_theme_constant_override("separation", 2)
+	side.add_child(_nav)
 	var rule := ColorRect.new()
 	rule.color = Color(UITheme.BRONZE, 0.6)
 	rule.custom_minimum_size = Vector2(2, 0)
