@@ -1,8 +1,9 @@
 extends Node2D
 ## The journey controller: one life, twenty days. Runs the day clock, the
-## spawn director, elites and the boss, level-ups and the HUD; opens the
-## goddess's shrine on the lore days (checkpointing the journey there); and on
-## death offers a revive for gold, or ends the journey for good.
+## areas, level-ups, kills and rewards, the goddess's shrines (checkpointing
+## the journey there), the Demon King's arrival, and on death a revive for
+## gold or the end of the journey. The horde is SpawnDirector's, chests are
+## LootDirector's, the music RunMusic's, and the save JourneyRecord's.
 
 ## For the HUD, which listens instead of reading the run every frame.
 signal gold_changed(gold: int, revive_cost: int)
@@ -10,45 +11,6 @@ signal day_changed(day: int, final_day: int, next_shrine: int)
 
 const SECONDS_PER_DAY := 60.0  # 20 days in 20 minutes
 const FINAL_DAY := 20
-const SPAWN_RADIUS := 700.0
-const BOSS_SPAWN_DISTANCE := 450.0
-const GRACE_PERIOD := 2.0  # seconds before the first spawn
-const ELITE_INTERVAL := 30.0
-## Waves: spawning builds over WAVE_BUILD of each WAVE_CYCLE seconds from
-## WAVE_LOW to WAVE_HIGH times the base rate, then eases to WAVE_LULL.
-const WAVE_CYCLE := 24.0
-const WAVE_BUILD := 0.7  # fraction of the cycle spent building
-const WAVE_LOW := 1.0
-const WAVE_HIGH := 1.4
-const WAVE_LULL := 0.3
-## Share of spawns placed ahead of where the player is running.
-const AHEAD_CHANCE := 0.45
-const AHEAD_SPREAD := 1.1  # radians either side of the running direction
-## Announced events (encirclement, Vexclaw ambush, plague tide).
-const EVENT_FROM_DAY := 3
-const EVENT_FIRST := 75.0
-const EVENT_GAP := Vector2(40.0, 55.0)
-const EVENT_WARNING := 1.5
-## Enemies get this much tougher each day after the first (HP fully, damage
-## at 70%; see Enemy.setup). Day 20 is 1 + 19 * this.
-const TOUGHNESS_PER_DAY := 0.2
-## Treasure chests: one appears every CHEST_INTERVAL s (up to MAX_CHESTS at
-## once) somewhere just off-screen; a HUD arrow points the way. Some are
-## golden (two rewards); from MIMIC_FROM_DAY some are Mimics that fight back.
-const CHEST_FIRST := 20.0
-const CHEST_INTERVAL := 30.0
-const GOLDEN_CHANCE := 0.15
-const MIMIC_CHANCE := 0.15
-const MIMIC_FROM_DAY := 3
-const FERVOR_DURATION := 15.0
-const FERVOR_HASTE := 0.5
-const MAX_CHESTS := 3
-const CHEST_DISTANCE := Vector2(450.0, 850.0)
-const BOMB_RADIUS := 450.0
-const BOMB_DAMAGE := 150.0
-const GOLD_POUCH_PER_DAY := 12
-## How far from the Demon King his summoned minions appear.
-const SUMMON_RING := 80.0
 ## Biomes by day; the Demon King's temple arena has this radius.
 const RUINS_FROM_DAY := 10
 const ARENA_RADIUS := 650.0
@@ -59,7 +21,6 @@ const MOOD := {
 	"ruins": Color(0.48, 0.4, 0.5),
 	"temple": Color(0.42, 0.28, 0.34),
 }
-const CHEST_REEL := preload("res://scripts/ui/chest_reel.gd")
 const ENDING := preload("res://scripts/ui/ending.gd")
 const VIGNETTE := preload("res://scripts/ui/vignette.gd")
 ## The camera pulls back from 1.0 toward this as you level (30 levels).
@@ -67,23 +28,13 @@ const MIN_ZOOM := 0.86
 ## The goddess finds you on the original game's lore days.
 const SHRINE_DAYS := [5, 10, 15, 19]
 const SHRINE_SCENE := preload("res://scenes/ui/shrine.tscn")
+const SHRINE := preload("res://scripts/ui/shrine.gd")
 const PAUSE_MENU := preload("res://scripts/ui/pause_menu.gd")
 ## After a level-up, gems this close fly to you, so none are left behind.
 const LEVEL_UP_MAGNET := 700.0
-## Music intensity: enemies this close count as pressure; this many is full.
-const PRESSURE_RADIUS := 320.0
-const PRESSURE_FULL := 30.0
-## In the ruins, intensity this high brings in the faster track for at least
-## PEAK_HOLD seconds, until things calm below PEAK_RELEASE.
-const PEAK_AT := 0.9
-const PEAK_RELEASE := 0.6
-const PEAK_HOLD := 20.0
-## Elites can carry a trait from this day: some of the time, then always.
-const TRAITS_FROM_DAY := 5  # after the goddess's first visit
-const TRAIT_CHANCE := 0.6
-const TRAITS_ALWAYS_FROM_DAY := 10
 const TRAIT_GOLD_MULT := 2.0
-const SPLIT_COUNT := 3
+const MINI_BOSS_GOLD_PER_DAY := 15
+const MINI_BOSS_STYLE := 40.0
 ## Shrine covenants: a curse until the next shrine, for a reward.
 ## id -> [name, curse, boon]. Effects live in set_covenant() and the
 ## *_mult() functions below.
@@ -95,7 +46,6 @@ const COVENANTS := {
 }
 ## Below this HP fraction, the first time, the game suggests the flask.
 const FLASK_HINT_HP := 0.5
-const SHRINE := preload("res://scripts/ui/shrine.gd")
 ## Reviving costs gold, doubling each time: 800, 1600, 3200...
 const REVIVE_BASE_COST := 800
 const REVIVE_HP := 0.5  # fraction of max HP you come back with
@@ -105,37 +55,8 @@ const TITLE_SCENE := "res://scenes/ui/title.tscn"
 ## Ignore end-screen input briefly so a held key doesn't skip it.
 const END_MENU_DELAY := 0.8
 
-const ENEMY_SCENE := preload("res://scenes/enemy.tscn")
-const BOSS_SCENE := preload("res://scenes/boss.tscn")
 const GEM_SCENE := preload("res://scenes/xp_gem.tscn")
 const CORPSE_SCENE := preload("res://scenes/devour_corpse.tscn")
-const CHEST_SCENE := preload("res://scenes/loot_chest.tscn")
-const DREADLING := preload("res://data/enemies/dreadling.tres")
-const VEXCLAW := preload("res://data/enemies/vexclaw.tres")
-const PLAGUEWING := preload("res://data/enemies/plaguewing.tres")
-const MIMIC := preload("res://data/enemies/mimic.tres")
-const DEMON_KING := preload("res://data/enemies/demon_king.tres")
-const HEXEYE := preload("res://data/enemies/hexeye.tres")
-const WARDEN := preload("res://data/enemies/warden.tres")
-## Mid-journey peaks: day -> [enemy, attack cycle, summons?, enrage?]. Each
-## arrives MINI_BOSS_DELAY seconds into its day (after that day's shrine).
-const MINI_BOSSES := {
-	10: [preload("res://data/enemies/ruin_guardian.tres"), [Boss.Attack.CHARGE, Boss.Attack.SLAM], false, true],
-	15: [preload("res://data/enemies/hollow_spirit.tres"), [Boss.Attack.BLINK, Boss.Attack.SLAM, Boss.Attack.VOLLEY], true, true],
-}
-const MINI_BOSS_DELAY := 25.0
-## While a mini-boss lives the waves thin out, so the duel stays readable.
-const MINI_BOSS_WAVES := 0.5
-const MINI_BOSS_GOLD_PER_DAY := 15
-const MINI_BOSS_STYLE := 40.0
-## Monsters by day: [Dreadling, Vexclaw, Plaguewing, Hexeye, Warden] weights.
-const SPAWN_TABLE := [
-	[6, [90, 10, 0, 0, 0], [60, 40, 0, 0, 0]],
-	[10, [45, 40, 8, 7, 0], [30, 45, 15, 10, 0]],
-	[14, [38, 30, 14, 10, 8], [20, 35, 20, 15, 10]],
-	[99, [30, 28, 18, 12, 12], [15, 33, 22, 15, 15]],
-]
-
 const STARTING_WEAPON := preload("res://data/weapons/blade.tres")
 ## Offered when everything in the pool is maxed.
 const FALLBACK_UPGRADE := preload("res://data/items/panacea.tres")
@@ -163,45 +84,41 @@ var gold := 0:
 	set(value):
 		gold = value
 		gold_changed.emit(gold, revive_cost())
-var boss: Boss
-var mini_boss: Boss
-var _minis_done := []
-var _restoring := false
 var revives := 0
 var best_rank := 0  # the style meter's best this journey
-var results: Results
-var _unlocked_at_start: Array[String] = []  # starting weapons, to spot new ones
-var _kills_by := {}  # enemy name -> kills, until the next _note_codex()
+var covenant := ""
 ## TrainingData.id -> ranks bought at the goddess's shrines this journey.
 var training_ranks := {}
+## The journey is over (won, or the hero accepted their fate).
+var over := false
+## The hero has fallen and the goddess's offer is open.
+var awaiting_revive := false
+var boss_spawned := false
+var boss: Boss:
+	get:
+		return spawner.boss
+var mini_boss: Boss:
+	get:
+		return spawner.mini_boss
+
+var spawner: SpawnDirector
+var loot: LootDirector
+var music: RunMusic
+var record := JourneyRecord.new()
+var style: StyleMeter
+var atmosphere: Atmosphere
 var shrine: CanvasLayer
 var pause_menu: CanvasLayer
-var chest_reel: CanvasLayer
 var ending: CanvasLayer
-## Chests waiting for their ceremony, [rewards, golden, at]: two can be
-## opened in one frame (a Mimic's golden chest beside another).
-var _chest_queue: Array = []
-var _revealing := false
-var atmosphere: Atmosphere
-@onready var camera: Camera2D = $Player/Camera2D
+var results: Results
+var _unlocked_at_start: Array[String] = []  # starting weapons, to spot new ones
 var _shrines_done := []
-var _awaiting_revive := false
+var _restoring := false
 var _last_day := 0
-var style: StyleMeter
-var covenant := ""
-var _pressure := 0.0
-var _pressure_timer := 0.0
-var _peak_hold := 0.0
-var _spawn_timer := GRACE_PERIOD
-var _elite_timer := ELITE_INTERVAL
-var _chest_timer := CHEST_FIRST
-var _event_timer := EVENT_FIRST
-var _fervor_until := 0.0
-var _boss_spawned := false
-var _over := false
 var _banner_tween: Tween
 
 @onready var player: Player = $Player
+@onready var camera: Camera2D = $Player/Camera2D
 @onready var enemies: Node2D = $Enemies
 @onready var pickups: Node2D = $Pickups
 @onready var level_up: CanvasLayer = $LevelUp
@@ -218,6 +135,13 @@ var _banner_tween: Tween
 
 func _ready() -> void:
 	Enemy.damage_log.clear()
+	spawner = SpawnDirector.new(self)
+	add_child(spawner)
+	spawner.mini_boss_arrived.connect(_on_mini_boss_arrived)
+	loot = LootDirector.new(self)
+	add_child(loot)
+	music = RunMusic.new(self)
+	add_child(music)
 	Game.enemy_killed.connect(_on_enemy_killed)
 	player.died.connect(_on_player_died)
 	player.leveled_up.connect(_on_player_leveled_up)
@@ -240,8 +164,6 @@ func _ready() -> void:
 	for button: Button in [primary_button, secondary_button]:
 		button.theme_type_variation = &"MenuItem"
 		button.add_theme_font_size_override("font_size", 26)
-	chest_reel = CHEST_REEL.new()
-	add_child(chest_reel)
 	ending = ENDING.new()
 	add_child(ending)
 	add_child(SplatLayer.new())
@@ -255,9 +177,7 @@ func _ready() -> void:
 	world.set_origin(player.position)
 	mood.color = MOOD.forest
 	if Save.resume and Save.has_journey():
-		_restoring = true  # replaying the hero: no banners for old Resonances
 		_restore(Save.data.journey)
-		_restoring = false
 	else:
 		player.apply_upgrade(_starting_weapon())
 	Save.resume = false
@@ -291,12 +211,12 @@ func day() -> int:
 
 
 func toughness() -> float:
-	return 1.0 + TOUGHNESS_PER_DAY * (day() - 1)
+	return spawner.toughness()
 
 
 func _process(delta: float) -> void:
 	world.update(player.position, get_viewport_rect().size)
-	if _over:
+	if over:
 		return  # the results screen takes it from here
 
 	elapsed += delta
@@ -306,7 +226,7 @@ func _process(delta: float) -> void:
 		style.scale = 1.0 + StyleMeter.DAY_SCALE * (day() - 1)
 		if next_shrine_day() == day() + 1:
 			Hints.show_hint("shrine_soon", "The goddess finds you tomorrow. At her shrine, gold buys training. Gold also pays for a revive if you fall, so don't spend it all.")
-	if not _over and player.hp < player.stat("max_hp") * FLASK_HINT_HP and player.flask_charges > 0:
+	if player.hp < player.stat("max_hp") * FLASK_HINT_HP and player.flask_charges > 0:
 		Hints.show_hint("flask", "You're hurt! Press {flask} to drink the Goddess's Tears. She refills them at every shrine, so use them.")
 	if day() in SHRINE_DAYS and not day() in _shrines_done and not level_up.visible:
 		_shrines_done.append(day())
@@ -316,23 +236,13 @@ func _process(delta: float) -> void:
 		create_tween().tween_property(mood, "color", MOOD.ruins, 4.0)
 		atmosphere.set_area("ruins")
 		moments.area_card("The Fallen Ruins")
-	if day() >= FINAL_DAY and not _boss_spawned:
+	if day() >= FINAL_DAY and not boss_spawned:
 		_spawn_boss()
-	if day() in MINI_BOSSES and not day() in _minis_done and not _boss_spawned \
-			and elapsed >= (day() - 1) * SECONDS_PER_DAY + MINI_BOSS_DELAY:
-		_minis_done.append(day())
-		_spawn_mini_boss(day())
-
-	# The waves stop once the Demon King arrives: Day 20 is a duel.
-	if not _boss_spawned:
-		_spawn_waves(delta)
-	_chest_timer -= delta
-	if _chest_timer <= 0.0:
-		_chest_timer = CHEST_INTERVAL
-		_spawn_chest()
-
+	if not boss_spawned:
+		spawner.update(delta)
+	loot.update(delta)
 	_update_status()
-	_update_music(delta)
+	music.update(delta)
 
 
 func _physics_process(_delta: float) -> void:
@@ -342,119 +252,6 @@ func _physics_process(_delta: float) -> void:
 func _exit_tree() -> void:
 	Crowd.clear()
 	Hints.clear()  # however the run is left: quit, title or a new journey
-
-
-func _spawn_waves(delta: float) -> void:
-	_spawn_timer -= delta
-	if _spawn_timer <= 0.0:
-		_spawn_timer = maxf(0.45, 1.3 - day() * 0.05) / wave_intensity() / (1.4 if covenant == "horde" else 1.0)
-		if is_instance_valid(mini_boss):
-			_spawn_timer /= MINI_BOSS_WAVES
-		# Bigger packs as the days pass: 1 per spawn on Days 1-4, 2 on 5-9, ...
-		for i in 1 + day() / 5:
-			_spawn_enemy()
-	_elite_timer -= delta
-	if _elite_timer <= 0.0:
-		_elite_timer = ELITE_INTERVAL
-		_spawn_enemy(true)
-	if day() >= EVENT_FROM_DAY:
-		_event_timer -= delta
-		if _event_timer <= 0.0:
-			_event_timer = randf_range(EVENT_GAP.x, EVENT_GAP.y)
-			_start_event()
-
-
-## How hard the current wave is pushing: builds up, then a short breather.
-func wave_intensity() -> float:
-	var t := fmod(elapsed, WAVE_CYCLE) / WAVE_CYCLE
-	if t > WAVE_BUILD:
-		return WAVE_LULL
-	return lerpf(WAVE_LOW, WAVE_HIGH, t / WAVE_BUILD)
-
-
-# Where a new enemy appears: mostly ahead of a running player, so fleeing in
-# a straight line runs into the next pack.
-func _spawn_point(distance: float) -> Vector2:
-	var angle := randf() * TAU
-	if player.velocity.length() > 10.0 and randf() < AHEAD_CHANCE:
-		angle = player.velocity.angle() + randf_range(-AHEAD_SPREAD, AHEAD_SPREAD)
-	return player.position + Vector2.RIGHT.rotated(angle) * distance
-
-
-func _start_event() -> void:
-	var events := ["encircle", "ambush"]
-	if day() >= 8:
-		events.append("plague")
-	var event: String = events.pick_random()
-	var warnings := {
-		"encircle": "They're surrounding you!",
-		"ambush": "A Vexclaw pack is hunting you!",
-		"plague": "A plague tide rises...",
-	}
-	show_banner(warnings[event], 2.0)
-	Game.sfx("boss_warn", 0.0)
-	await get_tree().create_timer(EVENT_WARNING, false).timeout
-	if _over or _boss_spawned:
-		return
-	match event:
-		"encircle":
-			# A closing ring of Dreadlings, all the way around.
-			var count := 12 + day()
-			for i in count:
-				var angle := TAU * i / count + randf_range(-0.05, 0.05)
-				_spawn_at(DREADLING, player.position + Vector2.RIGHT.rotated(angle) * 520.0)
-		"ambush":
-			# A Vexclaw pack from one side.
-			var side := randf() * TAU
-			for i in 3 + day() / 4:
-				_spawn_at(VEXCLAW, player.position + Vector2.RIGHT.rotated(side + randf_range(-0.4, 0.4)) * 600.0)
-		"plague":
-			var side := randf() * TAU
-			for i in 2 + day() / 8:
-				_spawn_at(PLAGUEWING, player.position + Vector2.RIGHT.rotated(side + randf_range(-0.5, 0.5)) * 600.0)
-			for i in 6:
-				_spawn_at(DREADLING, player.position + Vector2.RIGHT.rotated(side + randf_range(-0.6, 0.6)) * 560.0)
-
-
-func _spawn_at(data: EnemyData, at: Vector2) -> void:
-	var enemy := ENEMY_SCENE.instantiate() as Enemy
-	enemy.setup(data, player, false, toughness())
-	enemy.position = at
-	enemies.add_child(enemy)
-
-
-# Which track the moment calls for, and how hard it should hit. Waves swell
-# the music, a crowd around you pushes it to full, lulls muffle it.
-func _update_music(delta: float) -> void:
-	if _awaiting_revive:
-		return
-	Game.footstep = "footstep_grass" if world.biome == "forest" and not _boss_spawned else "footstep_stone"
-	if _boss_spawned:
-		Music.set_intensity(1.0)
-		return
-	if is_instance_valid(mini_boss):
-		Music.set_intensity(1.0)
-		Music.play("ruins_peak", 1.5)
-		return
-	_pressure_timer -= delta
-	if _pressure_timer <= 0.0:
-		_pressure_timer = 0.5
-		var near := 0
-		for node in enemies.get_children():
-			if (node as Node2D).global_position.distance_squared_to(player.global_position) < PRESSURE_RADIUS * PRESSURE_RADIUS:
-				near += 1
-		_pressure = clampf(near / PRESSURE_FULL, 0.0, 1.0)
-	var wave := clampf((wave_intensity() - WAVE_LULL) / (WAVE_HIGH - WAVE_LULL), 0.0, 1.0)
-	var intensity := maxf(maxf(0.3 + 0.7 * wave, _pressure), style.intensity())
-	Music.set_intensity(intensity)
-	if world.biome == "forest":
-		Music.play("forest", 2.5)
-		return
-	if intensity >= PEAK_AT:
-		_peak_hold = PEAK_HOLD
-	elif intensity < PEAK_RELEASE:
-		_peak_hold -= delta
-	Music.play("ruins_peak" if _peak_hold > 0.0 else "ruins", 2.5)
 
 
 func _on_rank_changed(rank: int, rising: bool) -> void:
@@ -512,8 +309,8 @@ func _update_status() -> void:
 	var parts := []
 	if covenant != "":
 		parts.append(COVENANTS[covenant][0])
-	if elapsed < _fervor_until:
-		parts.append("Goddess's Fervor  %ds" % ceili(_fervor_until - elapsed))
+	if elapsed < loot.fervor_until:
+		parts.append("Goddess's Fervor  %ds" % ceili(loot.fervor_until - elapsed))
 	for essence: EssenceData in player.essences:
 		parts.append("%s x%d" % [essence.display_name.get_slice(" ", 0), player.essences[essence]])
 	hud.set_status("   ".join(parts))
@@ -531,67 +328,27 @@ func show_banner(text: String, duration := 2.5) -> void:
 	_banner_tween.tween_callback(banner.hide)
 
 
-# Weights ported from explore(), keyed by day instead of total stats.
-# The original allowed 5% Plaguewings from the start; that is brutal in real
-# time, so early days skip them. Elites lean toward stronger monsters so
-# Vexclaw essences (the Blade evolution) are reachable. Tune freely.
-func _pick_enemy(elite := false) -> EnemyData:
-	var weights: Array = SPAWN_TABLE.back()[2 if elite else 1]
-	for row: Array in SPAWN_TABLE:
-		if day() < row[0]:
-			weights = row[2 if elite else 1]
-			break
-	var kinds := [DREADLING, VEXCLAW, PLAGUEWING, HEXEYE, WARDEN]
-	var total := 0
-	for w: int in weights:
-		total += w
-	var roll := randi_range(1, total)
-	for i in kinds.size():
-		roll -= weights[i]
-		if roll <= 0:
-			return kinds[i]
-	return DREADLING
-
-
-func _spawn_enemy(elite := false, distance := SPAWN_RADIUS) -> void:
-	var enemy := ENEMY_SCENE.instantiate() as Enemy
-	var affix := ""
-	if elite and day() >= TRAITS_FROM_DAY and (day() >= TRAITS_ALWAYS_FROM_DAY or randf() < TRAIT_CHANCE):
-		affix = Enemy.TRAITS.keys().pick_random()
-	enemy.setup(_pick_enemy(elite), player, elite, toughness(), affix)
-	enemy.position = _spawn_point(distance)
-	enemies.add_child(enemy)
-	if enemy.data == HEXEYE:
-		Hints.show_hint("hexeye", "A Hexeye: it keeps its distance and aims a blue line before it fires. Step off the line.")
-	elif enemy.data == WARDEN:
-		Hints.show_hint("warden", "A Warden: its shield soaks most of your damage until it breaks. Burns and bites wear it down too.")
-	if affix != "":
-		Hints.show_hint("trait", "Elites can carry a trait, named over their head: Swift, Armored, Splitting (bursts into three) or Vampiric (heals when it hits you). They pay double gold.")
-	if elite:
-		Hints.show_hint("elite", "An elite is coming: bigger and tougher. Kill it and it drops an essence you can Devour.")
-
-
 # Testing shortcuts. Only active in debug builds (running from the editor),
 # never in an exported game.
 func _unhandled_input(event: InputEvent) -> void:
 	# Esc pauses, unless a screen (level-up, shrine, death) already has.
-	if event.is_action_pressed("pause") and not _over and not get_tree().paused:
+	if event.is_action_pressed("pause") and not over and not get_tree().paused:
 		get_viewport().set_input_as_handled()
 		pause_menu.open(self)
 		return
-	if not OS.is_debug_build() or _over or not event is InputEventKey:
+	if not OS.is_debug_build() or over or not event is InputEventKey:
 		return
 	var key := event as InputEventKey
 	if not key.pressed or key.echo:
 		return
 	match key.keycode:
 		KEY_F1:
-			_spawn_enemy(true, 250.0)
+			spawner.spawn_enemy(true, 250.0)
 			show_banner("[debug] Elite spawned", 1.0)
 		KEY_F2:
 			player.gain_xp(player.xp_to_next() - player.xp)
 		KEY_F3:
-			if not _boss_spawned:
+			if not boss_spawned:
 				elapsed = (FINAL_DAY - 1) * SECONDS_PER_DAY
 		KEY_F4:
 			player.hp = player.stat("max_hp")
@@ -599,20 +356,13 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 # A mid-journey guardian: its own attack cycle, a bar and a title card.
-func _spawn_mini_boss(on_day: int) -> void:
-	var entry: Array = MINI_BOSSES[on_day]
-	mini_boss = BOSS_SCENE.instantiate() as Boss
-	mini_boss.setup(entry[0], player)
-	mini_boss.configure(entry[1], entry[2], entry[3])
-	mini_boss.position = player.position + Vector2.RIGHT.rotated(randf() * TAU) * BOSS_SPAWN_DISTANCE
-	mini_boss.summon.connect(_on_boss_summon)
-	mini_boss.enraged.connect(func() -> void: show_banner("%s is enraged!" % entry[0].display_name, 2.0))
-	enemies.add_child(mini_boss)
-	hud.show_boss(mini_boss, entry[0].display_name)
-	moments.area_card(entry[0].display_name)
+func _on_mini_boss_arrived(guardian: Boss, data: EnemyData) -> void:
+	guardian.enraged.connect(func() -> void: show_banner("%s is enraged!" % data.display_name, 2.0))
+	hud.show_boss(guardian, data.display_name)
+	moments.area_card(data.display_name)
 	Game.sfx("doom", 0.0)
 	Game.sfx("boss_warn", 0.0)
-	Game.shockwave(mini_boss.global_position, Color(0.9, 0.3, 0.3), 220.0, 0.7)
+	Game.shockwave(guardian.global_position, Color(0.9, 0.3, 0.3), 220.0, 0.7)
 	camera.punch(0.08, 1.0)
 	Hints.show_hint("mini_boss", "A guardian of this land! Red markings show where it will strike: step out of them, then hit back. Waves thin out while it lives.")
 
@@ -623,10 +373,9 @@ func _on_mini_boss_killed(enemy: Enemy) -> void:
 	Save.count_felled(enemy.data.display_name)
 	gold += roundi(MINI_BOSS_GOLD_PER_DAY * day() * gold_mult())
 	style.add(MINI_BOSS_STYLE)
-	_place_chest.call_deferred(at, LootChest.Kind.GOLDEN)
-	var kinds := [DREADLING, VEXCLAW, PLAGUEWING, HEXEYE, WARDEN]
+	loot.place_chest.call_deferred(at, LootChest.Kind.GOLDEN)
 	var corpse := CORPSE_SCENE.instantiate() as DevourCorpse
-	corpse.setup((kinds.pick_random() as EnemyData).essence)
+	corpse.setup((SpawnDirector.KINDS.pick_random() as EnemyData).essence)
 	corpse.position = at + Vector2(40, 0)
 	pickups.add_child.call_deferred(corpse)
 	moments.felled("%s Felled" % enemy.data.display_name)
@@ -636,12 +385,9 @@ func _on_mini_boss_killed(enemy: Enemy) -> void:
 
 
 func _spawn_boss() -> void:
-	_boss_spawned = true
-	boss = BOSS_SCENE.instantiate() as Boss
-	boss.setup(DEMON_KING, player)
-	boss.position = player.position + Vector2.RIGHT.rotated(randf() * TAU) * BOSS_SPAWN_DISTANCE
-	boss.summon.connect(_on_boss_summon)
-	boss.enraged.connect(func() -> void:
+	boss_spawned = true
+	var king := spawner.spawn_boss()
+	king.enraged.connect(func() -> void:
 		show_banner("The Demon King is enraged!", 2.0)
 		Game.sfx("toll", 0.0)
 		Music.play("boss_enraged", 1.0))
@@ -649,7 +395,7 @@ func _spawn_boss() -> void:
 	Game.sfx("doom", 0.0)
 	Game.sfx("toll", 0.0)
 	Music.play("boss_opening", 0.4, "boss")
-	_clear_swarm()
+	spawner.clear_swarm()
 	world.make_arena(player.position, ARENA_RADIUS)
 	# The goddess's last gift: the duel starts at full strength.
 	var healed := player.stat("max_hp") - player.hp
@@ -660,175 +406,24 @@ func _spawn_boss() -> void:
 	create_tween().tween_property(mood, "color", MOOD.temple, 2.0)
 	atmosphere.set_area("temple")
 	camera.punch(0.15, 1.6)
-	Game.shockwave(boss.global_position, Color(0.9, 0.2, 0.3), 260.0, 0.8)
-	enemies.add_child(boss)
-	hud.show_boss(boss, DEMON_KING.display_name)
+	Game.shockwave(king.global_position, Color(0.9, 0.2, 0.3), 260.0, 0.8)
+	enemies.add_child(king)
+	hud.show_boss(king, king.data.display_name)
 	moments.area_card("Temple of the Demon King")
 	show_banner("The sky darkens... The Demon King descends.", 3.5)
 	Hints.show_hint("boss", "A red mark on the ground shows where he will slam: step out of it. Dodge his rings of dark orbs, and drink your Tears when low.")
 
 
-func _spawn_chest() -> void:
-	if get_tree().get_nodes_in_group("chests").size() >= MAX_CHESTS:
-		return
-	var distance := randf_range(CHEST_DISTANCE.x, CHEST_DISTANCE.y)
-	var roll := randf()
-	var kind := LootChest.Kind.NORMAL
-	if roll < GOLDEN_CHANCE:
-		kind = LootChest.Kind.GOLDEN
-	elif roll < GOLDEN_CHANCE + MIMIC_CHANCE and day() >= MIMIC_FROM_DAY:
-		kind = LootChest.Kind.MIMIC
-	_place_chest(player.position + Vector2.RIGHT.rotated(randf() * TAU) * distance, kind)
-	Hints.show_hint("chest", "A chest appeared! Follow the golden arrow at the edge of the screen to find it.")
-
-
-func _place_chest(at: Vector2, kind: LootChest.Kind) -> void:
-	var chest := CHEST_SCENE.instantiate() as LootChest
-	chest.kind = kind
-	chest.position = Obstacles.push_out(at, 24.0)
-	chest.opened.connect(_on_chest_opened)
-	pickups.add_child(chest)
-
-
-func _on_chest_opened(chest: LootChest) -> void:
-	if chest.kind == LootChest.Kind.MIMIC:
-		_spring_mimic(chest.global_position)
-		return
-	var golden := chest.kind == LootChest.Kind.GOLDEN
-	var at := chest.global_position
-	Game.sfx("chest_open", 0.0)
-	Game.fx("spark", at, 3.0 if golden else 2.0, Color(1, 0.9, 0.5))
-	Game.shake(0.35 if golden else 0.2)
-	var hurt := player.hp < player.stat("max_hp") * 0.9
-	var rewards := [Loot.roll(hurt)]
-	if golden:
-		rewards.append(Loot.roll(hurt, rewards[0].id))
-	_chest_queue.append([rewards, golden, at])
-	if not _revealing:
-		_reveal_chests()
-
-
-# The ceremony: the run pauses while the reel spins, then the loot lands.
-# Chests opened together take turns.
-func _reveal_chests() -> void:
-	_revealing = true
-	while not _chest_queue.is_empty():
-		var entry: Array = _chest_queue.pop_front()
-		var rewards: Array = entry[0]
-		var golden: bool = entry[1]
-		var at: Vector2 = entry[2]
-		get_tree().paused = true
-		await chest_reel.reveal(rewards, golden)
-		if _over or _awaiting_revive:
-			break
-		get_tree().paused = false
-		Game.burst(at, Color(1, 0.85, 0.35), 50 if golden else 25, 260.0)
-		Game.shockwave(at, Color(1, 0.85, 0.35), 120.0 if golden else 90.0)
-		var lines := []
-		for i in rewards.size():
-			lines.append(_grant_loot(rewards[i], at + Vector2(24 * i, 0)))
-		var title := "GOLDEN CHEST\n" if golden else ""
-		show_banner(title + "\n".join(lines), 2.5 if golden else 2.0)
-	_chest_queue.clear()
-	_revealing = false
-
-
-func _spring_mimic(at: Vector2) -> void:
-	var mimic := ENEMY_SCENE.instantiate() as Enemy
-	mimic.setup(MIMIC, player, false, toughness())
-	mimic.position = at
-	enemies.add_child.call_deferred(mimic)
-	Game.sfx("boss_warn", 0.0)
-	Game.shake(0.4)
-	show_banner("It was a Mimic!\nKill it for its treasure.", 2.0)
-
-
-# Applies one reward and returns its banner line.
-func _grant_loot(entry: Dictionary, at: Vector2) -> String:
-	var text: String = entry.text
-	match entry.id:
-		"common_potion":
-			player.hp = minf(player.stat("max_hp"), player.hp + player.stat("max_hp") * 0.3)
-		"high_potion":
-			player.hp = minf(player.stat("max_hp"), player.hp + player.stat("max_hp") * 0.6)
-		"rejuvenation":
-			player.hp = player.stat("max_hp")
-		"attraction":
-			for node in pickups.get_children():
-				if node is XPGem:
-					(node as XPGem).magnetize()
-		"blessing":
-			player.gain_xp(player.xp_to_next() - player.xp)
-		"gold":
-			var amount := GOLD_POUCH_PER_DAY * day()
-			gold += amount
-			text = text % amount
-			Game.sfx("coins", 0.0)
-		"fervor":
-			_fervor_until = elapsed + FERVOR_DURATION
-			player.add_timed_modifier({"stat": "haste", "add": FERVOR_HASTE}, FERVOR_DURATION)
-		"bomb":
-			Game.sfx("bomb", 0.0)
-			Game.rumble(0.5, 0.8, 0.4)
-			Game.shake(0.6)
-			Game.fx("explosion", player.global_position, 4.0)
-			Game.burst(player.global_position, Color(1, 0.6, 0.2), 60, 450.0)
-			for node in enemies.get_children():
-				var enemy := node as Enemy
-				if enemy and player.global_position.distance_to(enemy.global_position) <= BOMB_RADIUS:
-					var push := player.global_position.direction_to(enemy.global_position) * 300.0
-					enemy.take_damage(BOMB_DAMAGE, push, "enemy_hit", "Bomb")
-	if entry.id != "gold" and entry.id != "bomb":
-		Game.sfx("loot", 0.0)
-	_pop_loot_icon(at, Loot.icon(entry))
-	return "%s: %s" % [entry.name, text]
-
-
-# The reward's sprite floats up out of the chest and fades.
-func _pop_loot_icon(at: Vector2, texture: Texture2D) -> void:
-	var icon := Sprite2D.new()
-	icon.texture = texture
-	icon.scale = Vector2(2.5, 2.5)
-	icon.position = at + Vector2(0, -10)
-	get_tree().get_first_node_in_group("effects").add_child(icon)
-	var tween := icon.create_tween().set_parallel()
-	tween.tween_property(icon, "position:y", at.y - 60.0, 1.2).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
-	tween.tween_property(icon, "modulate:a", 0.0, 0.5).set_delay(0.8)
-	tween.chain().tween_callback(icon.queue_free)
-
-
-# His arrival scatters the horde: no kills, no drops, just a puff of smoke.
-func _clear_swarm() -> void:
-	for node in enemies.get_children():
-		var enemy := node as Enemy
-		if enemy and enemy.alive():
-			Game.burst(enemy.global_position, Color(0.4, 0.3, 0.5), 6)
-			enemy.queue_free()
-	Game.shake(0.5)
-
-
-func _on_boss_summon(at: Vector2, count: int, phase_two: bool) -> void:
-	var start := randf() * TAU
-	for i in count:
-		var minion := ENEMY_SCENE.instantiate() as Enemy
-		minion.setup(VEXCLAW if phase_two else DREADLING, player, false, toughness())
-		minion.position = at + Vector2.RIGHT.rotated(start + TAU * i / count) * SUMMON_RING
-		enemies.add_child(minion)
-	Game.burst(at, Color(0.75, 0.35, 1.0), 16, 220.0)
-
-
 func _on_enemy_killed(enemy: Enemy) -> void:
 	kills += 1
-	_kills_by[enemy.data.display_name] = int(_kills_by.get(enemy.data.display_name, 0)) + 1
+	record.count_kill(enemy)
 	style.add_kill(enemy.elite)
 	var bounty := enemy.data.gold * (5 if enemy.elite else 1) * (TRAIT_GOLD_MULT if enemy.affix != "" else 1.0)
 	gold += roundi(bounty * gold_mult())
 	if enemy.affix == "splitting":
-		for i in SPLIT_COUNT:
-			var at := enemy.global_position + Vector2.RIGHT.rotated(TAU * i / SPLIT_COUNT) * 30.0
-			_spawn_at.call_deferred(enemy.data, at)
+		spawner.split(enemy)
 	if enemy.data.drops_golden_chest:
-		_place_chest.call_deferred(enemy.global_position, LootChest.Kind.GOLDEN)
+		loot.place_chest.call_deferred(enemy.global_position, LootChest.Kind.GOLDEN)
 	if enemy.data.final:
 		_end_run("VICTORY", true)
 		return
@@ -856,7 +451,7 @@ func _on_player_devoured(essence: EssenceData) -> void:
 
 
 func _on_resonated(resonance: String, description: String) -> void:
-	if _over or _restoring:
+	if over or _restoring:
 		return
 	Game.sfx("evolve", 0.0, 0.8)
 	Game.shockwave(player.global_position, Color(0.6, 0.9, 1.0), 200.0, 0.6)
@@ -908,7 +503,7 @@ func _gather_gems() -> void:
 
 # Shows one level-up screen per pending level, one after another.
 func _offer_next_level_up() -> void:
-	if _over or player.pending_level_ups == 0:
+	if over or player.pending_level_ups == 0:
 		return
 	player.pending_level_ups -= 1
 	var offers := player.available_upgrades(UPGRADE_POOL)
@@ -938,87 +533,31 @@ func add_training(training: TrainingData) -> void:
 
 
 func _on_shrine_closed() -> void:
-	_note_codex()
-	Save.save_journey(_snapshot())
+	record.note_codex(player)
+	Save.save_journey(JourneyRecord.snapshot(self))
 	if day() == 19:
 		show_banner("Tomorrow, the Demon King.", 2.5)
 	else:
 		show_banner("Your journey continues... (saved)", 2.0)
 
 
-# Everything needed to rebuild this hero at the shrine just visited.
-func _snapshot() -> Dictionary:
-	var upgrades := []
-	for upgrade: Resource in player.upgrade_levels:
-		upgrades.append([upgrade.resource_path, player.upgrade_levels[upgrade]])
-	var essences := []
-	for essence: EssenceData in player.essences:
-		essences.append([essence.resource_path, player.essences[essence]])
-	return {
-		"day": day(), "level": player.level, "xp": player.xp,
-		"hp_fraction": player.hp / player.stat("max_hp"), "gold": gold, "kills": kills,
-		"revives": revives, "training": training_ranks.duplicate(), "upgrades": upgrades,
-		"essences": essences, "seed": world.seed_value,
-		"flask_max": player.flask_max, "flask_heal": player.flask_heal, "covenant": covenant,
-		"damage": Enemy.damage_log.duplicate(), "best_rank": best_rank,
-	}
-
-
-# What this run has met and found, into the Codex (Save.note_codex).
-func _note_codex() -> void:
-	var upgrades := []
-	for upgrade: Resource in player.upgrade_levels:
-		upgrades.append(upgrade.resource_path)
-	var essences := []
-	for essence: EssenceData in player.essences:
-		essences.append(essence.resource_path)
-	Save.note_codex(_kills_by, upgrades, essences, player.resonances)
-	_kills_by.clear()
-
-
-# Continue from a shrine checkpoint: same hero, same world, start of that day.
 func _restore(journey: Dictionary) -> void:
-	world.set_seed(int(journey.seed))
-	var saved_day := int(journey.day)
-	elapsed = (saved_day - 1) * SECONDS_PER_DAY + 0.5
+	_restoring = true  # replaying the hero: no banners for old Resonances
+	var saved_day := JourneyRecord.restore(self, journey)
+	_restoring = false
 	for shrine_day: int in SHRINE_DAYS:
 		if shrine_day <= saved_day:
 			_shrines_done.append(shrine_day)
-	gold = int(journey.gold)
-	kills = int(journey.kills)
-	Enemy.damage_log = (journey.get("damage", {}) as Dictionary).duplicate()
-	best_rank = int(journey.get("best_rank", 0))
-	revives = int(journey.revives)
-	player.level = int(journey.level)
-	player.xp = int(journey.xp)
-	for entry: Array in journey.upgrades:
-		for i in int(entry[1]):
-			player.apply_upgrade(load(entry[0]))
-	for entry: Array in journey.essences:
-		for i in int(entry[1]):
-			player.add_essence(load(entry[0]))
-	for training: TrainingData in SHRINE.TRAININGS:
-		for i in int(journey.training.get(training.id, 0)):
-			add_training(training)
-	player.flask_max = int(journey.get("flask_max", player.flask_max))
-	player.flask_heal = float(journey.get("flask_heal", player.flask_heal))
-	player.refill_flask()
-	var sealed := String(journey.get("covenant", ""))
-	if sealed != "thirst":  # Thirst's price was paid at the shrine
-		set_covenant(sealed)
-	else:
-		covenant = sealed
-	player.hp = player.stat("max_hp") * float(journey.hp_fraction)
 	if saved_day >= RUINS_FROM_DAY:
 		world.biome = "ruins"
 		mood.color = MOOD.ruins
-	_spawn_timer = GRACE_PERIOD
+	spawner.grace()
 	show_banner("Day %d. Your journey continues." % saved_day, 2.5)
 
 
 func _on_player_died() -> void:
 	# The goddess can pull you back, for a price that doubles every time.
-	_awaiting_revive = true
+	awaiting_revive = true
 	Save.mark_fallen(day())  # closing the game now can't undo it
 	primary_button.disabled = true  # until the offer is on screen
 	secondary_button.disabled = true
@@ -1030,7 +569,7 @@ func _on_player_died() -> void:
 	Music.muffle(true)
 	banner.hide()
 	await moments.you_died()
-	if not _awaiting_revive:
+	if not awaiting_revive:
 		return
 	var cost := revive_cost()
 	var can_pay := gold >= cost
@@ -1042,11 +581,17 @@ func _on_player_died() -> void:
 	primary_button.disabled = not can_pay
 
 
-func _revive() -> void:
+## True once the revive offer is on screen and the hero can still choose.
+func revive_offer_open() -> bool:
+	return awaiting_revive and not secondary_button.disabled
+
+
+## Pays for a revive; false if the gold isn't there.
+func revive() -> bool:
 	var cost := revive_cost()
-	if gold < cost:
-		return
-	_awaiting_revive = false
+	if not awaiting_revive or gold < cost:
+		return false
+	awaiting_revive = false
 	Save.clear_fallen()
 	revives += 1
 	gold -= cost  # after revives changes, so the HUD shows the next price
@@ -1066,17 +611,26 @@ func _revive() -> void:
 	Game.shake(0.4)
 	Game.sfx("level_up", 0.0)
 	show_banner("The goddess pulls you back...\nher light grows weaker.", 2.5)
+	return true
+
+
+## Declines the revive: the journey ends here.
+func accept_fate() -> void:
+	if not awaiting_revive:
+		return
+	awaiting_revive = false
+	_end_run("You have fallen in battle...\nThe cycle remains unbroken.")
 
 
 func _end_run(message: String, won := false) -> void:
-	_over = true
-	_awaiting_revive = false
+	over = true
+	awaiting_revive = false
 	get_tree().paused = false
 	Game.sfx("victory" if won else "defeat", 0.0)
 	if won:
 		Game.sfx("toll", 0.0)
 	Music.stop(4.0 if won else 3.0)
-	_note_codex()
+	record.note_codex(player)
 	Save.end_journey(day(), won)
 	enemies.process_mode = Node.PROCESS_MODE_DISABLED
 	banner.hide()
@@ -1101,14 +655,14 @@ func _show_end_menu(focus: Button) -> void:
 	primary_button.disabled = true
 	secondary_button.disabled = true
 	await get_tree().create_timer(END_MENU_DELAY).timeout
-	primary_button.disabled = _awaiting_revive and gold < revive_cost()
+	primary_button.disabled = awaiting_revive and gold < revive_cost()
 	secondary_button.disabled = false
 	focus.grab_focus()
 
 
 func _on_primary() -> void:
-	if _awaiting_revive:
-		_revive()
+	if awaiting_revive:
+		revive()
 	else:
 		Game.sfx("click", 0.0)
 		Save.resume = false
@@ -1116,9 +670,8 @@ func _on_primary() -> void:
 
 
 func _on_secondary() -> void:
-	if _awaiting_revive:
-		_awaiting_revive = false
-		_end_run("You have fallen in battle...\nThe cycle remains unbroken.")
+	if awaiting_revive:
+		accept_fate()
 	else:
 		Game.sfx("click", 0.0)
 		Game.change_scene(TITLE_SCENE)

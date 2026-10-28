@@ -71,7 +71,7 @@ func _ready() -> void:
 	var player: Player = _main.player
 	player.base.max_hp = 1e9
 	player.hp = 1e9
-	player._invuln = 1e9
+	player.set_invulnerable(1e9)
 	_main.elapsed = 14 * 60.0 + 5.0
 	# A Day 15 hero is around level 32 (balance sims); at level 1 a horde
 	# would level them every few frames and the benchmark would measure
@@ -93,16 +93,15 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	if _main.level_up.visible:
-		_main.level_up._pick(0)
+		_main.level_up.pick(0)
 	if _main.shrine.visible:
-		_main.shrine._blessed = true
-		_main.shrine._close()
+		_main.shrine.skip()
 	if "hide" in options():
 		for enemy in _main.enemies.get_children():
 			enemy.visible = false
 	var alive: int = _main.enemies.get_child_count()
 	for i in mini(count - alive, 8):  # about the game's own spawn rate
-		_main._spawn_enemy(randf() < 0.02, randf_range(250.0, 650.0))
+		_main.spawner.spawn_enemy(randf() < 0.02, randf_range(250.0, 650.0))
 	_time += delta
 	if _time < WARMUP:
 		_label.text = "Benchmark: warming up with %d enemies..." % count

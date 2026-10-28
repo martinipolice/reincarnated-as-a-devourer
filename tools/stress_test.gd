@@ -54,7 +54,7 @@ func _run() -> void:
 	var p = main.player
 	p.base.max_hp = 1e9
 	p.hp = 1e9
-	p._invuln = 1e9
+	p.set_invulnerable(1e9)
 	main.elapsed = 14 * 60.0 + 5.0
 	p.level = 32  # a Day 15 hero; at level 1 the horde would trigger a level-up screen every few frames
 	if "nolight" in options:
@@ -120,14 +120,13 @@ func _process(_d):
 		last = now
 		var leveled := false
 		if main.level_up.visible:
-			main.level_up._pick(0)
+			main.level_up.pick(0)
 			leveled = true
 		if main.shrine.visible:
-			main.shrine._blessed = true
-			main.shrine._close()
+			main.shrine.skip()
 		var alive: int = main.enemies.get_child_count()
 		for i in mini(count - alive, 8):  # top up at about the game's own spawn rate
-			main._spawn_enemy(randf() < 0.02, randf_range(250.0, 650.0))
+			main.spawner.spawn_enemy(randf() < 0.02, randf_range(250.0, 650.0))
 		if "hidefx" in options:
 			main.get_node("Effects").visible = false
 			for layer in main.get_children():

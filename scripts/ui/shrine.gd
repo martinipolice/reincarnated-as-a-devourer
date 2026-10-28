@@ -42,7 +42,7 @@ const GODDESS_FRAMES := preload("res://assets/ninja/goddess/sprite_frames.tres")
 
 var _main: Node
 var _day := 0
-var _blessed := false
+var blessed := false
 var _title: Label
 var _story: Label
 var _gold_label: Label
@@ -52,7 +52,7 @@ var _training_box: VBoxContainer
 var _potion_box: VBoxContainer
 var _covenant_box: VBoxContainer
 var _offered: Array = []
-var _sealed := false
+var sealed := false
 var _blessings_left := 1
 var _revive_label: Label
 var _continue: Button
@@ -71,9 +71,9 @@ func _ready() -> void:
 func open(day: int, main: Node) -> void:
 	_main = main
 	_day = day
-	_blessed = false
+	blessed = false
 	_blessings_left = 1
-	_sealed = false
+	sealed = false
 	_main.set_covenant("")  # the last covenant ends here
 	_offered = _main.COVENANTS.keys()
 	_offered.shuffle()
@@ -94,8 +94,25 @@ func open(day: int, main: Node) -> void:
 	Game.sfx("level_up", 0.0)
 
 
-func _close() -> void:
-	if not _blessed:
+## The blessing cards still open to pick.
+func blessing_choices() -> Array:
+	return _blessing_box.get_children().filter(func(card: Button) -> bool:
+		return not card.disabled and not card.is_queued_for_deletion())
+
+
+## The covenant buttons, unless one is sealed already.
+func covenant_choices() -> Array:
+	return [] if sealed else _covenant_box.get_children()
+
+
+## Leaves without choosing anything (benchmarks and stress tests).
+func skip() -> void:
+	blessed = true
+	close()
+
+
+func close() -> void:
+	if not blessed:
 		return
 	Game.sfx("click", 0.0)
 	visible = false
@@ -107,10 +124,10 @@ func _refresh() -> void:
 	var player: Player = _main.player
 	_gold_label.text = "Gold: %d" % _main.gold
 	_revive_label.text = "Next revive: %d gold" % _main.revive_cost()
-	_blessing_title.text = "Her blessing: choose one" if not _blessed else "Her blessing is with you."
+	_blessing_title.text = "Her blessing: choose one" if not blessed else "Her blessing is with you."
 	for child in _blessing_box.get_children():
-		(child as Button).disabled = _blessed
-		if _blessed:
+		(child as Button).disabled = blessed
+		if blessed:
 			(child as Control).modulate = Color(0.5, 0.48, 0.55)
 	for child in _training_box.get_children():
 		_training_box.remove_child(child)
@@ -151,11 +168,11 @@ func _refresh() -> void:
 		seal.add_theme_color_override("font_color", COVENANT_COLOR)
 		var sealed_this: bool = _main.covenant == id
 		seal.text = "%s%s\n%s  ·  %s" % [entry[0], "  (sealed)" if sealed_this else "", entry[1], entry[2]]
-		seal.disabled = _sealed
+		seal.disabled = sealed
 		seal.pressed.connect(_seal.bind(id))
 		_covenant_box.add_child(seal)
-	_continue.disabled = not _blessed
-	_continue.text = "Rise and continue" if _blessed else "Choose her blessing"
+	_continue.disabled = not blessed
+	_continue.text = "Rise and continue" if blessed else "Choose her blessing"
 
 
 func _training_row(training: TrainingData) -> Control:
@@ -179,7 +196,7 @@ func _training_row(training: TrainingData) -> Control:
 		var cost := training.cost(rank)
 		buy.text = "Train  %dg" % cost
 		buy.disabled = _main.gold < cost
-		buy.pressed.connect(_buy_training.bind(training))
+		buy.pressed.connect(buy_training.bind(training))
 	row.add_child(buy)
 	return row
 
@@ -209,34 +226,34 @@ func _focus_first_blessing() -> void:
 
 func _bless(upgrade: Resource) -> void:
 	_blessings_left -= 1
-	_blessed = _blessings_left <= 0
+	blessed = _blessings_left <= 0
 	_main.player.apply_upgrade(upgrade)
 	Game.sfx("pick", 0.0)
-	if not _blessed:
+	if not blessed:
 		_build_blessings()  # Thirst: pick again from a fresh three
 		_focus_first_blessing.call_deferred()
 	_refresh()
-	if _blessed:
+	if blessed:
 		_continue.grab_focus()
 
 
 # A covenant is for good: once sealed, it can't be undone at this shrine.
 func _seal(id: String) -> void:
-	if _sealed:
+	if sealed:
 		return
-	_sealed = true
+	sealed = true
 	_main.set_covenant(id)
 	Game.sfx("covenant", 0.0)
 	Game.shake(0.2)
 	if id == "thirst":
 		_blessings_left += 1  # its reward: a second blessing
-		if _blessed:
-			_blessed = false
+		if blessed:
+			blessed = false
 			_build_blessings()
 	_refresh()
 
 
-func _buy_training(training: TrainingData) -> void:
+func buy_training(training: TrainingData) -> void:
 	var rank: int = _main.training_ranks.get(training.id, 0)
 	if _main.gold < training.cost(rank) or rank >= training.max_rank:
 		Game.sfx("denied", 0.0)
@@ -373,7 +390,7 @@ func _build() -> void:
 		item.add_theme_font_size_override("font_size", 26)
 		item.focus_entered.connect(_show_page.bind(entry[0]))
 		_nav.add_child(item)
-	_continue = UITheme.menu_item("", _close)
+	_continue = UITheme.menu_item("", close)
 	_continue.custom_minimum_size = Vector2(230, 40)
 	_continue.add_theme_font_size_override("font_size", 26)
 	_nav.add_child(_continue)

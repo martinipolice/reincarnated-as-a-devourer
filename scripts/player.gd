@@ -124,6 +124,11 @@ func _physics_process(delta: float) -> void:
 	queue_redraw()
 
 
+## Ignores hits for `seconds` (benchmarks and tests hold it up).
+func set_invulnerable(seconds: float) -> void:
+	_invuln = seconds
+
+
 ## Respects the brief invulnerability after a hit unless `ignore_invuln`
 ## (the boss slam, a big telegraphed attack, always lands).
 func take_damage(atk: float, ignore_invuln := false) -> void:

@@ -249,8 +249,12 @@ decides the ending. Full pitch: [docs/DESIGN.md](docs/DESIGN.md).
 data/        Game content as .tres Resources (enemies, essences, weapons, items, training).
              Tune here, not in code.
 scenes/      main (run controller + HUD), player, enemy, boss, XP gem, weapons/, ui/
-scripts/     GDScript; autoload/ holds Game (juice, input) and Save, data/ the Resource classes
-tools/       Dev tools, not shipped: headless balance sim, art importer
+scripts/     GDScript; autoload/ holds Game (juice, input) and Save, data/ the Resource classes,
+             run/ the pieces of a run main.gd wires together: SpawnDirector (the horde,
+             mini-bosses, the Demon King), LootDirector (chests), RunMusic, JourneyRecord
+             (the shrine checkpoint and the Codex)
+tests/       Headless test suite (not shipped); run_tests.gd runs it
+tools/       Dev tools, not shipped: headless balance sim, stress test, art importer
 assets/      Art and audio (see CREDITS.md for sources and licenses)
 docs/        Design documents
 ```
@@ -319,6 +323,20 @@ Windows download is the smoother way to play. What made the difference:
   damage numbers and particles thin out until it's smooth again.
 
 "Show FPS" in Settings shows frame rate, frame time and the enemy count while you play.
+
+## Tests
+
+`tests/` holds a headless suite: saves and migration, unlocks, the Codex, damage and
+shields, the spawn table, mini-bosses, revives, resonances, evolutions, covenants, the
+shrine checkpoint round trip, the menus, and a few seconds of a busy day. Any engine error
+during a test fails it. It never touches your save:
+
+```
+godot --headless --path . -s res://tests/run_tests.gd
+```
+
+Add `-- run` (or any part of a file name) to run only matching files. GitHub Actions runs
+the suite on every push and pull request (`.github/workflows/tests.yml`).
 
 ## Balance testing
 

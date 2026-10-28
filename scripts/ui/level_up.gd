@@ -7,7 +7,8 @@ extends CanvasLayer
 
 signal chosen(upgrade: Resource)
 
-var _offers: Array = []
+## The upgrades on the cards now showing.
+var offers: Array = []
 
 @onready var title: Label = %Title
 @onready var options: HBoxContainer = %Options
@@ -25,14 +26,14 @@ func _ready() -> void:
 	prompt.add_theme_color_override("font_color", UITheme.ASH)
 
 
-func open(offers: Array, player: Player) -> void:
-	_offers = offers
+func open(choices: Array, player: Player) -> void:
+	offers = choices
 	for child in options.get_children():
 		options.remove_child(child)
 		child.queue_free()
 	for i in offers.size():
 		var card := card_for(offers[i], player, str(i + 1))
-		card.pressed.connect(_pick.bind(i))
+		card.pressed.connect(pick.bind(i))
 		options.add_child(card)
 		card.deal(0.06 * i)
 	title.text = "Level %d" % player.level
@@ -48,16 +49,17 @@ func _input(event: InputEvent) -> void:
 	if not visible or not event is InputEventKey or not event.pressed or event.echo:
 		return
 	var index: int = (event as InputEventKey).keycode - KEY_1
-	if index >= 0 and index < _offers.size():
+	if index >= 0 and index < offers.size():
 		get_viewport().set_input_as_handled()
-		_pick(index)
+		pick(index)
 
 
-func _pick(index: int) -> void:
+## Takes the card at `index` (also how the test bots choose).
+func pick(index: int) -> void:
 	Game.sfx("pick", 0.0)
 	hide()
 	get_tree().paused = false
-	chosen.emit(_offers[index])
+	chosen.emit(offers[index])
 
 
 ## The card for taking `upgrade` next (also the goddess's blessings).

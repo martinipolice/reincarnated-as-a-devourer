@@ -38,16 +38,14 @@ func _initialize() -> void:
 func _process(_delta: float) -> bool:
 	frame += 1
 	if main.level_up.visible:
-		main.level_up._pick(randi() % main.level_up._offers.size())
+		main.level_up.pick(randi() % main.level_up.offers.size())
 		return false
 	if main.shrine.visible:
 		_use_shrine()
 		return false
-	if main._awaiting_revive and not main.primary_button.disabled:
-		main._on_primary()  # revive whenever it can pay
-		return false
-	if main._awaiting_revive and main.secondary_button.disabled == false and main.gold < main.revive_cost():
-		main._on_secondary()
+	if main.revive_offer_open():
+		if not main.revive():  # revive whenever it can pay
+			main.accept_fate()
 		return false
 	if mode != "afk":
 		_steer()
@@ -77,7 +75,7 @@ func _process(_delta: float) -> bool:
 		if int(t - boss_at) / 15 > last_boss_report:
 			last_boss_report = int(t - boss_at) / 15
 			print("    boss +%3ds: boss hp=%5d  player hp=%3d" % [t - boss_at, main.boss.hp, p.hp])
-	if main._over:
+	if main.over:
 		var result := "WON" if not is_instance_valid(main.boss) and boss_at >= 0 and p.hp > 0 else "DIED"
 		var fight := "boss fight %ds" % (t - boss_at) if boss_at >= 0 else "no boss"
 		print("END %s %s: day %d t=%ds lv %d kills %d gold %d revives %d shrines %d devoured %d max_hp %d, %s, first level %.1fs" % [
@@ -121,11 +119,11 @@ func _damage_source(p) -> String:
 # training while keeping enough gold for the next revive.
 func _use_shrine() -> void:
 	var s = main.shrine
-	if covenants and not s._sealed:
-		var seals = s._covenant_box.get_children()
+	var seals = s.covenant_choices()
+	if covenants and not seals.is_empty():
 		seals[randi() % seals.size()].emit_signal("pressed")
-	while not s._blessed:
-		var options = s._blessing_box.get_children().filter(func(b): return not b.disabled and not b.is_queued_for_deletion())
+	while not s.blessed:
+		var options = s.blessing_choices()
 		options[randi() % options.size()].emit_signal("pressed")
 	var p = main.player
 	while true:
@@ -136,9 +134,9 @@ func _use_shrine() -> void:
 				best = t
 		if best == null or main.gold - best.cost(main.training_ranks.get(best.id, 0)) < main.revive_cost():
 			break
-		s._buy_training(best)
+		s.buy_training(best)
 	shrines += 1
-	s._close()
+	s.close()
 
 func _loadout(p) -> String:
 	var parts := []
@@ -172,9 +170,10 @@ func _steer() -> void:
 			var away: Vector2 = p.global_position - boss.slam_at
 			if away.length() < boss.slam_radius + 30.0:
 				push += away.normalized() * 6.0
-		if boss._charge_windup > 0.0:
+		var charge: Vector2 = boss.charge_warning()
+		if charge != Vector2.ZERO:
 			# Step sideways off the charge line.
-			var side: Vector2 = boss._charge_dir.orthogonal()
+			var side: Vector2 = charge.orthogonal()
 			push += side * (6.0 if side.dot(p.global_position - boss.global_position) >= 0.0 else -6.0)
 	for handle in Obstacles.near(p.global_position):
 		var d: Vector2 = p.global_position - handle.center

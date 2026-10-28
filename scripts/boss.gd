@@ -243,3 +243,8 @@ func _draw_telegraph() -> void:
 		var t: float = 1.0 - _volley_windup / VOLLEY_WINDUP[phase]
 		_telegraph.draw_circle(global_position, radius * 2.2, Color(VOLLEY_COLOR, 0.15 + 0.2 * t))
 		_telegraph.draw_arc(global_position, radius * (3.0 - 1.6 * t), 0.0, TAU, 48, Color(VOLLEY_COLOR, 0.9), 3.0)
+
+
+## Where a charge is about to go, while it winds up; else zero.
+func charge_warning() -> Vector2:
+	return _charge_dir if _charge_windup > 0.0 else Vector2.ZERO
