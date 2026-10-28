@@ -49,6 +49,9 @@ func _process(_delta: float) -> bool:
 	if main.devour_choice.visible:
 		main.devour_choice.pick(randi() % 2)
 		return false
+	if main.landmarks._pick.visible:  # an altar's reward
+		main.landmarks._pick.pick(randi() % 3)
+		return false
 	if main.revive_offer_open():
 		if not main.revive():  # revive whenever it can pay
 			main.accept_fate()
