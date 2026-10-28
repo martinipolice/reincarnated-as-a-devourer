@@ -22,6 +22,11 @@ const TEARS := [
 	["vessel", "Tear Vessel", "+1 flask charge", 300, 3],
 	["blessed", "Blessed Tears", "Each sip heals 10% more", 250, 3],
 ]
+## Threads of fate: more level-up control. [id, name, description, price].
+const FATE := [
+	["reroll", "Thread of Fate", "+1 reroll at level-ups", 150],
+	["banish", "Severed Thread", "+1 banish at level-ups", 250],
+]
 const TEARS_ICON := preload("res://assets/ninja/images/common_potion.png")
 const COVENANT_ICON := preload("res://assets/ninja/images/icon_covenant.png")
 const COVENANT_COLOR := Color(0.75, 0.55, 1.0)
@@ -154,6 +159,16 @@ func _refresh() -> void:
 			buy.disabled = _main.gold < cost
 			buy.pressed.connect(_buy_tears.bind(upgrade))
 		_potion_box.add_child(buy)
+	for fate: Array in FATE:
+		var thread := Button.new()
+		thread.custom_minimum_size = Vector2(0, 52)
+		thread.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		var held: int = _main.rerolls if fate[0] == "reroll" else _main.banishes
+		thread.text = tr("%s  %dg   (you hold %d)
+%s") % [tr(fate[1]), fate[3], held, tr(fate[2])]
+		thread.disabled = _main.gold < fate[3]
+		thread.pressed.connect(_buy_fate.bind(fate))
+		_potion_box.add_child(thread)
 	for child in _covenant_box.get_children():
 		_covenant_box.remove_child(child)
 		child.queue_free()
@@ -261,6 +276,19 @@ func buy_training(training: TrainingData) -> void:
 	_main.gold -= training.cost(rank)
 	_main.add_training(training)
 	Game.sfx("coins", 0.0)
+	_refresh()
+
+
+func _buy_fate(fate: Array) -> void:
+	if _main.gold < fate[3]:
+		Game.sfx("denied", 0.0)
+		return
+	_main.gold -= fate[3]
+	if fate[0] == "reroll":
+		_main.rerolls += 1
+	else:
+		_main.banishes += 1
+	Game.sfx("loot", 0.0)
 	_refresh()
 
 
@@ -375,7 +403,7 @@ func _build() -> void:
 	_covenant_box = VBoxContainer.new()
 	_covenant_box.add_theme_constant_override("separation", 8)
 	for entry: Array in [["Training", "Lasts the whole journey. Gold also buys revives.", _training_box],
-			["Goddess's Tears", "Your flask, refilled at every shrine.", _potion_box],
+			["Goddess's Tears", "Your flask, refilled at every shrine, and threads of fate.", _potion_box],
 			["Covenant", "Optional and final: a curse and a reward until her next shrine.", _covenant_box]]:
 		var page := VBoxContainer.new()
 		page.add_theme_constant_override("separation", 8)

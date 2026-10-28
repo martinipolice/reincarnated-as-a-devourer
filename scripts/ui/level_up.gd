@@ -4,11 +4,21 @@ extends CanvasLayer
 ## a click, the number keys 1-3, or arrows / d-pad + Enter / A. A card's color
 ## says what it is: gold a new weapon, blue a new passive, bronze a level,
 ## violet a weapon's last level (its evolution comes next).
+## Below the cards: Reroll (a fresh hand), Banish (gone for the run) and
+## Skip (gold instead); main.gd holds the charges and deals the new hands.
 
 signal chosen(upgrade: Resource)
+signal rerolled
+signal banished(upgrade: Resource)
+signal skipped
 
 ## The upgrades on the cards now showing.
 var offers: Array = []
+var _banishing := false
+var _banish_text := ""
+var _reroll: Button
+var _banish: Button
+var _skip: Button
 
 @onready var title: Label = %Title
 @onready var options: HBoxContainer = %Options
@@ -24,10 +34,36 @@ func _ready() -> void:
 	$Center/VBox.add_child(OrnateRule.new(420.0))
 	$Center/VBox.move_child($Center/VBox.get_child(-1), 1)
 	prompt.add_theme_color_override("font_color", UITheme.ASH)
+	var actions := HBoxContainer.new()
+	actions.alignment = BoxContainer.ALIGNMENT_CENTER
+	$Center/VBox.add_child(actions)
+	$Center/VBox.move_child(actions, prompt.get_index())
+	_reroll = _action(actions, func() -> void: rerolled.emit())
+	_banish = _action(actions, _toggle_banish)
+	_skip = _action(actions, func() -> void:
+		hide()
+		get_tree().paused = false
+		skipped.emit())
+	_skip.text = "Skip for gold"
 
 
-func open(choices: Array, player: Player) -> void:
+func _action(row: HBoxContainer, action: Callable) -> Button:
+	var button := UITheme.menu_item("", action)
+	button.custom_minimum_size = Vector2(220, 40)
+	button.add_theme_font_size_override("font_size", 24)
+	row.add_child(button)
+	return button
+
+
+## Deals `choices`; `rerolls` and `banishes` are the charges left this run.
+func open(choices: Array, player: Player, rerolls := 0, banishes := 0) -> void:
 	offers = choices
+	_banishing = false
+	_reroll.text = tr("Reroll  (%d)") % rerolls
+	_reroll.disabled = rerolls <= 0
+	_banish_text = tr("Banish  (%d)") % banishes
+	_banish.text = _banish_text
+	_banish.disabled = banishes <= 0
 	for child in options.get_children():
 		options.remove_child(child)
 		child.queue_free()
@@ -38,7 +74,8 @@ func open(choices: Array, player: Player) -> void:
 		card.deal(0.06 * i)
 	title.text = tr("Level %d") % player.level
 	prompt.text = Game.prompts("Choose one  ·  {pause} shows your build")
-	Game.sfx("level_up", 0.0)
+	if not visible:
+		Game.sfx("level_up", 0.0)
 	show()
 	get_tree().paused = true
 	(options.get_child(0) as Button).grab_focus()
@@ -54,12 +91,28 @@ func _input(event: InputEvent) -> void:
 		pick(index)
 
 
-## Takes the card at `index` (also how the test bots choose).
+## Takes the card at `index` (also how the test bots choose); in banish
+## mode, banishes it instead.
 func pick(index: int) -> void:
+	if _banishing:
+		_banishing = false
+		Game.sfx("covenant", 0.0, 1.3)
+		banished.emit(offers[index])
+		return
 	Game.sfx("pick", 0.0)
 	hide()
 	get_tree().paused = false
 	chosen.emit(offers[index])
+
+
+# Banish mode: the next card picked is banished; pressing Banish again cancels.
+func _toggle_banish() -> void:
+	_banishing = not _banishing
+	_banish.text = tr("Cancel banish") if _banishing else _banish_text
+	for card: Control in options.get_children():
+		card.modulate = Color(1.0, 0.55, 0.5) if _banishing else Color.WHITE
+	prompt.text = tr("Pick a card to banish for the rest of the journey") if _banishing 		else Game.prompts("Choose one  ·  {pause} shows your build")
+	(options.get_child(0) as Button).grab_focus()
 
 
 ## The card for taking `upgrade` next (also the goddess's blessings).

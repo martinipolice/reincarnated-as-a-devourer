@@ -77,6 +77,11 @@ const UPGRADE_POOL := [
 	preload("res://data/items/vigor.tres"),
 ]
 const OFFERS_PER_LEVEL := 3
+## Level-up control: rerolls and banishes to start a journey with (the
+## goddess sells more), and the gold a skipped level-up pays per day.
+const START_REROLLS := 2
+const START_BANISHES := 1
+const SKIP_GOLD_PER_DAY := 10
 const HUNGER := preload("res://data/items/hunger.tres")
 
 var elapsed := 0.0
@@ -87,6 +92,10 @@ var gold := 0:
 		gold_changed.emit(gold, revive_cost())
 var revives := 0
 var best_rank := 0  # the style meter's best this journey
+var rerolls := START_REROLLS
+var banishes := START_BANISHES
+## Upgrades banished at a level-up: never offered again this journey.
+var banished: Array[Resource] = []
 var covenant := ""
 ## TrainingData.id -> ranks bought at the goddess's shrines this journey.
 var training_ranks := {}
@@ -150,6 +159,9 @@ func _ready() -> void:
 	player.weapon_evolved.connect(_on_weapon_evolved)
 	player.resonated.connect(_on_resonated)
 	level_up.chosen.connect(_on_upgrade_chosen)
+	level_up.rerolled.connect(_on_rerolled)
+	level_up.banished.connect(_on_banished)
+	level_up.skipped.connect(_on_level_up_skipped)
 	primary_button.pressed.connect(_on_primary)
 	secondary_button.pressed.connect(_on_secondary)
 	shrine = SHRINE_SCENE.instantiate()
@@ -507,20 +519,53 @@ func _offer_next_level_up() -> void:
 	if over or player.pending_level_ups == 0:
 		return
 	player.pending_level_ups -= 1
-	var offers := player.available_upgrades(upgrade_pool())
-	offers.shuffle()
-	offers.resize(mini(OFFERS_PER_LEVEL, offers.size()))
+	level_up.open(_deal_offers(), player, rerolls, banishes)
+
+
+func _deal_offers(keep: Array = []) -> Array:
+	var offers := keep.duplicate()
+	var fresh := player.available_upgrades(upgrade_pool()).filter(func(u: Resource) -> bool:
+		return not u in keep)
+	fresh.shuffle()
+	offers.append_array(fresh.slice(0, OFFERS_PER_LEVEL - offers.size()))
 	if offers.is_empty():
 		offers = [FALLBACK_UPGRADE]
-	level_up.open(offers, player)
+	return offers
+
+
+func _on_rerolled() -> void:
+	if rerolls <= 0:
+		return
+	rerolls -= 1
+	Game.sfx("chest_open", 0.0, 1.4)
+	level_up.open(_deal_offers(), player, rerolls, banishes)
+
+
+# The banished card is gone for the journey; a fresh one takes its place.
+func _on_banished(upgrade: Resource) -> void:
+	if banishes <= 0 or upgrade == FALLBACK_UPGRADE:
+		return
+	banishes -= 1
+	banished.append(upgrade)
+	var keep: Array = level_up.offers.filter(func(u: Resource) -> bool: return u != upgrade)
+	level_up.open(_deal_offers(keep), player, rerolls, banishes)
+
+
+func _on_level_up_skipped() -> void:
+	var amount := SKIP_GOLD_PER_DAY * day()
+	gold += amount
+	Game.sfx("coins", 0.0)
+	show_banner(tr("Skipped: +%d gold") % amount, 1.2)
+	if player.pending_level_ups == 0:
+		_gather_gems()
+	_offer_next_level_up()
 
 
 ## What level-ups and blessings can offer now. Hunger only speeds Devouring,
 ## so it waits until the hero has Devoured once.
 func upgrade_pool() -> Array:
-	if player.devour_count() > 0:
-		return UPGRADE_POOL
-	return UPGRADE_POOL.filter(func(upgrade: Resource) -> bool: return upgrade != HUNGER)
+	return UPGRADE_POOL.filter(func(upgrade: Resource) -> bool:
+		return not upgrade in banished and (upgrade != HUNGER or player.devour_count() > 0))
 
 
 # More of the world comes into view as you grow.

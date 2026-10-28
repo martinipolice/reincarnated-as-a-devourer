@@ -119,6 +119,7 @@ func _show_build() -> void:
 		["Pickup range", "%d" % roundi(player.stat("pickup_radius"))],
 		["Regen", tr("%.1f HP/s") % player.stat("regen")],
 		["Tears", tr("%d / %d  ·  %d%% heal") % [player.flask_charges, player.flask_max, roundi(player.flask_heal * 100.0)]],
+		["Fate", tr("%d rerolls  ·  %d banishes") % [_main.rerolls, _main.banishes]],
 	]
 	for row: Array in rows:
 		stats.add_child(_line(row[0], UITheme.ASH))

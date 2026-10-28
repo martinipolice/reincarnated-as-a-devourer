@@ -40,6 +40,8 @@ static func snapshot(main: Node) -> Dictionary:
 		"essences": essences, "seed": main.world.seed_value,
 		"flask_max": player.flask_max, "flask_heal": player.flask_heal, "covenant": main.covenant,
 		"damage": Enemy.damage_log.duplicate(), "best_rank": main.best_rank,
+		"rerolls": main.rerolls, "banishes": main.banishes,
+		"banished": main.banished.map(func(u: Resource) -> String: return u.resource_path),
 	}
 
 
@@ -55,6 +57,10 @@ static func restore(main: Node, journey: Dictionary) -> int:
 	Enemy.damage_log = (journey.get("damage", {}) as Dictionary).duplicate()
 	main.best_rank = int(journey.get("best_rank", 0))
 	main.revives = int(journey.revives)
+	main.rerolls = int(journey.get("rerolls", main.START_REROLLS))
+	main.banishes = int(journey.get("banishes", main.START_BANISHES))
+	for path: String in journey.get("banished", []):
+		main.banished.append(load(path))
 	player.level = int(journey.level)
 	player.xp = int(journey.xp)
 	for entry: Array in journey.upgrades:
