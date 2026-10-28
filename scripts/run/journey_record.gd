@@ -32,7 +32,7 @@ static func snapshot(main: Node) -> Dictionary:
 		upgrades.append([upgrade.resource_path, player.upgrade_levels[upgrade]])
 	var essences := []
 	for essence: EssenceData in player.essences:
-		essences.append([essence.resource_path, player.essences[essence]])
+		essences.append([essence.resource_path, player.essences[essence], player.mutations.get(essence, 0)])
 	return {
 		"day": main.day(), "level": player.level, "xp": player.xp,
 		"hp_fraction": player.hp / player.stat("max_hp"), "gold": main.gold, "kills": main.kills,
@@ -76,8 +76,9 @@ static func restore(main: Node, journey: Dictionary) -> int:
 		for i in int(entry[1]) - upgrade.max_level:  # Lv 4-5: the branch it took
 			player.apply_upgrade(Branches.get_branch(upgrade, taken[entry[0]]))
 	for entry: Array in journey.essences:
+		var alternatives := int(entry[2]) if entry.size() > 2 else 0
 		for i in int(entry[1]):
-			player.add_essence(load(entry[0]))
+			player.add_essence(load(entry[0]), i < alternatives)
 	for training: TrainingData in main.SHRINE.TRAININGS:
 		for i in int(journey.training.get(training.id, 0)):
 			main.add_training(training)

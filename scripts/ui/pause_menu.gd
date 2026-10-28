@@ -151,8 +151,12 @@ func _show_build() -> void:
 
 	var extras := []
 	for essence: EssenceData in player.essences:
-		extras.append("%s x%d" % [essence.display_name, player.essences[essence]])
-	_page.add_child(_heading("Devoured"))
+		var mutated: int = player.mutations.get(essence, 0)
+		var line := "%s x%d" % [tr(essence.display_name), player.essences[essence]]
+		if mutated > 0:
+			line += tr(" (%d %s)") % [mutated, tr(Mutations.of(essence)[0])]
+		extras.append(line)
+	_page.add_child(_heading(tr("Devoured  ·  Hunger: %s") % tr(Hunger.NAMES[player.hunger_tier()])))
 	_page.add_child(_line(", ".join(extras) if extras else "Nothing yet. Elites drop essences.", UITheme.BONE if extras else UITheme.ASH))
 	_page.add_child(_heading("Resonances"))
 	if player.resonances.is_empty():

@@ -110,7 +110,7 @@ func update(delta: float) -> void:
 			spawn_enemy()
 	_elite_timer -= delta
 	if _elite_timer <= 0.0:
-		_elite_timer = ELITE_INTERVAL
+		_elite_timer = ELITE_INTERVAL * Hunger.ELITES[_player.hunger_tier()]
 		spawn_enemy(true)
 	if day >= EVENT_FROM_DAY:
 		_event_timer -= delta

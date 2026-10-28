@@ -14,6 +14,11 @@ signal stats_changed
 signal xp_changed(xp: int, needed: int, level: int)
 signal flask_changed(charges: int, max_charges: int)
 signal devoured(essence: EssenceData)
+## A Devour finished: main.gd offers its two mutations, then calls devour().
+## With nothing listening (tests, tools) the classic one is taken at once.
+signal essence_taken(essence: EssenceData)
+## The Hunger rose to a new tier (Hunger).
+signal hunger_rose(tier: int)
 signal weapon_evolved(weapon: Weapon)
 ## Two essences resonated (see Resonances): its name and what it grants.
 signal resonated(name: String, description: String)
@@ -69,6 +74,8 @@ var upgrade_levels := {}
 var branches := {}
 ## EssenceData -> how many have been Devoured this run.
 var essences := {}
+## EssenceData -> how many of those Devours took the alternative mutation.
+var mutations := {}
 ## Resonances awakened this run, by name.
 var resonances: Array[String] = []
 
@@ -194,7 +201,8 @@ func _update_flask(delta: float) -> void:
 	if _drinking > 0.0:
 		_drinking -= delta
 		if _drinking <= 0.0:
-			var healed := minf(stat("max_hp"), hp + stat("max_hp") * flask_heal) - hp
+			var heal: float = flask_heal * Hunger.TEARS[hunger_tier()]
+			var healed := minf(stat("max_hp"), hp + stat("max_hp") * heal) - hp
 			hp += healed
 			Game.sfx("flask_heal", 0.0)
 			Game.fx("spark", global_position, 2.5, TEARS_COLOR)
@@ -318,16 +326,41 @@ func devour_count() -> int:
 	return total
 
 
-## An essence's stat boost and max-HP cost, with no fanfare (also used to
-## rebuild a saved journey).
-func add_essence(essence: EssenceData) -> void:
+func hunger_tier() -> int:
+	return Hunger.tier(devour_count())
+
+
+## An essence's boost and max-HP cost, classic or its alternative mutation
+## (Mutations), with no fanfare (also used to rebuild a saved journey).
+func add_essence(essence: EssenceData, alternative := false) -> void:
+	var tier_before := hunger_tier()
 	essences[essence] = essences.get(essence, 0) + 1
-	modifiers.append({"stat": essence.stat, "add": essence.add, "mult": essence.mult})
-	modifiers.append({"stat": "max_hp", "add": -essence.max_hp_cost})
+	if alternative:
+		var mutation := Mutations.of(essence)
+		mutations[essence] = mutations.get(essence, 0) + 1
+		for mod: Dictionary in mutation[2]:
+			modifiers.append(mod.duplicate())
+		modifiers.append({"stat": "max_hp", "add": -float(mutation[3])})
+	else:
+		modifiers.append({"stat": essence.stat, "add": essence.add, "mult": essence.mult})
+		modifiers.append({"stat": "max_hp", "add": -essence.max_hp_cost})
+	_update_hunger()
 	hp = minf(hp, stat("max_hp"))
+	if hunger_tier() > tier_before:
+		hunger_rose.emit(hunger_tier())
 	_check_evolutions()
 	_check_resonances()
 	stats_changed.emit()
+
+
+# The Hunger's own strength: one modifier, replaced as the tier changes.
+func _update_hunger() -> void:
+	for i in range(modifiers.size() - 1, -1, -1):
+		if modifiers[i].get("source", "") == "hunger":
+			modifiers.remove_at(i)
+	var bonus: float = Hunger.MIGHT[hunger_tier()]
+	if bonus > 0.0:
+		modifiers.append({"stat": "might", "add": bonus, "source": "hunger"})
 
 
 ## Back from death (a goddess revive): some HP and a moment of safety.
@@ -337,10 +370,11 @@ func revive(hp_fraction: float, invulnerable_for: float) -> void:
 	set_physics_process(true)
 
 
-func devour(essence: EssenceData) -> void:
-	add_essence(essence)
-	# Feeding restores you, which pays for standing still to channel.
-	var heal_share := DEVOUR_HEAL * (1.0 + (stat("devour_speed") - 1.0) / 3.0)  # Hunger: +10% per level
+func devour(essence: EssenceData, alternative := false) -> void:
+	add_essence(essence, alternative)
+	# Feeding restores you, which pays for standing still to channel, less
+	# and less as the Hunger grows.
+	var heal_share: float = DEVOUR_HEAL * (1.0 + (stat("devour_speed") - 1.0) / 3.0) * Hunger.HEAL[hunger_tier()]
 	var healed := minf(stat("max_hp"), hp + stat("max_hp") * heal_share) - hp
 	hp += healed
 	Game.fx("spark", global_position, 2.5, Color(0.5, 1, 0.5))
@@ -363,7 +397,10 @@ func _update_devour(delta: float) -> void:
 			return
 	_devour_progress += delta
 	if _devour_progress >= _devour_time():
-		devour(_devour_target.essence)
+		if essence_taken.get_connections().is_empty():
+			devour(_devour_target.essence)
+		else:
+			essence_taken.emit(_devour_target.essence)
 		_devour_target.queue_free()
 		_devour_target = null
 		_devour_progress = 0.0

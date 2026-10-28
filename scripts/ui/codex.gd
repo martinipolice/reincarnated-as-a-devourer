@@ -191,7 +191,9 @@ func _essences() -> void:
 	for path: String in ESSENCES:
 		var essence: EssenceData = load(path)
 		if _knows("essences", path):
-			_entry(null, essence.display_name, tr("%s\nCosts %d max HP.") % [essence.description, essence.max_hp_cost],
+			var mutation := Mutations.of(essence)
+			_entry(null, essence.display_name, tr("Classic: %s, costs %d max HP.\nMutation, %s: %s, costs %d max HP.") % [
+				tr(essence.description), essence.max_hp_cost, tr(mutation[0]), tr(mutation[1]), mutation[3]],
 				false, essence.color)
 		else:
 			_entry(null, "???", "Not yet Devoured.", true, essence.color)

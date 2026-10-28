@@ -85,7 +85,8 @@ func test_resonance_awakens_once() -> void:
 		player.add_essence(DREADLING_ESSENCE)
 	check_eq(player.resonances, ["Predator's Pace"] as Array[String], "awakened once")
 	var from_essences := 2 * VEXCLAW_ESSENCE.add if VEXCLAW_ESSENCE.stat == "might" else 0.0
-	check_near(player.stat("might"), might + from_essences + 0.1, 0.001, "its bonus applies")
+	var hunger: float = Hunger.MIGHT[player.hunger_tier()]
+	check_near(player.stat("might"), might + from_essences + 0.1 + hunger, 0.001, "its bonus applies")
 	await end_run(main)
 
 

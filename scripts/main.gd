@@ -121,6 +121,7 @@ var shrine: CanvasLayer
 var pause_menu: CanvasLayer
 var ending: CanvasLayer
 var results: Results
+var devour_choice: DevourChoice
 var _unlocked_at_start: Array[String] = []  # starting weapons, to spot new ones
 var _shrines_done := []
 var _restoring := false
@@ -158,6 +159,12 @@ func _ready() -> void:
 	player.devoured.connect(_on_player_devoured)
 	player.weapon_evolved.connect(_on_weapon_evolved)
 	player.resonated.connect(_on_resonated)
+	player.hunger_rose.connect(_on_hunger_rose)
+	devour_choice = DevourChoice.new()
+	add_child(devour_choice)
+	player.essence_taken.connect(func(essence: EssenceData) -> void:
+		devour_choice.chosen.connect(func(alt: bool) -> void: player.devour(essence, alt), CONNECT_ONE_SHOT)
+		devour_choice.open(essence, player))
 	level_up.chosen.connect(_on_upgrade_chosen)
 	level_up.rerolled.connect(_on_rerolled)
 	level_up.banished.connect(_on_banished)
@@ -320,6 +327,9 @@ func next_shrine_day() -> int:
 # The HUD's status line: timed buffs and what you've devoured.
 func _update_status() -> void:
 	var parts := []
+	var hunger := player.hunger_tier()
+	if hunger > 0:
+		parts.append(tr("Hunger: %s") % tr(Hunger.NAMES[hunger]))
 	if covenant != "":
 		parts.append(COVENANTS[covenant][0])
 	if elapsed < loot.fervor_until:
@@ -471,6 +481,16 @@ func _on_resonated(resonance: String, description: String) -> void:
 	show_banner(tr("Resonance: %s\n%s") % [resonance, description], 3.0)
 	style.add(StyleMeter.DEVOUR_POINTS)
 	Hints.show_hint("resonance", "Two essences resonated! Holding 2 or more of certain pairs awakens a lasting bonus. Your build screen (pause) lists them.")
+
+
+func _on_hunger_rose(tier: int) -> void:
+	if _restoring:
+		return
+	Game.sfx("doom", 0.0, 1.3)
+	Game.shockwave(player.global_position, Hunger.COLORS[tier], 180.0, 0.5)
+	show_banner(tr("Your Hunger grows: %s
+%s") % [tr(Hunger.NAMES[tier]), tr(Hunger.WARNINGS[tier])], 3.0)
+	Hints.show_hint("hunger", "Each Devour feeds your Hunger. It makes you stronger, but Devours heal less, elites come more often, and the goddess gives less.")
 
 
 func _on_weapon_evolved(weapon: Weapon) -> void:

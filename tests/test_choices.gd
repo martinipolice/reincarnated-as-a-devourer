@@ -146,3 +146,68 @@ func test_branches_save_and_banish() -> void:
 	check_eq(_weapon(main, bell).branch_rank("b"), 2, "on Knell")
 	check(Branches.get_branch(load("res://data/weapons/blade.tres"), "a") in main.banished, "banished branch restored")
 	await end_run(main)
+
+
+func test_mutation_is_the_same_essence_with_another_boost() -> void:
+	var main: Node = await start_run()
+	var player: Player = main.player
+	var vexclaw: EssenceData = load("res://data/essences/vexclaw_essence.tres")
+	var haste := player.stat("haste")
+	var might := player.stat("might")
+	var max_hp := player.stat("max_hp")
+	player.add_essence(vexclaw, true)
+	check_near(player.stat("haste"), haste + 0.15, 0.001, "Feral Reflexes: attack speed")
+	check_near(player.stat("might"), might, 0.001, "not the classic might")
+	check_near(player.stat("max_hp"), max_hp - 10.0, 0.001, "its own HP cost")
+	check_eq(int(player.essences[vexclaw]), 1, "still counts as a Vexclaw essence")
+	check_eq(int(player.mutations[vexclaw]), 1, "recorded as a mutation")
+	await end_run(main)
+
+
+func test_devour_offers_the_choice() -> void:
+	var main: Node = await start_run()
+	var hexeye: EssenceData = load("res://data/essences/hexeye_essence.tres")
+	main.player.essence_taken.emit(hexeye)
+	check(main.devour_choice.visible and tree.paused, "the choice pauses the run")
+	main.devour_choice.pick(1)
+	check_eq(int(main.player.mutations.get(hexeye, 0)), 1, "took the mutation")
+	check(not tree.paused, "and resumes")
+	await end_run(main)
+
+
+func test_hunger_tiers_cost_and_pay() -> void:
+	var main: Node = await start_run()
+	var player: Player = main.player
+	var dreadling: EssenceData = load("res://data/essences/dreadling_essence.tres")
+	var rose := []
+	player.hunger_rose.connect(func(tier: int) -> void: rose.append(tier))
+	var might := player.stat("might")
+	for i in 12:
+		player.add_essence(dreadling)
+	check_eq(player.hunger_tier(), 3, "12 Devours: Insatiable")
+	check_eq(rose, [1, 2, 3], "announced each tier once")
+	check_near(player.stat("might"), might + Hunger.MIGHT[3], 0.001, "the Hunger's strength, not stacked")
+	player.hp = 1.0
+	player.devour(dreadling)
+	var healed := player.hp - 1.0
+	check(healed < player.stat("max_hp") * Player.DEVOUR_HEAL * 0.3, "Devours barely heal")
+	main.gold = 0
+	main.shrine.open(5, main)
+	await tree.process_frame
+	check_eq(main.shrine.blessing_choices().size(), Hunger.BLESSINGS[3], "the goddess offers less")
+	main.shrine.skip()
+	await end_run(main)
+
+
+func test_mutations_save() -> void:
+	var main: Node = await start_run()
+	var warden: EssenceData = load("res://data/essences/warden_essence.tres")
+	main.player.add_essence(warden, true)
+	main.player.add_essence(warden, false)
+	var defense: float = main.player.stat("defense")
+	Save.data.journey = JourneyRecord.snapshot(main)
+	await end_run(main)
+	main = await start_run(true)
+	check_eq(int(main.player.mutations.get(warden, 0)), 1, "one mutation restored")
+	check_near(main.player.stat("defense"), defense, 0.001, "same stats")
+	await end_run(main)

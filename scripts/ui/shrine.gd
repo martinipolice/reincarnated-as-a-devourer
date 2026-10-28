@@ -223,7 +223,7 @@ func _build_blessings() -> void:
 	var player: Player = _main.player
 	var offers: Array = player.available_upgrades(_main.upgrade_pool())
 	offers.shuffle()
-	offers.resize(mini(3, offers.size()))
+	offers.resize(mini(Hunger.BLESSINGS[player.hunger_tier()], offers.size()))
 	if offers.is_empty():
 		offers = [_main.FALLBACK_UPGRADE]
 	for i in offers.size():
