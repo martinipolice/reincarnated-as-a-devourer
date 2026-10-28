@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="EnemyData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/enemy_data.gd" id="1"]
+[ext_resource type="SpriteFrames" path="res://assets/ninja/ruin_guardian/sprite_frames.tres" id="2"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Ruin Guardian"
+max_hp = 2200.0
+atk = 42.0
+defense = 45.0
+move_speed = 70.0
+gold = 0
+xp = 0
+boss = true
+knockback_scale = 0.0
+radius = 30.0
+color = Color(0.85, 0.25, 0.25, 1)
+sprite_frames = ExtResource("2")
+sprite_scale = 1.6

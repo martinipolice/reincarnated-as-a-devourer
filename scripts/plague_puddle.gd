@@ -4,8 +4,8 @@ extends Node2D
 ## while they stand in it, then fades. Checked by distance: one puddle, one
 ## player, no physics needed.
 
-const RADIUS := 38.0
-const LIFETIME := 2.5
+const RADIUS := 32.0
+const LIFETIME := 2.0
 const TICK := 0.5
 const COLOR := Color(0.45, 0.8, 0.25)
 

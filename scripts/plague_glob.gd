@@ -2,7 +2,8 @@ class_name PlagueGlob
 extends Area2D
 ## A Plaguewing's lobbed glob. Flies to where the player was standing when it
 ## was spat (so moving dodges it), hurts on a direct hit, and leaves a poison
-## puddle where it lands either way.
+## puddle where it lands either way. A ring on the ground marks the landing
+## spot, closing in as the glob arrives.
 
 const SPEED := 260.0
 const RADIUS := 7.0
@@ -29,7 +30,13 @@ func _ready() -> void:
 	body_entered.connect(_on_body_entered)
 
 
+var _start_distance := 0.0
+
+
 func _physics_process(delta: float) -> void:
+	if _start_distance <= 0.0:
+		_start_distance = maxf(global_position.distance_to(_target), 1.0)
+	queue_redraw()
 	var step := SPEED * delta
 	if global_position.distance_to(_target) <= step:
 		_land()
@@ -52,6 +59,11 @@ func _land() -> void:
 
 
 func _draw() -> void:
+	# Landing marker, drawn where the glob will land.
+	if _start_distance > 0.0:
+		var spot := to_local(_target)
+		var left := clampf(global_position.distance_to(_target) / _start_distance, 0.0, 1.0)
+		draw_arc(spot, PlaguePuddle.RADIUS * (0.5 + 0.5 * left), 0.0, TAU, 24, Color(COLOR, 0.25 + 0.35 * (1.0 - left)), 2.0)
 	draw_circle(Vector2.ZERO, RADIUS + 3.0, Color(COLOR, 0.3))
 	draw_circle(Vector2.ZERO, RADIUS, COLOR)
 	draw_circle(Vector2(-2, -2), 2.5, Color(0.85, 1, 0.7))

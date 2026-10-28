@@ -23,6 +23,8 @@ LAYOUT = {
     "plaguewing": (128, 0),
     "player": (192, 0),
     "mimic": (0, 64),
+    "hexeye": (64, 64),
+    "warden": (128, 64),
 }
 SIZE = (256, 128)
 

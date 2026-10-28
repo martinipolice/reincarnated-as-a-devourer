@@ -115,6 +115,26 @@ const VEXCLAW := preload("res://data/enemies/vexclaw.tres")
 const PLAGUEWING := preload("res://data/enemies/plaguewing.tres")
 const MIMIC := preload("res://data/enemies/mimic.tres")
 const DEMON_KING := preload("res://data/enemies/demon_king.tres")
+const HEXEYE := preload("res://data/enemies/hexeye.tres")
+const WARDEN := preload("res://data/enemies/warden.tres")
+## Mid-journey peaks: day -> [enemy, attack cycle, summons?, enrage?]. Each
+## arrives MINI_BOSS_DELAY seconds into its day (after that day's shrine).
+const MINI_BOSSES := {
+	10: [preload("res://data/enemies/ruin_guardian.tres"), [Boss.Attack.CHARGE, Boss.Attack.SLAM], false, true],
+	15: [preload("res://data/enemies/hollow_spirit.tres"), [Boss.Attack.BLINK, Boss.Attack.SLAM, Boss.Attack.VOLLEY], true, true],
+}
+const MINI_BOSS_DELAY := 25.0
+## While a mini-boss lives the waves thin out, so the duel stays readable.
+const MINI_BOSS_WAVES := 0.5
+const MINI_BOSS_GOLD_PER_DAY := 15
+const MINI_BOSS_STYLE := 40.0
+## Monsters by day: [Dreadling, Vexclaw, Plaguewing, Hexeye, Warden] weights.
+const SPAWN_TABLE := [
+	[6, [90, 10, 0, 0, 0], [60, 40, 0, 0, 0]],
+	[10, [45, 40, 8, 7, 0], [30, 45, 15, 10, 0]],
+	[14, [38, 30, 14, 10, 8], [20, 35, 20, 15, 10]],
+	[99, [30, 28, 18, 12, 12], [15, 33, 22, 15, 15]],
+]
 
 const STARTING_WEAPON := preload("res://data/weapons/blade.tres")
 ## Offered when everything in the pool is maxed.
@@ -126,6 +146,8 @@ const UPGRADE_POOL := [
 	preload("res://data/weapons/aegis.tres"),
 	preload("res://data/weapons/maw.tres"),
 	preload("res://data/weapons/chains.tres"),
+	preload("res://data/weapons/doom_bell.tres"),
+	preload("res://data/items/hunger.tres"),
 	preload("res://data/items/wooden_guard.tres"),
 	preload("res://data/items/leather_treads.tres"),
 	preload("res://data/items/stamina.tres"),
@@ -142,6 +164,9 @@ var gold := 0:
 		gold = value
 		gold_changed.emit(gold, revive_cost())
 var boss: Boss
+var mini_boss: Boss
+var _minis_done := []
+var _restoring := false
 var revives := 0
 ## TrainingData.id -> ranks bought at the goddess's shrines this journey.
 var training_ranks := {}
@@ -193,6 +218,7 @@ func _ready() -> void:
 	player.leveled_up.connect(_on_player_leveled_up)
 	player.devoured.connect(_on_player_devoured)
 	player.weapon_evolved.connect(_on_weapon_evolved)
+	player.resonated.connect(_on_resonated)
 	level_up.chosen.connect(_on_upgrade_chosen)
 	primary_button.pressed.connect(_on_primary)
 	secondary_button.pressed.connect(_on_secondary)
@@ -216,9 +242,11 @@ func _ready() -> void:
 	world.set_origin(player.position)
 	mood.color = MOOD.forest
 	if Save.resume and Save.has_journey():
+		_restoring = true  # replaying the hero: no banners for old Resonances
 		_restore(Save.data.journey)
+		_restoring = false
 	else:
-		player.apply_upgrade(STARTING_WEAPON)
+		player.apply_upgrade(_starting_weapon())
 	Save.resume = false
 	end_menu.hide()
 	banner.hide()
@@ -278,6 +306,10 @@ func _process(delta: float) -> void:
 		moments.area_card("The Fallen Ruins")
 	if day() >= FINAL_DAY and not _boss_spawned:
 		_spawn_boss()
+	if day() in MINI_BOSSES and not day() in _minis_done and not _boss_spawned \
+			and elapsed >= (day() - 1) * SECONDS_PER_DAY + MINI_BOSS_DELAY:
+		_minis_done.append(day())
+		_spawn_mini_boss(day())
 
 	# The waves stop once the Demon King arrives: Day 20 is a duel.
 	if not _boss_spawned:
@@ -304,6 +336,8 @@ func _spawn_waves(delta: float) -> void:
 	_spawn_timer -= delta
 	if _spawn_timer <= 0.0:
 		_spawn_timer = maxf(0.45, 1.3 - day() * 0.05) / wave_intensity() / (1.4 if covenant == "horde" else 1.0)
+		if is_instance_valid(mini_boss):
+			_spawn_timer /= MINI_BOSS_WAVES
 		# Bigger packs as the days pass: 1 per spawn on Days 1-4, 2 on 5-9, ...
 		for i in 1 + day() / 5:
 			_spawn_enemy()
@@ -386,6 +420,10 @@ func _update_music(delta: float) -> void:
 	if _boss_spawned:
 		Music.set_intensity(1.0)
 		return
+	if is_instance_valid(mini_boss):
+		Music.set_intensity(1.0)
+		Music.play("ruins_peak", 1.5)
+		return
 	_pressure_timer -= delta
 	if _pressure_timer <= 0.0:
 		_pressure_timer = 0.5
@@ -441,6 +479,14 @@ func set_covenant(id: String) -> void:
 	player.stats_changed.emit()
 
 
+# The weapon chosen on the title screen, if it's unlocked; else the Blade.
+func _starting_weapon() -> WeaponData:
+	var path := String(Save.data.get("start_weapon", ""))
+	if path in Unlocks.unlocked(Save.data):
+		return load(path)
+	return STARTING_WEAPON
+
+
 ## The next day the goddess will appear, or 0 if she won't again.
 func next_shrine_day() -> int:
 	for shrine_day: int in SHRINE_DAYS:
@@ -478,19 +524,21 @@ func show_banner(text: String, duration := 2.5) -> void:
 # time, so early days skip them. Elites lean toward stronger monsters so
 # Vexclaw essences (the Blade evolution) are reachable. Tune freely.
 func _pick_enemy(elite := false) -> EnemyData:
-	var weights: Array
-	if day() < 6:
-		weights = [60, 40, 0] if elite else [90, 10, 0]
-	elif day() < 12:
-		weights = [30, 50, 20] if elite else [45, 45, 10]
-	else:
-		weights = [20, 45, 35] if elite else [35, 35, 30]
-	var roll := randi_range(1, 100)
-	if roll <= weights[0]:
-		return DREADLING
-	if roll <= weights[0] + weights[1]:
-		return VEXCLAW
-	return PLAGUEWING
+	var weights: Array = SPAWN_TABLE.back()[2 if elite else 1]
+	for row: Array in SPAWN_TABLE:
+		if day() < row[0]:
+			weights = row[2 if elite else 1]
+			break
+	var kinds := [DREADLING, VEXCLAW, PLAGUEWING, HEXEYE, WARDEN]
+	var total := 0
+	for w: int in weights:
+		total += w
+	var roll := randi_range(1, total)
+	for i in kinds.size():
+		roll -= weights[i]
+		if roll <= 0:
+			return kinds[i]
+	return DREADLING
 
 
 func _spawn_enemy(elite := false, distance := SPAWN_RADIUS) -> void:
@@ -501,8 +549,12 @@ func _spawn_enemy(elite := false, distance := SPAWN_RADIUS) -> void:
 	enemy.setup(_pick_enemy(elite), player, elite, toughness(), affix)
 	enemy.position = _spawn_point(distance)
 	enemies.add_child(enemy)
+	if enemy.data == HEXEYE:
+		Hints.show_hint("hexeye", "A Hexeye: it keeps its distance and aims a blue line before it fires. Step off the line.")
+	elif enemy.data == WARDEN:
+		Hints.show_hint("warden", "A Warden: its shield soaks most of your damage until it breaks. Burns and bites wear it down too.")
 	if affix != "":
-		Hints.show_hint("affix", "Elites can carry a affix, named over their head: Swift, Armored, Splitting (bursts into three) or Vampiric (heals when it hits you). They pay double gold.")
+		Hints.show_hint("trait", "Elites can carry a trait, named over their head: Swift, Armored, Splitting (bursts into three) or Vampiric (heals when it hits you). They pay double gold.")
 	if elite:
 		Hints.show_hint("elite", "An elite is coming: bigger and tougher. Kill it and it drops an essence you can Devour.")
 
@@ -532,6 +584,43 @@ func _unhandled_input(event: InputEvent) -> void:
 		KEY_F4:
 			player.hp = player.stat("max_hp")
 			show_banner("[debug] Healed", 1.0)
+
+
+# A mid-journey guardian: its own attack cycle, a bar and a title card.
+func _spawn_mini_boss(on_day: int) -> void:
+	var entry: Array = MINI_BOSSES[on_day]
+	mini_boss = BOSS_SCENE.instantiate() as Boss
+	mini_boss.setup(entry[0], player)
+	mini_boss.configure(entry[1], entry[2], entry[3])
+	mini_boss.position = player.position + Vector2.RIGHT.rotated(randf() * TAU) * BOSS_SPAWN_DISTANCE
+	mini_boss.summon.connect(_on_boss_summon)
+	mini_boss.enraged.connect(func() -> void: show_banner("%s is enraged!" % entry[0].display_name, 2.0))
+	enemies.add_child(mini_boss)
+	hud.show_boss(mini_boss, entry[0].display_name)
+	moments.area_card(entry[0].display_name)
+	Game.sfx("doom", 0.0)
+	Game.sfx("boss_warn", 0.0)
+	Game.shockwave(mini_boss.global_position, Color(0.9, 0.3, 0.3), 220.0, 0.7)
+	camera.punch(0.08, 1.0)
+	Hints.show_hint("mini_boss", "A guardian of this land! Red markings show where it will strike: step out of them, then hit back. Waves thin out while it lives.")
+
+
+# A guardian's reward: a golden chest, a purse, an essence to Devour.
+func _on_mini_boss_killed(enemy: Enemy) -> void:
+	var at := enemy.global_position
+	Save.count_felled(enemy.data.display_name)
+	gold += roundi(MINI_BOSS_GOLD_PER_DAY * day() * gold_mult())
+	style.add(MINI_BOSS_STYLE)
+	_place_chest.call_deferred(at, LootChest.Kind.GOLDEN)
+	var kinds := [DREADLING, VEXCLAW, PLAGUEWING, HEXEYE, WARDEN]
+	var corpse := CORPSE_SCENE.instantiate() as DevourCorpse
+	corpse.setup((kinds.pick_random() as EnemyData).essence)
+	corpse.position = at + Vector2(40, 0)
+	pickups.add_child.call_deferred(corpse)
+	moments.felled("%s Felled" % enemy.data.display_name)
+	get_tree().create_timer(2.5).timeout.connect(moments.clear)
+	camera.punch(0.1, 0.9)
+	show_banner("A golden chest, gold, and an essence remain.", 2.5)
 
 
 func _spawn_boss() -> void:
@@ -727,8 +816,11 @@ func _on_enemy_killed(enemy: Enemy) -> void:
 			_spawn_at.call_deferred(enemy.data, at)
 	if enemy.data.drops_golden_chest:
 		_place_chest.call_deferred(enemy.global_position, LootChest.Kind.GOLDEN)
-	if enemy.data.boss:
+	if enemy.data.final:
 		_end_run("VICTORY", true)
+		return
+	if enemy == mini_boss:
+		_on_mini_boss_killed(enemy)
 		return
 	Hints.show_hint("gems", "Walk near the green gems to collect XP. Each level lets you pick a new weapon or upgrade.")
 	var gem := GEM_SCENE.instantiate() as XPGem
@@ -744,9 +836,20 @@ func _on_enemy_killed(enemy: Enemy) -> void:
 
 
 func _on_player_devoured(essence: EssenceData) -> void:
+	Save.count_devour()
 	style.add(StyleMeter.DEVOUR_POINTS)
 	show_banner("Devoured %s\n%s   -%d max HP" % [
 		essence.display_name, essence.description, essence.max_hp_cost])
+
+
+func _on_resonated(resonance: String, description: String) -> void:
+	if _over or _restoring:
+		return
+	Game.sfx("evolve", 0.0, 0.8)
+	Game.shockwave(player.global_position, Color(0.6, 0.9, 1.0), 200.0, 0.6)
+	show_banner("Resonance: %s\n%s" % [resonance, description], 3.0)
+	style.add(StyleMeter.DEVOUR_POINTS)
+	Hints.show_hint("resonance", "Two essences resonated! Holding 2 or more of certain pairs awakens a lasting bonus. Your build screen (pause) lists them.")
 
 
 func _on_weapon_evolved(weapon: Weapon) -> void:

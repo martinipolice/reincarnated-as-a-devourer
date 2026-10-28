@@ -42,6 +42,7 @@ const SFX := {
 	"light_cast": [["kenney_digital/laser{4-6}.ogg"], -24.0, 1.5, true],
 	"light_hit": [["kenney_impact/impactGlass_light_00{0-4}.ogg"], -17.0, 1.2, true],
 	"aegis_hit": [["kenney_impact/impactMetal_light_00{0-4}.ogg", "kenney_impact/impactMetal_medium_00{0-4}.ogg"], -12.0, 1.0, true],
+	"bell": [["kenney_impact/impactBell_heavy_00{0-4}.ogg"], -13.0, 1.15, true],
 	"enemy_hit": [["kenney_impact/impactPunch_medium_00{0-4}.ogg"], -16.0, 1.0, true],
 	"enemy_die": [["kenney_impact/impactSoft_heavy_00{0-4}.ogg"], -11.0, 0.85, true],
 	"gem": [["kenney_interface/glass_00{1-6}.ogg"], -16.0, 1.0, true],

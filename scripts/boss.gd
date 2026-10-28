@@ -7,13 +7,18 @@ extends Enemy
 ## - Dark volley: stops, gathers power, then fires a ring of orbs to dodge.
 ## He also summons a few minions now and then (XP and a little chaos).
 ## Below half HP he enrages: faster, bigger slams, denser volleys.
+## The mini-bosses (Days 10 and 15) are Bosses too, set up with configure():
+## their own attack cycle, with or without summons and an enrage. Two more
+## attacks are theirs:
+## - Charge: a line marks the path, then it rushes along it.
+## - Blink: it fades, reappears beside you, and fires a ring of orbs.
 
 signal slam_started
 signal enraged
 ## Asks the run to spawn `count` minions around `at`; true in phase 2.
 signal summon(at: Vector2, count: int, phase_two: bool)
 
-enum Attack { SLAM, VOLLEY }
+enum Attack { SLAM, VOLLEY, CHARGE, BLINK }
 
 const ORB_SCENE := preload("res://scenes/boss_orb.tscn")
 const FIRST_ATTACK := 4.0
@@ -34,6 +39,12 @@ const ENRAGED_SPEED_MULT := 1.35
 const TELEGRAPH_COLOR := Color(1, 0.2, 0.2)
 const VOLLEY_COLOR := Color(0.75, 0.35, 1.0)
 const OUTLINE_COLOR := Color(0.95, 0.8, 1.0)
+const CHARGE_WINDUP := 0.9
+const CHARGE_TIME := 0.55
+const CHARGE_SPEED := 560.0
+const CHARGE_LENGTH := CHARGE_SPEED * CHARGE_TIME
+const BLINK_FADE := 0.35
+const BLINK_DISTANCE := 170.0
 
 ## Slam target and remaining wind-up; read by tools/balance_sim.gd's bot too.
 var slam_at := Vector2.ZERO
@@ -43,10 +54,25 @@ var phase := 0  # 0 = normal, 1 = enraged
 
 var _next_attack := FIRST_ATTACK
 var _next_summon: float = SUMMON_INTERVAL[0]
-var _next_kind := Attack.SLAM
+## The attack cycle, in order; mini-bosses get their own via configure().
+var attacks: Array = [Attack.SLAM, Attack.VOLLEY]
+var summons := true
+var can_enrage := true
+var _attack_index := 0
+var _charge_windup := 0.0
+var _charge_time := 0.0
+var _charge_dir := Vector2.ZERO
+var _blink := 0.0
 var _volley_windup := 0.0
 var _flash := 0.0
 var _telegraph: Node2D
+
+
+## Sets a mini-boss's attack cycle; call before add_child().
+func configure(attack_cycle: Array, with_summons: bool, with_enrage: bool) -> void:
+	attacks = attack_cycle
+	summons = with_summons
+	can_enrage = with_enrage
 
 
 func _ready() -> void:
@@ -61,18 +87,25 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
-	# He plants his feet while gathering a volley.
-	if _volley_windup <= 0.0:
+	# He plants his feet while gathering a volley or a charge, and moves on
+	# his own during a charge or a blink.
+	if _charge_time > 0.0:
+		_charge_time -= delta
+		position += _charge_dir * CHARGE_SPEED * delta
+		position = Obstacles.push_out(position, radius * 0.8)
+	elif _volley_windup <= 0.0 and _charge_windup <= 0.0 and _blink <= 0.0:
 		super(delta)
 	_update_phase()
 	_update_slam(delta)
 	_update_volley(delta)
-	if windup <= 0.0 and _volley_windup <= 0.0:
+	_update_charge(delta)
+	_update_blink(delta)
+	if windup <= 0.0 and _volley_windup <= 0.0 and _charge_windup <= 0.0 and _charge_time <= 0.0 and _blink <= 0.0:
 		_next_attack -= delta
 		if _next_attack <= 0.0 and is_instance_valid(target):
 			_start_attack()
 	_next_summon -= delta
-	if _next_summon <= 0.0:
+	if summons and _next_summon <= 0.0:
 		_next_summon = SUMMON_INTERVAL[phase]
 		summon.emit(global_position, SUMMON_COUNT, phase == 1)
 	_flash = maxf(0.0, _flash - delta)
@@ -80,7 +113,7 @@ func _physics_process(delta: float) -> void:
 
 
 func _update_phase() -> void:
-	if phase == 0 and hp <= max_hp * ENRAGE_AT:
+	if can_enrage and phase == 0 and hp <= max_hp * ENRAGE_AT:
 		phase = 1
 		slam_radius = SLAM_RADIUS[1]
 		Game.shake(0.6)
@@ -94,15 +127,48 @@ func move_speed() -> float:
 
 func _start_attack() -> void:
 	_next_attack = ATTACK_GAP[phase]
-	if _next_kind == Attack.SLAM:
-		windup = SLAM_WINDUP
-		slam_at = target.global_position
-		Game.sfx("boss_warn", 0.0)
-		slam_started.emit()
-		_next_kind = Attack.VOLLEY
-	else:
+	var kind: Attack = attacks[_attack_index % attacks.size()]
+	_attack_index += 1
+	match kind:
+		Attack.SLAM:
+			windup = SLAM_WINDUP
+			slam_at = target.global_position
+			Game.sfx("boss_warn", 0.0)
+			slam_started.emit()
+		Attack.VOLLEY:
+			_volley_windup = VOLLEY_WINDUP[phase]
+		Attack.CHARGE:
+			_charge_windup = CHARGE_WINDUP
+			_charge_dir = global_position.direction_to(target.global_position)
+			Game.sfx("boss_warn", 0.0)
+		Attack.BLINK:
+			_blink = BLINK_FADE * 2.0
+			Game.sfx("devour", 0.0, 1.4)
+
+
+func _update_charge(delta: float) -> void:
+	if _charge_windup <= 0.0:
+		return
+	_charge_windup -= delta
+	if _charge_windup <= 0.0:
+		_charge_time = CHARGE_TIME
+		Game.sfx("boss_slam")
+		Game.shake(0.3)
+
+
+# Fade out, reappear beside the hero, fade in, then a ring of orbs.
+func _update_blink(delta: float) -> void:
+	if _blink <= 0.0:
+		return
+	var before := _blink
+	_blink -= delta
+	if before > BLINK_FADE and _blink <= BLINK_FADE and is_instance_valid(target):
+		position = target.global_position + Vector2.from_angle(randf() * TAU) * BLINK_DISTANCE
+		Game.fx("smoke", global_position, 3.0, Color(0.7, 0.9, 1.0))
+	modulate.a = clampf(absf(_blink - BLINK_FADE) / BLINK_FADE, 0.15, 1.0)
+	if _blink <= 0.0:
+		modulate.a = 1.0
 		_volley_windup = VOLLEY_WINDUP[phase]
-		_next_kind = Attack.SLAM
 
 
 func _update_slam(delta: float) -> void:
@@ -166,6 +232,12 @@ func _draw_telegraph() -> void:
 		_telegraph.draw_arc(slam_at, slam_radius, 0.0, TAU, 64, Color(TELEGRAPH_COLOR, 0.9), 2.0)
 	elif _flash > 0.0:
 		_telegraph.draw_circle(slam_at, slam_radius, Color(1, 0.5, 0.4, _flash / SLAM_FLASH * 0.6))
+	if _charge_windup > 0.0:
+		# The path of the coming charge, brightening.
+		var t := 1.0 - _charge_windup / CHARGE_WINDUP
+		var end := global_position + _charge_dir * CHARGE_LENGTH
+		_telegraph.draw_line(global_position, end, Color(TELEGRAPH_COLOR, 0.15 + 0.3 * t), radius * 2.0)
+		_telegraph.draw_line(global_position, end, Color(TELEGRAPH_COLOR, 0.8), 2.0)
 	if _volley_windup > 0.0:
 		# Dark power gathering around him: a shrinking purple ring.
 		var t: float = 1.0 - _volley_windup / VOLLEY_WINDUP[phase]

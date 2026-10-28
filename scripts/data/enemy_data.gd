@@ -12,11 +12,16 @@ extends Resource
 ## Value of the XP gem it drops.
 @export var xp := 1
 ## How it moves and attacks; see enemy.gd.
-@export_enum("chase", "swarm", "pounce", "spitter") var behavior := "chase"
+@export_enum("chase", "swarm", "pounce", "spitter", "caster", "warden") var behavior := "chase"
+## Wardens: damage their shield soaks before it breaks (it takes most of
+## every hit meanwhile). 0 = no shield.
+@export var shield := 0.0
 ## Granted when an elite of this type is Devoured. Empty = can't be Devoured.
 @export var essence: EssenceData
-## Bosses end the run when killed and are never Devoured.
+## Bosses (and mini-bosses) are never Devoured and don't jostle in crowds.
 @export var boss := false
+## Killing it wins the journey (the Demon King).
+@export var final := false
 ## Leaves a golden treasure chest when killed (the Mimic).
 @export var drops_golden_chest := false
 ## 1 = full knockback from hits, 0 = immovable.

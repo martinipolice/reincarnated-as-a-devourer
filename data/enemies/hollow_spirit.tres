@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="EnemyData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/enemy_data.gd" id="1"]
+[ext_resource type="SpriteFrames" path="res://assets/ninja/hollow_spirit/sprite_frames.tres" id="2"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Hollow Spirit"
+max_hp = 3000.0
+atk = 48.0
+defense = 50.0
+move_speed = 80.0
+gold = 0
+xp = 0
+boss = true
+knockback_scale = 0.0
+radius = 28.0
+color = Color(0.7, 0.9, 1, 1)
+sprite_frames = ExtResource("2")
+sprite_scale = 2.0

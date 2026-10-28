@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/weapon_data.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/weapons/doom_bell.tscn" id="2"]
+[ext_resource type="Resource" path="res://data/essences/hexeye_essence.tres" id="3"]
+[ext_resource type="Texture2D" path="res://assets/ninja/images/icon_bell.png" id="4"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Doom Bell"
+description = "A spectral bell tolls over the nearest enemy, blasting and slowing all around it."
+scene = ExtResource("2")
+max_level = 3
+evolve_with = ExtResource("3")
+evolve_count = 3
+evolved_name = "Death Knell"
+level_descriptions = PackedStringArray("A spectral bell tolls over the nearest enemy, blasting and slowing all around it.", "Damage 40 -> 58, a wider toll, tolls faster", "2 bells at once, damage 58 -> 80. Devour 3 Hexeyes to evolve it")
+icon = ExtResource("4")

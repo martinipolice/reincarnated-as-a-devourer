@@ -4,7 +4,7 @@ extends Control
 ## - golden: unopened chests
 ## - the essence's own color, smaller and quicker: an elite's essence to Devour
 ##   (they fade, so it matters to get there)
-## - red: the Demon King
+## - red: the Demon King, or a mini-boss
 
 const MARGIN := 36.0
 const SIZE := 22.0
@@ -31,8 +31,9 @@ func _draw() -> void:
 		var corpse := node as DevourCorpse
 		_arrow(corpse, center, inner, Color(corpse.essence.color.lightened(0.5), quick), SIZE * 0.8)
 	var main := owner as Node
-	if main and is_instance_valid(main.get("boss")):
-		_arrow(main.boss, center, inner, Color(BOSS_COLOR, pulse), SIZE * 1.2)
+	for key in ["boss", "mini_boss"]:
+		if main and is_instance_valid(main.get(key)):
+			_arrow(main.get(key), center, inner, Color(BOSS_COLOR, pulse), SIZE * 1.2)
 
 
 func _arrow(target: Node2D, center: Vector2, inner: Rect2, color: Color, size: float) -> void:

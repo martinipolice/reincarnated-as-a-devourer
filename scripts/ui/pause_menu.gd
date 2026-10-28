@@ -146,6 +146,12 @@ func _show_build() -> void:
 		extras.append("%s x%d" % [essence.display_name, player.essences[essence]])
 	_page.add_child(_heading("Devoured"))
 	_page.add_child(_line(", ".join(extras) if extras else "Nothing yet. Elites drop essences.", UITheme.BONE if extras else UITheme.ASH))
+	_page.add_child(_heading("Resonances"))
+	if player.resonances.is_empty():
+		_page.add_child(_line("None yet. Hold 2 of each of certain essence pairs.", UITheme.ASH))
+	for entry: Array in Resonances.TABLE:
+		if entry[0] in player.resonances:
+			_page.add_child(_line("%s: %s" % [entry[0], entry[3]], UITheme.GOLD))
 	var training := []
 	for t: TrainingData in _main.SHRINE.TRAININGS:
 		var rank := int(_main.training_ranks.get(t.id, 0))

@@ -15,6 +15,8 @@ signal xp_changed(xp: int, needed: int, level: int)
 signal flask_changed(charges: int, max_charges: int)
 signal devoured(essence: EssenceData)
 signal weapon_evolved(weapon: Weapon)
+## Two essences resonated (see Resonances): its name and what it grants.
+signal resonated(name: String, description: String)
 
 const BODY_COLOR := Color(0.9, 0.82, 0.55)
 const BODY_RADIUS := 12.0
@@ -45,6 +47,7 @@ var base := {
 	"pickup_radius": 120.0,
 	"haste": 1.0,  # weapon attack speed multiplier
 	"regen": 0.0,  # HP per second
+	"devour_speed": 1.0,  # Hunger: Devour channels faster and heals more
 }
 ## Each entry: {"stat": "defense", "add": 10.0, "mult": 0.0}
 var modifiers: Array[Dictionary] = []
@@ -64,6 +67,8 @@ var pending_level_ups := 0
 var upgrade_levels := {}
 ## EssenceData -> how many have been Devoured this run.
 var essences := {}
+## Resonances awakened this run, by name.
+var resonances: Array[String] = []
 
 var _invuln := 0.0
 var _facing := "down"
@@ -252,7 +257,25 @@ func is_devouring() -> bool:
 
 
 func devour_progress() -> float:
-	return _devour_progress / DEVOUR_TIME
+	return _devour_progress / _devour_time()
+
+
+func _devour_time() -> float:
+	return DEVOUR_TIME / stat("devour_speed")
+
+
+# Two essences held together awaken a Resonance (scripts/data/resonances.gd).
+func _check_resonances() -> void:
+	for entry: Array in Resonances.TABLE:
+		if entry[0] in resonances:
+			continue
+		var a := essences.get(load(entry[1]), 0) as int
+		var b := essences.get(load(entry[2]), 0) as int
+		if a >= Resonances.NEEDED and b >= Resonances.NEEDED:
+			resonances.append(entry[0])
+			for mod: Dictionary in entry[4]:
+				modifiers.append(mod.duplicate())
+			resonated.emit(entry[0], entry[3])
 
 
 ## Total essences taken this run; the endings will read this.
@@ -271,6 +294,7 @@ func add_essence(essence: EssenceData) -> void:
 	modifiers.append({"stat": "max_hp", "add": -essence.max_hp_cost})
 	hp = minf(hp, stat("max_hp"))
 	_check_evolutions()
+	_check_resonances()
 	stats_changed.emit()
 
 
@@ -284,7 +308,8 @@ func revive(hp_fraction: float, invulnerable_for: float) -> void:
 func devour(essence: EssenceData) -> void:
 	add_essence(essence)
 	# Feeding restores you, which pays for standing still to channel.
-	var healed := minf(stat("max_hp"), hp + stat("max_hp") * DEVOUR_HEAL) - hp
+	var heal_share := DEVOUR_HEAL * (1.0 + (stat("devour_speed") - 1.0) / 3.0)  # Hunger: +10% per level
+	var healed := minf(stat("max_hp"), hp + stat("max_hp") * heal_share) - hp
 	hp += healed
 	Game.fx("spark", global_position, 2.5, Color(0.5, 1, 0.5))
 	if healed >= 1.0:
@@ -305,7 +330,7 @@ func _update_devour(delta: float) -> void:
 		if _devour_target == null:
 			return
 	_devour_progress += delta
-	if _devour_progress >= DEVOUR_TIME:
+	if _devour_progress >= _devour_time():
 		devour(_devour_target.essence)
 		_devour_target.queue_free()
 		_devour_target = null

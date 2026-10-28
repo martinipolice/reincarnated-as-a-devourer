@@ -165,11 +165,17 @@ func _steer() -> void:
 		var danger: float = DODGE_RADIUS + e.radius
 		if dist < danger and dist > 0.1:
 			push += d / dist * (danger - dist) / danger * 4.0
-	var boss = main.boss
-	if is_instance_valid(boss) and boss.windup > 0.0:
-		var away: Vector2 = p.global_position - boss.slam_at
-		if away.length() < boss.slam_radius + 30.0:
-			push += away.normalized() * 6.0
+	for boss in [main.boss, main.mini_boss]:
+		if not is_instance_valid(boss):
+			continue
+		if boss.windup > 0.0:
+			var away: Vector2 = p.global_position - boss.slam_at
+			if away.length() < boss.slam_radius + 30.0:
+				push += away.normalized() * 6.0
+		if boss._charge_windup > 0.0:
+			# Step sideways off the charge line.
+			var side: Vector2 = boss._charge_dir.orthogonal()
+			push += side * (6.0 if side.dot(p.global_position - boss.global_position) >= 0.0 else -6.0)
 	for handle in Obstacles.near(p.global_position):
 		var d: Vector2 = p.global_position - handle.center
 		var reach: float = handle.radius + 34.0

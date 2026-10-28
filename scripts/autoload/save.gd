@@ -30,6 +30,10 @@ func defaults() -> Dictionary:
 		"wins": 0,
 		"best_day": 0,
 		"endings": [],  # endings seen: "spare", "devour"
+		# Lifetime records behind the starting-weapon unlocks (Unlocks).
+		"devoured_total": 0,
+		"felled": [],  # mini-bosses ever felled, by name
+		"start_weapon": "res://data/weapons/blade.tres",  # last chosen
 		# Set the moment the hero falls, cleared by a revive. Still set at
 		# the next launch means the game closed on the death screen: the
 		# journey is over (one life), not continued from the last shrine.
@@ -96,6 +100,17 @@ func has_journey() -> bool:
 ## Checkpoints the journey in progress (main.gd builds the snapshot).
 func save_journey(snapshot: Dictionary) -> void:
 	data.journey = snapshot
+	save_game()
+
+
+## Lifetime records for the unlocks; written with the next save.
+func count_devour() -> void:
+	data.devoured_total = int(data.devoured_total) + 1
+
+
+func count_felled(boss_name: String) -> void:
+	if not boss_name in data.felled:
+		data.felled.append(boss_name)
 	save_game()
 
 

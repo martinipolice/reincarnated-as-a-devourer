@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="EnemyData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/enemy_data.gd" id="1"]
+[ext_resource type="Resource" path="res://data/essences/hexeye_essence.tres" id="2"]
+[ext_resource type="SpriteFrames" path="res://assets/ninja/hexeye/sprite_frames.tres" id="3"]
+
+[resource]
+script = ExtResource("1")
+behavior = "caster"
+display_name = "Hexeye"
+max_hp = 60.0
+atk = 20.0
+defense = 10.0
+move_speed = 85.0
+gold = 3
+xp = 4
+radius = 11.0
+color = Color(0.45, 0.85, 1, 1)
+essence = ExtResource("2")
+sprite_frames = ExtResource("3")
+sprite_scale = 2.0

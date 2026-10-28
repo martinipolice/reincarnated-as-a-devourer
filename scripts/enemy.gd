@@ -6,6 +6,9 @@ extends Area2D
 ## - "swarm":   approach from a personal angle so the pack surrounds you.
 ## - "pounce":  close in, crouch with an aim line, then dash; recover after.
 ## - "spitter": creep in slowly, pausing to lob globs that leave puddles.
+## - "caster":  keep its distance, aim a line at you, then fire a bolt.
+## - "warden":  plod in behind a shield that soaks most damage until it
+##              breaks (EnemyData.shield).
 ## Movement is steered (smooth acceleration) and Crowd keeps a little space
 ## between monsters. Elites are tougher, gold-ringed versions that leave a
 ## Devour corpse. From Day 5 an elite can carry a trait (TRAITS), named over
@@ -70,6 +73,16 @@ const SPIT_WINDUP := 0.4
 const SPIT_COOLDOWN := 5.0
 const SPIT_TINT := Color(0.7, 1.6, 0.6)
 const GLOB_SCENE := preload("res://scenes/plague_glob.tscn")
+# caster
+const CAST_RANGE := 340.0  # fires when this close
+const CAST_KEEP := 220.0  # backs off when closer than this
+const CAST_WINDUP := 0.8
+const CAST_COOLDOWN := 3.6
+const CAST_COLOR := Color(0.45, 0.85, 1.0)
+const BOLT_SCENE := preload("res://scenes/hex_bolt.tscn")
+# warden
+const SHIELD_SOAK := 0.75  # share of each hit the shield takes
+const SHIELD_COLOR := Color(0.75, 0.85, 1.0)
 
 var data: EnemyData
 var target: Node2D
@@ -91,6 +104,10 @@ var _directional := false
 var _next_number := 0
 var _separation := Vector2.ZERO
 var _hit_flash := 0.0
+var shield_hp := 0.0
+var _slow := 1.0  # a Doom Bell's toll: movement multiplier...
+var _slow_time := 0.0  # ...for this long
+var _aim := Vector2.ZERO
 var _step := 0
 var _dir := -1
 var _burn_dps := 0.0
@@ -109,6 +126,7 @@ func setup(enemy_data: EnemyData, chase_target: Node2D, is_elite := false, tough
 	affix = elite_trait if is_elite else ""
 	max_hp = data.max_hp * (ELITE_HP_MULT if elite else 1.0) * toughness
 	hp = max_hp
+	shield_hp = data.shield * toughness
 	atk = data.atk * (ELITE_ATK_MULT if elite else 1.0) * (1.0 + (toughness - 1.0) * 0.7) * Game.enemy_atk_mult
 	radius = data.radius * (ELITE_SIZE_MULT if elite else 1.0)
 
@@ -154,6 +172,8 @@ func _physics_process(delta: float) -> void:
 			desired = _pounce()
 		"spitter":
 			desired = _spitter()
+		"caster":
+			desired = _caster()
 		_:
 			desired = global_position.direction_to(target.global_position) * move_speed()
 	if state != State.DASH and not data.boss:
@@ -164,6 +184,10 @@ func _physics_process(delta: float) -> void:
 	_update_burn(delta)
 	if not alive():
 		return
+	if _slow_time > 0.0:
+		_slow_time -= delta
+	if shield_hp > 0.0:
+		queue_redraw()  # the shield turns to face you
 	var accel := ACCEL * (4.0 if state == State.DASH else 1.0)
 	_velocity = _velocity.move_toward(desired, accel * delta)
 	position += (_velocity + _knockback) * delta
@@ -180,7 +204,13 @@ func _physics_process(delta: float) -> void:
 
 
 func move_speed() -> float:
-	return data.move_speed * (SWIFT_SPEED if affix == "swift" else 1.0)
+	return data.move_speed * (SWIFT_SPEED if affix == "swift" else 1.0) * (_slow if _slow_time > 0.0 else 1.0)
+
+
+## Slows it to `factor` of its speed for `duration` seconds (strongest wins).
+func slow(factor: float, duration: float) -> void:
+	_slow = minf(_slow, factor) if _slow_time > 0.0 else factor
+	_slow_time = maxf(_slow_time, duration)
 
 
 ## Sets it alight: `dps` for `duration` seconds (the stronger burn wins).
@@ -302,6 +332,35 @@ func _spitter() -> Vector2:
 	return to_player / maxf(distance, 0.01) * move_speed() * creep
 
 
+# Hold a firing distance: approach, back off if crowded in, aim, shoot.
+func _caster() -> Vector2:
+	var to_player := target.global_position - global_position
+	var distance := to_player.length()
+	if state == State.WINDUP:
+		_aim = to_player / maxf(distance, 0.01)
+		if _state_time >= CAST_WINDUP:
+			_cast()
+			_cooldown = CAST_COOLDOWN * (0.6 if elite else 1.0)
+			_set_state(State.MOVE)
+		queue_redraw()
+		return Vector2.ZERO
+	if _cooldown <= 0.0 and distance < CAST_RANGE:
+		_set_state(State.WINDUP)
+		return Vector2.ZERO
+	var direction := to_player / maxf(distance, 0.01)
+	if distance < CAST_KEEP:
+		return -direction * move_speed() * 0.8
+	return direction * move_speed()
+
+
+func _cast() -> void:
+	var bolt := BOLT_SCENE.instantiate() as HexBolt
+	bolt.setup(_aim, atk * 0.8)
+	bolt.position = global_position
+	get_parent().get_parent().add_child(bolt)
+	Game.sfx("boss_volley", 0.15, 1.6)
+
+
 func _spit() -> void:
 	var glob := GLOB_SCENE.instantiate() as PlagueGlob
 	glob.setup(target.global_position, atk * 0.4)
@@ -317,6 +376,15 @@ func take_damage(amount: float, knockback := Vector2.ZERO, hit_sfx := "enemy_hit
 	if not alive():
 		return
 	var dealt := Game.damage(amount, data.defense) * (ARMORED_TAKEN if affix == "armored" else 1.0)
+	if shield_hp > 0.0:
+		# The shield takes most of the hit until it breaks.
+		var soaked := minf(dealt * SHIELD_SOAK, shield_hp)
+		shield_hp -= soaked
+		dealt -= soaked
+		if shield_hp <= 0.0:
+			Game.sfx("aegis_hit", 0.0, 0.6)
+			Game.burst(global_position, SHIELD_COLOR, 14, 180.0)
+		queue_redraw()
 	hp -= dealt
 	damaged.emit(hp, max_hp)
 	# Throttled per enemy, so a swarm under the Blade doesn't drown the screen.
@@ -373,3 +441,12 @@ func _draw() -> void:
 			draw_circle(Vector2.ZERO, radius + 4.0, Color(AIM_COLOR, 0.25 * t))
 		elif data.behavior == "spitter":
 			draw_circle(Vector2.ZERO, radius + 6.0, Color(SPIT_TINT, 0.3))
+		elif data.behavior == "caster":
+			# The line it's about to fire along, brightening.
+			var t := clampf(_state_time / CAST_WINDUP, 0.0, 1.0)
+			draw_line(Vector2.ZERO, _aim * 300.0, Color(CAST_COLOR, 0.25 + 0.6 * t), 2.0 + 3.0 * t)
+	if shield_hp > 0.0:
+		# A plate of shield in front, fading as it cracks.
+		var facing := to_local(target.global_position).normalized() if is_instance_valid(target) else Vector2.DOWN
+		var strength := clampf(shield_hp / maxf(data.shield, 1.0), 0.2, 1.0)
+		draw_arc(Vector2.ZERO, radius + 6.0, facing.angle() - 1.1, facing.angle() + 1.1, 12, Color(SHIELD_COLOR, 0.35 + 0.5 * strength), 4.0)

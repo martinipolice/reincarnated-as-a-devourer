@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="EssenceData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/essence_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Warden Essence"
+description = "+1.5 HP regeneration"
+stat = "regen"
+add = 1.5
+max_hp_cost = 12.0
+color = Color(0.75, 0.85, 1, 1)

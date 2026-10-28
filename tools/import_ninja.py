@@ -27,10 +27,14 @@ DIRECTIONAL = {
     "dreadling": "Actor/Monster/Spirit/SpriteSheet.png",
     "vexclaw": "Actor/Monster/Beast/Beast.png",
     "plaguewing": "Actor/Monster/GreenOctopus/SpriteSheet.png",
+    "hexeye": "Actor/Monster/Eye/Eye.png",
+    "warden": "Actor/Monster/Cyclope/SpriteSheet.png",
 }
 # Single strips: name -> (sheet, frame w, frame h, frames, fps, animation, loop)
 STRIPS = {
     "demon_king": ("Actor/Boss/DemonCyclop/Walk.png", 50, 50, 6, 8, "run", True),
+    "ruin_guardian": ("Actor/Boss/GiantRedSamurai/Walk.png", 96, 48, 6, 8, "run", True),
+    "hollow_spirit": ("Actor/Boss/GiantSpirit/Idle.png", 50, 50, 5, 8, "run", True),
     "mimic": ("Items/Treasure/LittleTreasureChest.png", 16, 16, 2, 6, "run", True),
     "chest": ("Items/Treasure/BigTreasureChest.png", 16, 14, 2, 8, "open", False),
     "swoosh": ("FX/Slash/SpriteSheetCircular.png", 54, 55, 7, 28, "play", False),
@@ -55,6 +59,8 @@ STATIC = {
     "icon_maw": "Ui/Skill Icon/Spell/Death.png",
     "icon_chains": "Ui/Skill Icon/Spell/Fireball.png",
     "icon_covenant": "Ui/Skill Icon/Spell/BookDarkness.png",
+    "icon_bell": "Ui/Skill Icon/Spell/OrbDarkness.png",
+    "icon_hunger": "Ui/Skill Icon/Spell/Necromancy.png",
     # loot and pickups
     "common_potion": "Items/Potion/LifePot.png",
     "high_potion": "Items/Potion/Medipack.png",
