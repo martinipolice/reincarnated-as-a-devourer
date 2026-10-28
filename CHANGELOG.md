@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.2.0
+
+New content and a full menu overhaul.
+
+- **New monsters:** the Hexeye (fires telegraphed hexes from range) and the Warden (a shield
+  that soaks hits). A spawn table by day decides who comes.
+- **Mini-bosses:** the Ruin Guardian on Day 10 (charges) and the Hollow Spirit on Day 15
+  (blinks). Each drops gold, a golden chest and an essence.
+- **Doom Bell**, a sixth weapon that tolls, blasts and slows; it evolves into the Death
+  Knell. **Hunger**, a passive for faster Devouring that heals more.
+- **Resonances:** five essence pairs that awaken a lasting bonus.
+- **Starting weapons** to unlock across journeys, picked from cards.
+- **Menus rebuilt** in a souls frame with Hades-style choice cards: title screen, level-up,
+  the goddess's shrine, pause, revive, and confirm dialogs. Scene fades.
+- **New screens:** results with damage per weapon, the Codex, and credits.
+- Plaguewing retune: a landing marker for each glob, smaller and shorter puddles, less
+  damage.
+
 ## 0.1.0 (first public build)
 
 The first playable release: a complete 20-day journey, from the Whispering Forest to the

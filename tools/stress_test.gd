@@ -15,9 +15,9 @@ extends SceneTree
 #   onestep    one physics step per frame: the true cost of a frame, without
 #              Godot's catch-up steps blurring it
 # Budget (60 fps): avg >= 60 fps and p99 frame <= 20 ms at 500 enemies.
-# Last measured (Oct 2026): editor ~90-100 fps avg, p99 ~20 ms; release
-# Windows build (scripts/debug/benchmark.gd, --bench=500) ~100-120 fps,
-# p99 ~15-16 ms. Web build: see README (Performance).
+# Last measured (Oct 2026, v0.2.0): editor ~94-102 fps avg, p99 ~19 ms;
+# release Windows build (scripts/debug/benchmark.gd, -- --bench=500)
+# ~120 fps, p99 ~17 ms. Web build: see README (Performance).
 # Untyped on purpose: -s compiles this before autoloads exist.
 
 const WARMUP := 4.0

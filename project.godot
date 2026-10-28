@@ -16,7 +16,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 
 config/name="Reincarnated as a Devourer"
 config/description="A survivors-like roguelite: 20 days to face the Demon King, growing stronger by devouring what you kill."
-config/version="0.1.0"
+config/version="0.2.0"
 run/main_scene="res://scenes/ui/title.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://icon.svg"

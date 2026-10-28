@@ -189,8 +189,10 @@ func _physics_process(delta: float) -> void:
 		return
 	if _slow_time > 0.0:
 		_slow_time -= delta
-	if shield_hp > 0.0:
-		queue_redraw()  # the shield turns to face you
+	# The shield turns to face you; 15 times a second is plenty for a slow
+	# Warden, and staggered so a crowd of them doesn't redraw together.
+	if shield_hp > 0.0 and (Engine.get_physics_frames() + get_instance_id()) % 4 == 0:
+		queue_redraw()
 	var accel := ACCEL * (4.0 if state == State.DASH else 1.0)
 	_velocity = _velocity.move_toward(desired, accel * delta)
 	position += (_velocity + _knockback) * delta

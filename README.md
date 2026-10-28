@@ -12,7 +12,7 @@ as a real-time game.
 
 ## Play / run
 
-Version 0.1.0 ([changelog](CHANGELOG.md)). Builds for Windows and the web come from the
+Version 0.2.0 ([changelog](CHANGELOG.md)). Builds for Windows and the web come from the
 export presets (**Project → Export**); the itch.io page kit is in [docs/itch](docs/itch/README.md).
 
 To run from source:
@@ -45,9 +45,11 @@ deaths, the boss's slam and big moments (Settings: Controller vibration).
 
 Weapons attack automatically. Collect XP gems to level up and choose from three upgrades,
 each showing exactly what it changes: the **Blade**, **Goddess Light**, **Aegis**,
-**Devourer's Maw** (jaws that bite the nearest enemies and heal you on kills) and **Hellfire
-Chains** (a burning lash where you face) weapons, or the **Guard**, **Treads**, **Stamina**, **Fury** (attack speed), **Magnet
-Charm** (pickup range) and **Vigor** (HP regen) passives. Tier names come from the original
+**Devourer's Maw** (jaws that bite the nearest enemies and heal you on kills), **Hellfire
+Chains** (a burning lash where you face) and **Doom Bell** (a bell that tolls over the
+nearest enemy, blasting and slowing everything around it) weapons, or the **Guard**,
+**Treads**, **Stamina**, **Fury** (attack speed), **Magnet Charm** (pickup range), **Vigor**
+(HP regen) and **Hunger** (faster Devour that heals more) passives. Tier names come from the original
 game's shop.
 
 Every 30 seconds a **treasure chest** appears nearby; a gold arrow at the screen edge points
@@ -63,8 +65,17 @@ Every monster fights its own way, and every attack is telegraphed:
 |---|---|
 | Dreadling | Swarms: each one approaches from its own angle, so the pack surrounds you |
 | Vexclaw | Hunts: closes in, crouches with a red aim line, then pounces where you're heading |
-| Plaguewing | Spits: creeps in slowly, lobbing plague globs that leave poison puddles |
+| Plaguewing | Spits: creeps in slowly, lobbing plague globs (a closing ring marks where each lands) that leave poison puddles |
 | Mimic | Pounces like a Vexclaw |
+| Hexeye | Casts: keeps its distance and fires a hex along a line it shows first |
+| Warden | Guards: a shield soaks most of each hit until it breaks |
+
+Which monsters come, and how many, follows a spawn table by day: Dreadlings early, Hexeyes
+from Day 7, Wardens from Day 11, and a heavier mix in the ruins.
+
+**Mini-bosses.** On Day 10 the **Ruin Guardian** charges in a straight line after a wind-up
+and slams; on Day 15 the **Hollow Spirit** blinks beside you, slams and fires volleys. The
+waves thin while one lives. Fell it for gold, a golden chest and an essence.
 
 Spawning comes in waves that build up and then ease off, new monsters appear mostly
 ahead of where you're running, and from Day 3 announced events strike: an encircling ring
@@ -109,9 +120,26 @@ remembers which endings you've reached.
   and Aegis evolve at Lv 3 with a passive at Lv 3: Light + Vigor becomes **Goddess's Grace**
   (a wider volley whose hits heal you, up to 3 HP a second), and Aegis + Guard becomes the
   **Bulwark of Dawn** (five blades; each cuts a Plaguewing glob out of the air, then
-  recharges for 1.2 s).
+  recharges for 1.2 s). The Doom Bell becomes the **Death Knell** after 3 Hexeye essences.
+- **Resonances.** Hold 2 or more of each of two certain essences and they resonate: a
+  lasting bonus on top of the essences (five pairs, e.g. Vexclaw + Dreadling is *Predator's
+  Pace*, +10% damage and +8% move speed). The build screen lists yours.
+- **Starting weapons.** The Blade is yours from the start; reaching Day 10 or 19, Devouring
+  15 essences across journeys, or felling a mini-boss unlocks the others, and a new journey
+  begins with a choice of cards.
 
 ### Souls-like UI
+
+The menus borrow from souls games and Hades. Panels sit in thin bronze frames with gold
+corner studs; menus are plain lists where the focused entry turns gold on a band of light
+(Elden Ring's title and grace menus). The title opens on "Press any button" over a dark sky
+with rising embers. Choices are tall cards in the style of Hades' boons, colored by what
+they are: gold a new weapon, blue a new passive, bronze a level, violet a weapon's last level
+before it evolves. The goddess's shrine is a site of grace: her figure in its light with her
+words beneath, her blessing as three cards, and a menu for training, her Tears and
+covenants. A journey ends on a results screen with each weapon's share of the damage, and
+the **Codex** on the title screen fills in the monsters, weapons, essences and Resonances
+you've found. Scenes fade through black; irreversible choices ask first.
 
 A framed, pixel-font HUD in the corners, away from the action: HP and XP top-left, the day
 top-right, the flask bottom-left, gold and the next revive price bottom-right, and the boss's
