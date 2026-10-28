@@ -171,6 +171,9 @@ func _steer() -> void:
 		if dist < nd:
 			nd = dist
 			nearest = e
+		var crack: Vector2 = e.burrow_warning()
+		if crack != Vector2.ZERO and p.global_position.distance_to(crack) < 80.0:
+			push += (p.global_position - crack).normalized() * 6.0  # step off the crack
 		var danger: float = DODGE_RADIUS + e.radius
 		if dist < danger and dist > 0.1:
 			push += d / dist * (danger - dist) / danger * 4.0

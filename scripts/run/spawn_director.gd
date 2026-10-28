@@ -46,6 +46,8 @@ const MIMIC := preload("res://data/enemies/mimic.tres")
 const DEMON_KING := preload("res://data/enemies/demon_king.tres")
 const HEXEYE := preload("res://data/enemies/hexeye.tres")
 const WARDEN := preload("res://data/enemies/warden.tres")
+const ACOLYTE := preload("res://data/enemies/acolyte.tres")
+const BURROWER := preload("res://data/enemies/burrower.tres")
 ## Mid-journey peaks: day -> [enemy, attack cycle, summons?, enrage?]. Each
 ## arrives MINI_BOSS_DELAY seconds into its day (after that day's shrine).
 const MINI_BOSSES := {
@@ -56,15 +58,16 @@ const MINI_BOSS_DELAY := 25.0
 ## While a mini-boss lives the waves thin out, so the duel stays readable.
 const MINI_BOSS_WAVES := 0.5
 ## The kinds in SPAWN_TABLE's weight columns, in order.
-const KINDS := [DREADLING, VEXCLAW, PLAGUEWING, HEXEYE, WARDEN]
-## Monsters by day: [before day, normal weights, elite weights]. The original
+const KINDS := [DREADLING, VEXCLAW, PLAGUEWING, HEXEYE, WARDEN, ACOLYTE, BURROWER]
+## Monsters by day: [before day, normal weights, elite weights], weights in
+## KINDS order. The original
 ## allowed 5% Plaguewings from the start, brutal in real time, so early days
 ## skip them; elites lean stronger so Vexclaw essences are reachable.
 const SPAWN_TABLE := [
-	[6, [90, 10, 0, 0, 0], [60, 40, 0, 0, 0]],
-	[10, [45, 40, 8, 7, 0], [30, 45, 15, 10, 0]],
-	[14, [38, 30, 14, 10, 8], [20, 35, 20, 15, 10]],
-	[99, [30, 28, 18, 12, 12], [15, 33, 22, 15, 15]],
+	[6, [90, 10, 0, 0, 0, 0, 0], [60, 40, 0, 0, 0, 0, 0]],
+	[10, [42, 38, 8, 7, 0, 5, 0], [28, 42, 14, 10, 0, 6, 0]],
+	[14, [34, 27, 12, 9, 7, 5, 6], [18, 32, 18, 13, 9, 5, 5]],
+	[99, [27, 25, 15, 11, 10, 6, 6], [14, 30, 19, 13, 12, 6, 6]],
 ]
 
 var boss: Boss
@@ -158,6 +161,10 @@ func spawn_enemy(elite := false, distance := SPAWN_RADIUS) -> void:
 		Hints.show_hint("hexeye", "A Hexeye: it keeps its distance and aims a blue line before it fires. Step off the line.")
 	elif enemy.data == WARDEN:
 		Hints.show_hint("warden", "A Warden: its shield soaks most of your damage until it breaks. Burns and bites wear it down too.")
+	elif enemy.data == ACOLYTE:
+		Hints.show_hint("acolyte", "A Necro-acolyte: it keeps away and raises the freshly fallen with a purple beam. Kill it first.")
+	elif enemy.data == BURROWER:
+		Hints.show_hint("burrower", "A Burrower travels underground (watch the dirt trail). When the ground cracks under you, step away.")
 	if affix != "":
 		Hints.show_hint("trait", "Elites can carry a trait, named over their head: Swift, Armored, Splitting (bursts into three) or Vampiric (heals when it hits you). They pay double gold.")
 	if elite:

@@ -12,6 +12,7 @@ const ENEMIES := [
 	"res://data/enemies/dreadling.tres", "res://data/enemies/vexclaw.tres",
 	"res://data/enemies/plaguewing.tres", "res://data/enemies/mimic.tres",
 	"res://data/enemies/hexeye.tres", "res://data/enemies/warden.tres",
+	"res://data/enemies/acolyte.tres", "res://data/enemies/burrower.tres",
 	"res://data/enemies/ruin_guardian.tres", "res://data/enemies/hollow_spirit.tres",
 	"res://data/enemies/demon_king.tres",
 ]
@@ -29,7 +30,8 @@ const PASSIVES := [
 const ESSENCES := [
 	"res://data/essences/dreadling_essence.tres", "res://data/essences/vexclaw_essence.tres",
 	"res://data/essences/plaguewing_essence.tres", "res://data/essences/hexeye_essence.tres",
-	"res://data/essences/warden_essence.tres",
+	"res://data/essences/warden_essence.tres", "res://data/essences/acolyte_essence.tres",
+	"res://data/essences/burrower_essence.tres",
 ]
 ## How each kind of monster fights.
 const BEHAVIOR := {
@@ -39,6 +41,8 @@ const BEHAVIOR := {
 	"spitter": "Keeps its distance and lobs plague where you stand.",
 	"caster": "Keeps its distance and fires hexes along a line it shows first.",
 	"warden": "Shielded: the shield soaks most of each hit until it breaks.",
+	"raiser": "Keeps away and raises the freshly fallen with a beam. Kill it first.",
+	"burrower": "Travels underground, cracks the ground under you, then erupts. Hit it while it is up.",
 }
 const BOSS_NOTES := {
 	"Ruin Guardian": "Mini-boss of Day 10. Charges in a straight line after a wind-up, and slams.",

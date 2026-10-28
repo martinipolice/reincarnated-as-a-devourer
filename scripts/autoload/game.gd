@@ -74,6 +74,8 @@ const SFX := {
 	"warn_hex": [["synth/warn_hex.wav"], -13.0, 1.0, true],
 	"warn_glob": [["synth/warn_glob.wav"], -12.0, 1.0, true],
 	"warn_charge": [["synth/warn_charge.wav"], -3.0, 1.0, false],
+	"warn_raise": [["synth/warn_raise.wav"], -12.0, 1.0, true],
+	"warn_burrow": [["synth/warn_burrow.wav"], -8.0, 1.0, true],
 	"boss_warn": [["kenney_digital/lowThreeTone.ogg"], -6.0, 1.0, false],
 	"boss_slam": [["kenney_impact/impactPunch_heavy_00{0-4}.ogg", "kenney_impact/impactMetal_heavy_00{0-4}.ogg"], -2.0, 0.7, false],
 	"boss_volley": [["kenney_digital/phaserUp{1-3}.ogg"], -8.0, 0.8, false],

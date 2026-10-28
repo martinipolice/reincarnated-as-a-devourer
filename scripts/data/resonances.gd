@@ -21,4 +21,10 @@ const TABLE := [
 	["Bulwark Heart", "res://data/essences/warden_essence.tres", "res://data/essences/vexclaw_essence.tres",
 		"+25 max HP and +10 defense",
 		[{"stat": "max_hp", "add": 25.0}, {"stat": "defense", "add": 10.0}]],
+	["Grave Dirt", "res://data/essences/acolyte_essence.tres", "res://data/essences/burrower_essence.tres",
+		"+1.5 HP regeneration",
+		[{"stat": "regen", "add": 1.5}]],
+	["Hollow Hunt", "res://data/essences/burrower_essence.tres", "res://data/essences/vexclaw_essence.tres",
+		"+10% damage and +10 defense",
+		[{"stat": "might", "add": 0.1}, {"stat": "defense", "add": 10.0}]],
 ]

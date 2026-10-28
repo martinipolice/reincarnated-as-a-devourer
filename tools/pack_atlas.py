@@ -25,8 +25,10 @@ LAYOUT = {
     "mimic": (0, 64),
     "hexeye": (64, 64),
     "warden": (128, 64),
+    "acolyte": (192, 64),
+    "burrower": (0, 128),
 }
-SIZE = (256, 128)
+SIZE = (256, 192)
 
 
 def main() -> None:

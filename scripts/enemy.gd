@@ -9,6 +9,11 @@ extends Area2D
 ## - "caster":  keep its distance, aim a line at you, then fire a bolt.
 ## - "warden":  plod in behind a shield that soaks most damage until it
 ##              breaks (EnemyData.shield).
+## - "raiser":  keep its distance and channel a beam into the freshly fallen,
+##              raising them as weaker risen copies unless killed first.
+## - "burrower": travel underground (a moving dirt trail, untouchable), crack
+##              the ground under you, erupt, then stay up a moment before
+##              burrowing again.
 ## Movement is steered (smooth acceleration) and Crowd keeps a little space
 ## between monsters. Elites are tougher, gold-ringed versions that leave a
 ## Devour corpse. From Day 5 an elite can carry a trait (TRAITS), named over
@@ -80,6 +85,24 @@ const CAST_WINDUP := 0.8
 const CAST_COOLDOWN := 3.6
 const CAST_COLOR := Color(0.45, 0.85, 1.0)
 const BOLT_SCENE := preload("res://scenes/hex_bolt.tscn")
+# raiser (Necro-acolyte)
+const RAISE_REACH := 320.0  # raises the fallen this close to itself
+const RAISE_KEEP := 240.0  # and keeps about this far from you
+const RAISE_CHANNEL := 1.6
+const RAISE_COOLDOWN := 6.5
+const RAISE_COUNT := 2
+const RISEN_TOUGHNESS := 0.5
+const RISEN_TINT := Color(0.6, 0.9, 0.7)
+const RAISE_COLOR := Color(0.7, 0.45, 1.0)
+const FALLEN_MEMORY := 8.0  # seconds a body can still be raised
+# burrower
+const BURROW_SPEED := 1.4  # times its move speed, underground
+const BURROW_STRIKE := 40.0  # strikes from this close
+const BURROW_WINDUP := 0.7
+const BURROW_RADIUS := 50.0
+const BURROW_HIT := 1.4  # times its attack, if you're over the crack
+const SURFACE_TIME := 2.4
+const BURROW_COLOR := Color(0.55, 0.4, 0.25)
 # warden
 const SHIELD_SOAK := 0.75  # share of each hit the shield takes
 const SHIELD_COLOR := Color(0.75, 0.85, 1.0)
@@ -105,6 +128,15 @@ var _next_number := 0
 var _separation := Vector2.ZERO
 var _hit_flash := 0.0
 var shield_hp := 0.0
+## Raised by a Necro-acolyte: pays no gold and is never raised again.
+var risen := false
+var _toughness := 1.0
+var _raise_spots: Array = []
+var _under := false
+var _strike_at := Vector2.ZERO
+## Recent deaths a Necro-acolyte may raise: [position, EnemyData, time].
+static var fallen: Array = []
+static var _enemy_scene: PackedScene
 ## Damage dealt this run, by source (a weapon's name, "Bomb"): the results
 ## screen reads it, main.gd clears it when a run starts.
 static var damage_log := {}
@@ -133,6 +165,7 @@ func setup(enemy_data: EnemyData, chase_target: Node2D, is_elite := false, tough
 	target = chase_target
 	elite = is_elite
 	affix = elite_trait if is_elite else ""
+	_toughness = toughness
 	max_hp = data.max_hp * (ELITE_HP_MULT if elite else 1.0) * toughness
 	hp = max_hp
 	shield_hp = data.shield * toughness
@@ -153,8 +186,7 @@ func _ready() -> void:
 		sprite.scale = Vector2.ONE * data.sprite_scale * radius / data.radius
 		_directional = data.sprite_frames.has_animation("run_down")
 		sprite.play("run_down" if _directional else "run")
-		if elite:
-			sprite.self_modulate = ELITE_TINT
+		sprite.self_modulate = _base_tint()
 	if affix != "":
 		var tag := Label.new()
 		tag.text = "%s %s" % [TRAITS[affix][0], data.display_name]
@@ -183,6 +215,10 @@ func _physics_process(delta: float) -> void:
 			desired = _spitter()
 		"caster":
 			desired = _caster()
+		"raiser":
+			desired = _raiser()
+		"burrower":
+			desired = _burrower()
 		_:
 			desired = global_position.direction_to(target.global_position) * move_speed()
 	if state != State.DASH and not data.boss:
@@ -254,7 +290,19 @@ func _update_burn(delta: float) -> void:
 
 
 func _base_tint() -> Color:
+	if risen:
+		return RISEN_TINT
 	return ELITE_TINT if elite else Color.WHITE
+
+
+## Seconds of play, the same in real time and in fast headless sims.
+static func clock() -> float:
+	return Engine.get_physics_frames() / float(Engine.physics_ticks_per_second)
+
+
+## Where a burrower is about to erupt (while it cracks the ground); else zero.
+func burrow_warning() -> Vector2:
+	return _strike_at if data.behavior == "burrower" and state == State.WINDUP else Vector2.ZERO
 
 
 ## Called when its touch damaged the player.
@@ -385,6 +433,112 @@ func _warn(sound: String) -> void:
 	Game.sfx(sound, 0.08)
 
 
+# Keep a distance, strafe, and channel into the fallen when any lie near.
+func _raiser() -> Vector2:
+	var to_player := target.global_position - global_position
+	var distance := maxf(to_player.length(), 0.01)
+	if state == State.WINDUP:
+		queue_redraw()
+		if _state_time >= RAISE_CHANNEL:
+			_raise()
+			_cooldown = RAISE_COOLDOWN * (0.6 if elite else 1.0)
+			_set_state(State.MOVE)
+		return Vector2.ZERO
+	if _cooldown <= 0.0:
+		_raise_spots = _claim_fallen()
+		if not _raise_spots.is_empty():
+			_set_state(State.WINDUP)
+			_warn("warn_raise")
+			return Vector2.ZERO
+		_cooldown = 0.5  # look again soon
+	var direction := to_player / distance
+	if distance < RAISE_KEEP:
+		return -direction * move_speed() * 0.8
+	if distance > RAISE_KEEP + 80.0:
+		return direction * move_speed()
+	return direction.orthogonal() * move_speed() * 0.4
+
+
+# The nearest recent bodies within reach, claimed so no other acolyte takes them.
+func _claim_fallen() -> Array:
+	var now := clock()
+	fallen = fallen.filter(func(body: Array) -> bool: return now - body[2] < FALLEN_MEMORY)
+	var near := fallen.filter(func(body: Array) -> bool:
+		return global_position.distance_to(body[0]) <= RAISE_REACH)
+	near.sort_custom(func(a: Array, b: Array) -> bool:
+		return global_position.distance_squared_to(a[0]) < global_position.distance_squared_to(b[0]))
+	near = near.slice(0, RAISE_COUNT)
+	for body in near:
+		fallen.erase(body)
+	return near
+
+
+func _raise() -> void:
+	if _enemy_scene == null:
+		_enemy_scene = load("res://scenes/enemy.tscn")
+	for body: Array in _raise_spots:
+		var raised := _enemy_scene.instantiate() as Enemy
+		raised.setup(body[1], target, false, _toughness * RISEN_TOUGHNESS)
+		raised.risen = true
+		raised.position = body[0]
+		get_parent().add_child(raised)
+		Game.burst(body[0], RAISE_COLOR, 12, 160.0)
+	Game.sfx("devour", 0.1, 0.6)
+	_raise_spots.clear()
+
+
+# Underground it is untouchable; it closes in, cracks the ground where you
+# stand, erupts, and stays up (and hittable) for a moment.
+func _burrower() -> Vector2:
+	var to_player := target.global_position - global_position
+	match state:
+		State.WINDUP:
+			queue_redraw()
+			if _state_time >= BURROW_WINDUP:
+				_surface()
+				_set_state(State.RECOVER)
+				return Vector2.ZERO
+			var to_strike := _strike_at - global_position
+			return to_strike.limit_length(1.0) * move_speed() * 3.0 if to_strike.length() > 4.0 else Vector2.ZERO
+		State.RECOVER:
+			if _state_time >= SURFACE_TIME:
+				_go_under()
+				_cooldown = 1.0
+				_set_state(State.MOVE)
+			return to_player.normalized() * move_speed() * 0.35
+	if not _under:
+		_go_under()
+	queue_redraw()  # the trail
+	if _cooldown <= 0.0 and to_player.length() < BURROW_STRIKE:
+		_strike_at = target.global_position
+		_set_state(State.WINDUP)
+		_warn("warn_burrow")
+		return Vector2.ZERO
+	return to_player.normalized() * move_speed() * BURROW_SPEED
+
+
+func _go_under() -> void:
+	_under = true
+	collision_layer = 0
+	remove_from_group("enemies")
+	if data.sprite_frames:
+		sprite.visible = false
+
+
+func _surface() -> void:
+	_under = false
+	global_position = _strike_at
+	collision_layer = 2
+	add_to_group("enemies")
+	if data.sprite_frames:
+		sprite.visible = true
+	Game.burst(global_position, BURROW_COLOR, 16, 200.0)
+	Game.sfx("boss_slam", 0.1, 1.7)
+	Game.shake(0.15)
+	if target.global_position.distance_to(global_position) <= BURROW_RADIUS and target.has_method("take_damage"):
+		target.take_damage(atk * BURROW_HIT)
+
+
 func _spit() -> void:
 	_warn("warn_glob")
 	var glob := GLOB_SCENE.instantiate() as PlagueGlob
@@ -447,6 +601,10 @@ func _die() -> void:
 		Game.fx("smoke", global_position, 2.5)
 		Game.burst(global_position, data.color.lightened(0.2), 18)
 		Game.shake(0.25)
+	if not risen and not elite and not data.boss and data.behavior != "raiser":
+		fallen.append([global_position, data, clock()])
+		if fallen.size() > 60:
+			fallen.pop_front()
 	Game.enemy_killed.emit(self)
 	queue_free()
 
@@ -473,6 +631,26 @@ func _draw() -> void:
 			# The line it's about to fire along, brightening.
 			var t := clampf(_state_time / CAST_WINDUP, 0.0, 1.0)
 			draw_line(Vector2.ZERO, _aim * 300.0, Color(CAST_COLOR, 0.25 + 0.6 * t), 2.0 + 3.0 * t)
+		elif data.behavior == "raiser":
+			# A beam into each body, and the body stirring.
+			var t := clampf(_state_time / RAISE_CHANNEL, 0.0, 1.0)
+			for body: Array in _raise_spots:
+				var at := to_local(body[0])
+				draw_line(Vector2.ZERO, at, Color(RAISE_COLOR, 0.3 + 0.5 * t), 2.0 + 2.0 * t)
+				draw_circle(at, 6.0 + 10.0 * t, Color(RAISE_COLOR, 0.15 + 0.3 * t))
+		elif data.behavior == "burrower":
+			# The ground cracks where it will erupt.
+			var t := clampf(_state_time / BURROW_WINDUP, 0.0, 1.0)
+			var at := to_local(_strike_at)
+			draw_circle(at, BURROW_RADIUS * (0.4 + 0.6 * t), Color(BURROW_COLOR.darkened(0.3), 0.25 + 0.35 * t))
+			for i in 6:
+				var a := TAU * i / 6.0 + 0.3
+				draw_line(at, at + Vector2.from_angle(a) * BURROW_RADIUS * t, Color(0.15, 0.08, 0.04, 0.9), 2.0)
+	if _under and state == State.MOVE:
+		# A mound of loose earth trailing behind it.
+		var back := -_velocity.normalized() if _velocity.length() > 1.0 else Vector2.DOWN
+		for i in 3:
+			draw_circle(back * (6.0 + i * 9.0), 7.0 - i * 1.8, Color(BURROW_COLOR, 0.8 - i * 0.2))
 	if shield_hp > 0.0:
 		# A plate of shield in front, fading as it cracks.
 		var facing := to_local(target.global_position).normalized() if is_instance_valid(target) else Vector2.DOWN

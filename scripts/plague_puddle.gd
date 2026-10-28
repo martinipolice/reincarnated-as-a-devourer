@@ -34,7 +34,7 @@ func _physics_process(delta: float) -> void:
 		return
 	_tick -= delta
 	var player := get_tree().get_first_node_in_group("player") as Player
-	if player and _tick <= 0.0 and global_position.distance_to(player.global_position) < RADIUS:
+	if player and _tick <= 0.0 and global_position.distance_to(player.global_position) < radius():
 		_tick = TICK
 		var frame := Engine.get_physics_frames()
 		if frame - _last_hurt >= TICK * Engine.physics_ticks_per_second:
@@ -43,8 +43,9 @@ func _physics_process(delta: float) -> void:
 	queue_redraw()
 
 
+## Shrinks to 55% as it dries up, so old puddles stop blocking your way.
 func radius() -> float:
-	return RADIUS
+	return RADIUS * (0.55 + 0.45 * maxf(_life, 0.0) / LIFETIME)
 
 
 func _draw() -> void:

@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="EnemyData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/enemy_data.gd" id="1"]
+[ext_resource type="Resource" path="res://data/essences/burrower_essence.tres" id="2"]
+[ext_resource type="SpriteFrames" path="res://assets/ninja/burrower/sprite_frames.tres" id="3"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Burrower"
+max_hp = 110.0
+atk = 24.0
+defense = 22.0
+move_speed = 95.0
+gold = 4
+xp = 5
+behavior = "burrower"
+essence = ExtResource("2")
+radius = 13.0
+color = Color(0.55, 0.4, 0.25, 1)
+sprite_frames = ExtResource("3")
+sprite_scale = 2.0

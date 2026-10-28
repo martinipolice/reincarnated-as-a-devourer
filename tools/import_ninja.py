@@ -29,6 +29,8 @@ DIRECTIONAL = {
     "plaguewing": "Actor/Monster/GreenOctopus/SpriteSheet.png",
     "hexeye": "Actor/Monster/Eye/Eye.png",
     "warden": "Actor/Monster/Cyclope/SpriteSheet.png",
+    "acolyte": "Actor/Monster/Skull/SpriteSheet.png",
+    "burrower": "Actor/Monster/Mole/Mole.png",
 }
 # Single strips: name -> (sheet, frame w, frame h, frames, fps, animation, loop)
 STRIPS = {

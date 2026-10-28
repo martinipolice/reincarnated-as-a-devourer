@@ -111,6 +111,24 @@ def warn_charge():
     return (horn + rumble) * envelope(t, 0.7, 0.08)
 
 
+def warn_raise():
+    # A rising ghostly chord: the dead being called back.
+    t = times(1.2)
+    phase = sweep(t, 180, 260, 1.5)
+    chord = sum(np.sin(phase * k) / (i + 1) for i, k in enumerate((1.0, 1.26, 1.5, 2.0)))
+    breath = band(rng.standard_normal(len(t)), 600, 3000) * 0.15
+    return (chord + breath) * envelope(t, 0.9, 0.15) * (0.85 + 0.15 * np.sin(2 * np.pi * 6 * t))
+
+
+def warn_burrow():
+    # Ground cracking: a low rumble with grit, rising.
+    t = times(0.7)
+    rumble = band(rng.standard_normal(len(t)), 30, 140)
+    grit = band(rng.standard_normal(len(t)), 900, 2600) * (np.random.default_rng(3).random(len(t)) > 0.985)
+    thud = np.sin(sweep(t, 55, 40)) * 0.6
+    return (rumble * 1.2 + grit * 2.0 + thud) * envelope(t, 0.55, 0.05)
+
+
 # Ambient beds: 32 s loops, sitting well under the music.
 LOOP = 32.0
 
@@ -172,12 +190,21 @@ def temple_drone():
     return drone + breath / np.abs(breath).max() * 0.35
 
 
+def make(name, generate, **levels):
+    """Each sound gets its own seed, so adding one never changes the others."""
+    global rng
+    rng = np.random.default_rng(sum(map(ord, name)))
+    write(name, generate(), **levels)
+
+
 if __name__ == "__main__":
     os.makedirs(OUT, exist_ok=True)
-    write("warn_pounce", warn_pounce())
-    write("warn_hex", warn_hex())
-    write("warn_glob", warn_glob())
-    write("warn_charge", warn_charge())
-    write("amb_forest", forest_night(), rms_db=-24)
-    write("amb_ruins", ruins_wind(), rms_db=-23)
-    write("amb_temple", temple_drone(), rms_db=-22)
+    make("warn_pounce", warn_pounce)
+    make("warn_hex", warn_hex)
+    make("warn_glob", warn_glob)
+    make("warn_charge", warn_charge)
+    make("warn_raise", warn_raise)
+    make("warn_burrow", warn_burrow)
+    make("amb_forest", forest_night, rms_db=-24)
+    make("amb_ruins", ruins_wind, rms_db=-23)
+    make("amb_temple", temple_drone, rms_db=-22)

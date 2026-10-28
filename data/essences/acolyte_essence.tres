@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="EssenceData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/essence_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Necro-acolyte Essence"
+description = "Devour 25% faster"
+stat = "devour_speed"
+add = 0.25
+mult = 0.0
+max_hp_cost = 6.0
+color = Color(0.7, 0.45, 1, 1)

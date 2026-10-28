@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="EssenceData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/essence_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Burrower Essence"
+description = "+18 defense"
+stat = "defense"
+add = 18.0
+mult = 0.0
+max_hp_cost = 10.0
+color = Color(0.65, 0.5, 0.3, 1)

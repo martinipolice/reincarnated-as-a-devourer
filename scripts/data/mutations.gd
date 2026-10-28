@@ -21,6 +21,10 @@ const TABLE := {
 		[{"stat": "pickup_radius", "add": 60.0}, {"stat": "might", "add": 0.08}], 6.0],
 	"res://data/essences/warden_essence.tres": ["Iron Hide", "+20 defense",
 		[{"stat": "defense", "add": 20.0}], 8.0],
+	"res://data/essences/acolyte_essence.tres": ["Grave Pact", "+0.8 HP regeneration, +5 defense",
+		[{"stat": "regen", "add": 0.8}, {"stat": "defense", "add": 5.0}], 6.0],
+	"res://data/essences/burrower_essence.tres": ["Tunnel Sense", "+10% move speed, +30 pickup range",
+		[{"stat": "move_speed", "mult": 0.1}, {"stat": "pickup_radius", "add": 30.0}], 6.0],
 }
 
 

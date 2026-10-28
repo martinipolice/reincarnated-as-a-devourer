@@ -12,7 +12,7 @@ extends Resource
 ## Value of the XP gem it drops.
 @export var xp := 1
 ## How it moves and attacks; see enemy.gd.
-@export_enum("chase", "swarm", "pounce", "spitter", "caster", "warden") var behavior := "chase"
+@export_enum("chase", "swarm", "pounce", "spitter", "caster", "warden", "raiser", "burrower") var behavior := "chase"
 ## Wardens: damage their shield soaks before it breaks (it takes most of
 ## every hit meanwhile). 0 = no shield.
 @export var shield := 0.0

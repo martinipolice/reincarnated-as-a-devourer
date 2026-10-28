@@ -146,6 +146,7 @@ var _banner_tween: Tween
 
 func _ready() -> void:
 	Enemy.damage_log.clear()
+	Enemy.fallen.clear()
 	spawner = SpawnDirector.new(self)
 	add_child(spawner)
 	spawner.mini_boss_arrived.connect(_on_mini_boss_arrived)
@@ -441,7 +442,7 @@ func _on_enemy_killed(enemy: Enemy) -> void:
 	kills += 1
 	record.count_kill(enemy)
 	style.add_kill(enemy.elite)
-	var bounty := enemy.data.gold * (5 if enemy.elite else 1) * (TRAIT_GOLD_MULT if enemy.affix != "" else 1.0)
+	var bounty := 0.0 if enemy.risen else enemy.data.gold * (5 if enemy.elite else 1) * (TRAIT_GOLD_MULT if enemy.affix != "" else 1.0)
 	gold += roundi(bounty * gold_mult())
 	if enemy.affix == "splitting":
 		spawner.split(enemy)
