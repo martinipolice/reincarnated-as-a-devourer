@@ -1,6 +1,7 @@
 extends Control
-## The title screen, souls style: the name over a dark sky with rising
-## embers and "Press any button"; then a plain menu list. Continue the
+## The title screen, souls style: the name in a crest over the game's own
+## world at night (TitleBackdrop) and "Press any button"; then a plain menu
+## list. Continue the
 ## journey in progress (saved at the last goddess shrine) or begin a new one
 ## (a hero only reincarnates once, so that abandons the old one, after a
 ## confirm). Once a second starting weapon is unlocked (Unlocks), beginning
@@ -9,10 +10,10 @@ extends Control
 
 const RUN_SCENE := "res://scenes/main.tscn"
 const ENDING := preload("res://scripts/ui/ending.gd")
-const GODDESS_FRAMES := preload("res://assets/ninja/goddess/sprite_frames.tres")
 const VIGNETTE := preload("res://scripts/ui/vignette.gd")
-const SKY_TOP := Color(0.02, 0.015, 0.04)
-const SKY_LOW := Color(0.11, 0.05, 0.08)
+const EMBER := Color(0.85, 0.16, 0.12)  # the crest's accent: hunger, blood
+## The light that sweeps across the name every few seconds.
+const SHINE_EVERY := 6.0
 
 ## Shown once per session: coming back from a journey goes straight to the menu.
 static var _greeted := false
@@ -26,6 +27,10 @@ var _press_tween: Tween
 var _footer: Label
 var _waiting := true  # for "any button"
 var _overlay: CanvasLayer  # the starting-weapon pick, while open
+var _crest: Control
+var _glow: Sprite2D
+var _shine: TextureRect
+var _name: Label
 
 
 func _ready() -> void:
@@ -105,7 +110,7 @@ func _fill_list() -> void:
 		_list.add_child(UITheme.menu_item("Quit", get_tree().quit, "back"))
 	for child in _list.get_children():
 		if child is Button:
-			child.custom_minimum_size.y = 38
+			child.custom_minimum_size.y = 36
 
 
 func _focus_list() -> void:
@@ -196,75 +201,34 @@ func _close_pick() -> void:
 
 
 func _build() -> void:
-	var sky := TextureRect.new()
-	var gradient := Gradient.new()
-	gradient.set_color(0, SKY_TOP)
-	gradient.set_color(1, SKY_LOW)
-	var texture := GradientTexture2D.new()
-	texture.gradient = gradient
-	texture.fill_from = Vector2(0, 0)
-	texture.fill_to = Vector2(0, 1)
-	sky.texture = texture
-	sky.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	sky.stretch_mode = TextureRect.STRETCH_SCALE
-	add_child(sky)
-	sky.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-
-	# The goddess, faint, high behind the name: watching from afar.
-	var stage := Control.new()
-	stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(stage)
-	stage.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
-	var glow := Game.make_glow(Color(1.0, 0.85, 0.55, 0.3), 230.0)
-	glow.position = Vector2(0, 190)
-	stage.add_child(glow)
-	var goddess := AnimatedSprite2D.new()
-	goddess.sprite_frames = GODDESS_FRAMES
-	goddess.play("run_down")
-	goddess.position = Vector2(0, 180)
-	goddess.scale = Vector2(10, 10)
-	goddess.modulate = Color(1, 1, 1, 0.14)
-	stage.add_child(goddess)
-	var embers := CPUParticles2D.new()
-	embers.amount = 60
-	embers.lifetime = 7.0
-	embers.preprocess = 7.0
-	embers.position = Vector2(0, 760)
-	embers.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
-	embers.emission_rect_extents = Vector2(760, 10)
-	embers.direction = Vector2(0, -1)
-	embers.spread = 18.0
-	embers.gravity = Vector2(6, -4)
-	embers.initial_velocity_min = 30.0
-	embers.initial_velocity_max = 80.0
-	embers.scale_amount_min = 2.0
-	embers.scale_amount_max = 4.0
-	var fade := Gradient.new()
-	fade.set_color(0, Color(1.0, 0.55, 0.2, 0.0))
-	fade.set_color(1, Color(0.8, 0.2, 0.1, 0.0))
-	fade.add_point(0.2, Color(1.0, 0.6, 0.25, 0.9))
-	embers.color_ramp = fade
-	stage.add_child(embers)
-
+	add_child(TitleBackdrop.new())
+	var fog := TitleBackdrop.make_fog()
+	add_child(fog)
+	fog.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var vignette := ColorRect.new()
 	vignette.set_script(VIGNETTE)
 	add_child(vignette)
+	# A dark pool under the crest and the menu, so they read over the world.
+	var shade := TextureRect.new()
+	shade.texture = _radial(Color(0.01, 0.0, 0.02, 0.9), Color(0.01, 0.0, 0.02, 0.0))
+	shade.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(shade)
+	shade.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	shade.offset_left = -820
+	shade.offset_right = 820
+	shade.offset_top = -480
+	shade.offset_bottom = 420
 
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 6)
 	add_child(column)
 	column.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	column.offset_top = 110
-	var name_label := UITheme.title_label("Reincarnated as a Devourer", 84, UITheme.BONE)
-	column.add_child(name_label)
-	column.add_child(OrnateRule.new(520.0))
-	var quote := Label.new()
-	quote.text = "Hero from another world... survive, grow, and face your fate."
-	quote.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	quote.add_theme_color_override("font_color", Color(0.75, 0.7, 0.85))
-	column.add_child(quote)
+	column.offset_top = 40
+	_crest = _build_crest()
+	column.add_child(_crest)
 	var gap := Control.new()
-	gap.custom_minimum_size = Vector2(0, 22)
+	gap.custom_minimum_size = Vector2(0, 12)
 	column.add_child(gap)
 
 	_press = Label.new()
@@ -296,3 +260,94 @@ func _build() -> void:
 		int(Save.data.journeys), int(Save.data.wins), int(Save.data.best_day),
 		"  ·  ".join(seen), ProjectSettings.get_setting("application/config/version", "dev")]
 	_footer.hide()
+
+
+# The name as the screen's centerpiece: a small spaced line, the great word
+# in gothic with an ember glow behind it and a light that sweeps across it,
+# then a red rule and the tagline.
+func _build_crest() -> Control:
+	var crest := VBoxContainer.new()
+	crest.add_theme_constant_override("separation", 0)
+	crest.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var top := HBoxContainer.new()
+	top.alignment = BoxContainer.ALIGNMENT_CENTER
+	top.add_theme_constant_override("separation", 14)
+	top.add_child(OrnateRule.new(150.0, UITheme.GOLD.darkened(0.2)))
+	var small := Label.new()
+	small.text = "REINCARNATED  AS  A"
+	small.add_theme_font_size_override("font_size", 30)
+	small.add_theme_color_override("font_color", UITheme.GOLD)
+	top.add_child(small)
+	top.add_child(OrnateRule.new(150.0, UITheme.GOLD.darkened(0.2)))
+	crest.add_child(top)
+
+	var stage := Control.new()
+	stage.custom_minimum_size = Vector2(0, 150)
+	stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	crest.add_child(stage)
+	_glow = Game.make_glow(Color(EMBER, 0.55), 300.0)
+	_glow.scale = Vector2(14.0, 3.2)  # a wide ember haze behind the word
+	stage.add_child(_glow)
+	_name = UITheme.title_label("Devourer", 156, UITheme.BONE)
+	_name.add_theme_color_override("font_shadow_color", Color(EMBER.darkened(0.55), 0.9))
+	_name.add_theme_constant_override("shadow_offset_y", 6)
+	_name.add_theme_constant_override("shadow_offset_x", 0)
+	_name.clip_children = CanvasItem.CLIP_CHILDREN_AND_DRAW  # the shine shows only on the letters
+	stage.add_child(_name)
+	_name.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_name.offset_top = -18
+	_shine = TextureRect.new()
+	_shine.texture = _band()
+	_shine.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_shine.size = Vector2(90, 260)
+	_shine.rotation = 0.35
+	_shine.position = Vector2(-400, -40)
+	_shine.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_name.add_child(_shine)
+	stage.resized.connect(func() -> void: _glow.position = stage.size / 2.0 + Vector2(0, 10))
+
+	crest.add_child(OrnateRule.new(560.0, EMBER))
+	var tagline := Label.new()
+	tagline.text = "One life. Twenty days. Devour, or be devoured."
+	tagline.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	tagline.add_theme_font_size_override("font_size", 22)
+	tagline.add_theme_color_override("font_color", Color(0.78, 0.74, 0.86))
+	crest.add_child(tagline)
+	_animate_crest(crest)
+	return crest
+
+
+# The crest rises out of the dark once, then breathes; the shine sweeps by.
+func _animate_crest(crest: Control) -> void:
+	crest.modulate.a = 0.0
+	var reveal := create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	reveal.tween_property(crest, "modulate:a", 1.0, 0.4 if _greeted else 1.6)
+	var breathe := create_tween().set_loops().set_trans(Tween.TRANS_SINE)
+	breathe.tween_property(_glow, "modulate:a", 0.32, 2.6)
+	breathe.tween_property(_glow, "modulate:a", 0.6, 2.6)
+	var sweep := create_tween().set_loops()
+	sweep.tween_interval(SHINE_EVERY - 1.2)
+	sweep.tween_property(_shine, "position:x", 1200.0, 1.2).from(-300.0).set_trans(Tween.TRANS_SINE)
+
+
+func _radial(inner: Color, outer: Color) -> GradientTexture2D:
+	var gradient := Gradient.new()
+	gradient.set_color(0, inner)
+	gradient.set_color(1, outer)
+	var texture := GradientTexture2D.new()
+	texture.gradient = gradient
+	texture.fill = GradientTexture2D.FILL_RADIAL
+	texture.fill_from = Vector2(0.5, 0.42)
+	texture.fill_to = Vector2(1.0, 0.42)
+	return texture
+
+
+func _band() -> GradientTexture2D:
+	var gradient := Gradient.new()
+	gradient.offsets = PackedFloat32Array([0.0, 0.5, 1.0])
+	gradient.colors = PackedColorArray([Color(1, 0.72, 0.3, 0.0), Color(1, 0.78, 0.38, 0.85), Color(1, 0.72, 0.3, 0.0)])
+	var texture := GradientTexture2D.new()
+	texture.gradient = gradient
+	texture.width = 64
+	texture.height = 8
+	return texture
