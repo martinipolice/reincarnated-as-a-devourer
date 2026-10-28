@@ -31,6 +31,11 @@ func per_level(table: Array) -> Variant:
 	return table[clampi(level, 1, table.size()) - 1]
 
 
+## The name its damage is logged under (Enemy.damage_log).
+func source() -> String:
+	return data.display_name
+
+
 func damage(amount: float) -> float:
 	return amount * player.stat("might")
 

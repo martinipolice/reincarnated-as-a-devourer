@@ -53,7 +53,7 @@ func _physics_process(delta: float) -> void:
 func _on_area_entered(area: Area2D) -> void:
 	if _pierce < 0 or not area is Enemy:
 		return
-	(area as Enemy).take_damage(_damage, _dir * KNOCKBACK, "light_hit")
+	(area as Enemy).take_damage(_damage, _dir * KNOCKBACK, "light_hit", "Goddess Light")
 	if is_instance_valid(_grace):
 		_grace.on_bolt_hit()
 	_pierce -= 1

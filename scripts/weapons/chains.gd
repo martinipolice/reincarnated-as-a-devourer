@@ -52,7 +52,7 @@ func _strike() -> void:
 			continue
 		for dir: Vector2 in _aims:
 			if absf(dir.angle_to(offset)) <= half:
-				enemy.take_damage(amount, offset.normalized() * KNOCKBACK, "chains_hit")
+				enemy.take_damage(amount, offset.normalized() * KNOCKBACK, "chains_hit", source())
 				enemy.burn(burn, BURN_TIME)
 				hit = true
 				break

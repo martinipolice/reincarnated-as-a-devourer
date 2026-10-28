@@ -34,6 +34,8 @@ func defaults() -> Dictionary:
 		"devoured_total": 0,
 		"felled": [],  # mini-bosses ever felled, by name
 		"start_weapon": "res://data/weapons/blade.tres",  # last chosen
+		# The Codex: what this player has met and found, across journeys.
+		"codex": {"enemies": {}, "upgrades": [], "essences": [], "resonances": []},
 		# Set the moment the hero falls, cleared by a revive. Still set at
 		# the next launch means the game closed on the death screen: the
 		# journey is over (one life), not continued from the last shrine.
@@ -112,6 +114,21 @@ func count_felled(boss_name: String) -> void:
 	if not boss_name in data.felled:
 		data.felled.append(boss_name)
 	save_game()
+
+
+## Adds a run's discoveries to the Codex; written with the next save.
+## `kills`: enemy name -> kills since the last call.
+func note_codex(kills: Dictionary, upgrades: Array, essences: Array, resonances: Array) -> void:
+	var codex: Dictionary = data.codex
+	for key: String in ["enemies", "upgrades", "essences", "resonances"]:
+		if not codex.has(key):
+			codex[key] = {} if key == "enemies" else []
+	for enemy_name: String in kills:
+		codex.enemies[enemy_name] = int(codex.enemies.get(enemy_name, 0)) + int(kills[enemy_name])
+	for pair: Array in [[upgrades, codex.upgrades], [essences, codex.essences], [resonances, codex.resonances]]:
+		for item: String in pair[0]:
+			if not item in pair[1]:
+				pair[1].append(item)
 
 
 ## The hero has fallen; until a revive, the journey counts as lost.

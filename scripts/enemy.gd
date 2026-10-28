@@ -105,6 +105,9 @@ var _next_number := 0
 var _separation := Vector2.ZERO
 var _hit_flash := 0.0
 var shield_hp := 0.0
+## Damage dealt this run, by source (a weapon's name, "Bomb"): the results
+## screen reads it, main.gd clears it when a run starts.
+static var damage_log := {}
 var _slow := 1.0  # a Doom Bell's toll: movement multiplier...
 var _slow_time := 0.0  # ...for this long
 var _aim := Vector2.ZERO
@@ -232,7 +235,7 @@ func _update_burn(delta: float) -> void:
 	_burn_tick -= delta
 	if _burn_tick <= 0.0:
 		_burn_tick = BURN_TICK
-		take_damage(_burn_dps * BURN_TICK, Vector2.ZERO, "")
+		take_damage(_burn_dps * BURN_TICK, Vector2.ZERO, "", "Hellfire Chains")  # the only igniter
 	if _burn_time <= 0.0:
 		_burn_dps = 0.0
 		if data.sprite_frames:
@@ -372,9 +375,10 @@ func alive() -> bool:
 	return hp > 0.0
 
 
-func take_damage(amount: float, knockback := Vector2.ZERO, hit_sfx := "enemy_hit") -> void:
+func take_damage(amount: float, knockback := Vector2.ZERO, hit_sfx := "enemy_hit", source := "") -> void:
 	if not alive():
 		return
+	var hp_before := hp
 	var dealt := Game.damage(amount, data.defense) * (ARMORED_TAKEN if affix == "armored" else 1.0)
 	if shield_hp > 0.0:
 		# The shield takes most of the hit until it breaks.
@@ -386,6 +390,8 @@ func take_damage(amount: float, knockback := Vector2.ZERO, hit_sfx := "enemy_hit
 			Game.burst(global_position, SHIELD_COLOR, 14, 180.0)
 		queue_redraw()
 	hp -= dealt
+	if source != "":
+		damage_log[source] = float(damage_log.get(source, 0.0)) + minf(dealt, maxf(hp_before, 0.0))
 	damaged.emit(hp, max_hp)
 	# Throttled per enemy, so a swarm under the Blade doesn't drown the screen.
 	var now := Time.get_ticks_msec()

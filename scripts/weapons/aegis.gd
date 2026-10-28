@@ -87,7 +87,7 @@ func _physics_process(delta: float) -> void:
 				continue
 			_next_hit[id] = _time + HIT_COOLDOWN
 			var push := global_position.direction_to(enemy.global_position) * KNOCKBACK
-			enemy.take_damage(damage(EVOLVED_DAMAGE if evolved else per_level(DAMAGE)), push, "aegis_hit")
+			enemy.take_damage(damage(EVOLVED_DAMAGE if evolved else per_level(DAMAGE)), push, "aegis_hit", source())
 	if evolved:
 		_block_shots()
 	if _next_hit.size() > 256:

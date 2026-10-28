@@ -41,7 +41,7 @@ func _bite(targets: Array[Enemy]) -> void:
 	Game.sfx("maw", 0.1)
 	for enemy in targets:
 		_bites.append([enemy.global_position, 0.0])
-		enemy.take_damage(amount, Vector2.ZERO, "maw_hit")
+		enemy.take_damage(amount, Vector2.ZERO, "maw_hit", source())
 		if evolved:
 			healed += amount * EVOLVED_LIFESTEAL
 		if not enemy.alive():

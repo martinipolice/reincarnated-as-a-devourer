@@ -60,7 +60,7 @@ func _swing() -> void:
 		Game.sfx("blade")
 	for enemy in targets:
 		var push := global_position.direction_to(enemy.global_position) * KNOCKBACK
-		enemy.take_damage(damage(amount), push, "blade_hit")
+		enemy.take_damage(damage(amount), push, "blade_hit", source())
 	_sweep = 0.0
 	_start_angle = randf() * TAU
 

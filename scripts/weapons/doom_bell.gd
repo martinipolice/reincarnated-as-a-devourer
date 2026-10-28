@@ -50,7 +50,7 @@ func _toll(at: Vector2) -> void:
 	for node in get_tree().get_nodes_in_group("enemies"):
 		var enemy := node as Enemy
 		if enemy.alive() and enemy.global_position.distance_squared_to(at) <= radius * radius:
-			enemy.take_damage(amount, Vector2.ZERO, "")
+			enemy.take_damage(amount, Vector2.ZERO, "", source())
 			enemy.slow(slow, SLOW_TIME)
 
 

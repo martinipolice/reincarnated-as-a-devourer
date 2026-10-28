@@ -168,6 +168,10 @@ var mini_boss: Boss
 var _minis_done := []
 var _restoring := false
 var revives := 0
+var best_rank := 0  # the style meter's best this journey
+var results: Results
+var _unlocked_at_start: Array[String] = []  # starting weapons, to spot new ones
+var _kills_by := {}  # enemy name -> kills, until the next _note_codex()
 ## TrainingData.id -> ranks bought at the goddess's shrines this journey.
 var training_ranks := {}
 var shrine: CanvasLayer
@@ -213,6 +217,7 @@ var _banner_tween: Tween
 
 
 func _ready() -> void:
+	Enemy.damage_log.clear()
 	Game.enemy_killed.connect(_on_enemy_killed)
 	player.died.connect(_on_player_died)
 	player.leveled_up.connect(_on_player_leveled_up)
@@ -227,6 +232,14 @@ func _ready() -> void:
 	shrine.closed.connect(_on_shrine_closed)
 	pause_menu = PAUSE_MENU.new()
 	add_child(pause_menu)
+	results = Results.new()
+	add_child(results)
+	results.again.connect(_on_primary)
+	results.to_title.connect(_on_secondary)
+	_unlocked_at_start = Unlocks.unlocked(Save.data)
+	for button: Button in [primary_button, secondary_button]:
+		button.theme_type_variation = &"MenuItem"
+		button.add_theme_font_size_override("font_size", 26)
 	chest_reel = CHEST_REEL.new()
 	add_child(chest_reel)
 	ending = ENDING.new()
@@ -256,6 +269,7 @@ func _ready() -> void:
 	style = StyleMeter.new()
 	add_child(style)
 	style.rank_changed.connect(_on_rank_changed)
+	style.rank_changed.connect(func(rank: int, _rising: bool) -> void: best_rank = maxi(best_rank, rank))
 	player.hurt.connect(style.on_hurt)
 	hud.bind_style(style)
 	if covenant == "":
@@ -283,9 +297,7 @@ func toughness() -> float:
 func _process(delta: float) -> void:
 	world.update(player.position, get_viewport_rect().size)
 	if _over:
-		if Input.is_action_just_pressed("restart") and not primary_button.disabled:
-			_on_primary()
-		return
+		return  # the results screen takes it from here
 
 	elapsed += delta
 	if day() != _last_day:
@@ -765,7 +777,7 @@ func _grant_loot(entry: Dictionary, at: Vector2) -> String:
 				var enemy := node as Enemy
 				if enemy and player.global_position.distance_to(enemy.global_position) <= BOMB_RADIUS:
 					var push := player.global_position.direction_to(enemy.global_position) * 300.0
-					enemy.take_damage(BOMB_DAMAGE, push)
+					enemy.take_damage(BOMB_DAMAGE, push, "enemy_hit", "Bomb")
 	if entry.id != "gold" and entry.id != "bomb":
 		Game.sfx("loot", 0.0)
 	_pop_loot_icon(at, Loot.icon(entry))
@@ -807,6 +819,7 @@ func _on_boss_summon(at: Vector2, count: int, phase_two: bool) -> void:
 
 func _on_enemy_killed(enemy: Enemy) -> void:
 	kills += 1
+	_kills_by[enemy.data.display_name] = int(_kills_by.get(enemy.data.display_name, 0)) + 1
 	style.add_kill(enemy.elite)
 	var bounty := enemy.data.gold * (5 if enemy.elite else 1) * (TRAIT_GOLD_MULT if enemy.affix != "" else 1.0)
 	gold += roundi(bounty * gold_mult())
@@ -925,6 +938,7 @@ func add_training(training: TrainingData) -> void:
 
 
 func _on_shrine_closed() -> void:
+	_note_codex()
 	Save.save_journey(_snapshot())
 	if day() == 19:
 		show_banner("Tomorrow, the Demon King.", 2.5)
@@ -946,7 +960,20 @@ func _snapshot() -> Dictionary:
 		"revives": revives, "training": training_ranks.duplicate(), "upgrades": upgrades,
 		"essences": essences, "seed": world.seed_value,
 		"flask_max": player.flask_max, "flask_heal": player.flask_heal, "covenant": covenant,
+		"damage": Enemy.damage_log.duplicate(), "best_rank": best_rank,
 	}
+
+
+# What this run has met and found, into the Codex (Save.note_codex).
+func _note_codex() -> void:
+	var upgrades := []
+	for upgrade: Resource in player.upgrade_levels:
+		upgrades.append(upgrade.resource_path)
+	var essences := []
+	for essence: EssenceData in player.essences:
+		essences.append(essence.resource_path)
+	Save.note_codex(_kills_by, upgrades, essences, player.resonances)
+	_kills_by.clear()
 
 
 # Continue from a shrine checkpoint: same hero, same world, start of that day.
@@ -959,6 +986,8 @@ func _restore(journey: Dictionary) -> void:
 			_shrines_done.append(shrine_day)
 	gold = int(journey.gold)
 	kills = int(journey.kills)
+	Enemy.damage_log = (journey.get("damage", {}) as Dictionary).duplicate()
+	best_rank = int(journey.get("best_rank", 0))
 	revives = int(journey.revives)
 	player.level = int(journey.level)
 	player.xp = int(journey.xp)
@@ -1047,6 +1076,7 @@ func _end_run(message: String, won := false) -> void:
 	if won:
 		Game.sfx("toll", 0.0)
 	Music.stop(4.0 if won else 3.0)
+	_note_codex()
 	Save.end_journey(day(), won)
 	enemies.process_mode = Node.PROCESS_MODE_DISABLED
 	banner.hide()
@@ -1059,12 +1089,11 @@ func _end_run(message: String, won := false) -> void:
 		Save.record_ending(choice)
 		var chosen: Dictionary = ending.ENDINGS[choice]
 		message = "%s\n%s" % [chosen.title, chosen.subtitle]
-	end_text.text = "%s\n\nDay %d  ·  Level %d  ·  %d kills  ·  %d devoured  ·  %d revives" % [
-		message, day(), player.level, kills, player.devour_count(), revives]
-	primary_button.text = Game.prompts("Begin a new journey  ({restart})")
-	secondary_button.text = "Title screen"
-	secondary_button.show()
-	_show_end_menu(primary_button)
+	moments.clear()
+	var title := "Victory" if won else "Your Journey Ends"
+	var unlocked := Unlocks.unlocked(Save.data).filter(func(path: String) -> bool:
+		return not path in _unlocked_at_start)
+	results.open(self, won, title, message, unlocked)
 
 
 func _show_end_menu(focus: Button) -> void:

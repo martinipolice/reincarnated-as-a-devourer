@@ -24,6 +24,9 @@ const GUIDE := [
 	"At her shrine you may seal one covenant: a curse until the next shrine, for a reward.",
 	"You live only once. If you fall, she can pull you back for gold, and the price doubles each time. Keep some gold in reserve.",
 	"Goddess Light and Aegis evolve with a passive at Lv 3 (Vigor and Guard); the other weapons with Devoured essences.",
+	"Hold 2 or more of each of two certain essences and they resonate: a lasting bonus. The Codex lists the pairs you've found.",
+	"On Days 10 and 15 a mini-boss stalks the ruins. Fell it for gold, a golden chest and an essence.",
+	"Going further unlocks new starting weapons, chosen when you begin a journey.",
 ]
 
 

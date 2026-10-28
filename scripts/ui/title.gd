@@ -4,7 +4,8 @@ extends Control
 ## journey in progress (saved at the last goddess shrine) or begin a new one
 ## (a hero only reincarnates once, so that abandons the old one, after a
 ## confirm). Once a second starting weapon is unlocked (Unlocks), beginning
-## a journey first deals the starting weapons as cards.
+## a journey first deals the starting weapons as cards. Also: the Codex,
+## how to play, settings and the credits.
 
 const RUN_SCENE := "res://scenes/main.tscn"
 const ENDING := preload("res://scripts/ui/ending.gd")
@@ -17,6 +18,8 @@ const SKY_LOW := Color(0.11, 0.05, 0.08)
 static var _greeted := false
 
 var _menu: PauseMenu
+var _codex: Codex
+var _credits: Credits
 var _list: VBoxContainer
 var _press: Label
 var _press_tween: Tween
@@ -37,6 +40,12 @@ func _ready() -> void:
 	_menu = PauseMenu.new()
 	add_child(_menu)
 	_menu.closed.connect(_focus_list)
+	_codex = Codex.new()
+	add_child(_codex)
+	_codex.closed.connect(_focus_list)
+	_credits = Credits.new()
+	add_child(_credits)
+	_credits.closed.connect(_focus_list)
 	if _greeted:
 		_show_menu(false)
 
@@ -88,10 +97,15 @@ func _fill_list() -> void:
 		where.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		_list.add_child(where)
 	_list.add_child(UITheme.menu_item("New Journey", _new_journey, "pick"))
+	_list.add_child(UITheme.menu_item("Codex", _codex.open))
 	_list.add_child(UITheme.menu_item("How to Play", _menu.open.bind(null, "How to Play")))
 	_list.add_child(UITheme.menu_item("Settings", _menu.open.bind(null, "Settings")))
+	_list.add_child(UITheme.menu_item("Credits", _credits.open))
 	if not OS.has_feature("web"):
 		_list.add_child(UITheme.menu_item("Quit", get_tree().quit, "back"))
+	for child in _list.get_children():
+		if child is Button:
+			child.custom_minimum_size.y = 38
 
 
 func _focus_list() -> void:
@@ -240,7 +254,7 @@ func _build() -> void:
 	column.add_theme_constant_override("separation", 6)
 	add_child(column)
 	column.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	column.offset_top = 150
+	column.offset_top = 110
 	var name_label := UITheme.title_label("Reincarnated as a Devourer", 84, UITheme.BONE)
 	column.add_child(name_label)
 	column.add_child(OrnateRule.new(520.0))
@@ -250,7 +264,7 @@ func _build() -> void:
 	quote.add_theme_color_override("font_color", Color(0.75, 0.7, 0.85))
 	column.add_child(quote)
 	var gap := Control.new()
-	gap.custom_minimum_size = Vector2(0, 40)
+	gap.custom_minimum_size = Vector2(0, 22)
 	column.add_child(gap)
 
 	_press = Label.new()
