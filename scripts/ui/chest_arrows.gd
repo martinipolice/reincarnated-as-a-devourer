@@ -5,6 +5,7 @@ extends Control
 ## - the essence's own color, smaller and quicker: an elite's essence to Devour
 ##   (they fade, so it matters to get there)
 ## - red: the Demon King, or a mini-boss
+## - the landmark's own color, a diamond: a point of interest not yet used
 
 const MARGIN := 36.0
 const SIZE := 22.0
@@ -30,6 +31,10 @@ func _draw() -> void:
 	for node in get_tree().get_nodes_in_group("corpses"):
 		var corpse := node as DevourCorpse
 		_arrow(corpse, center, inner, Color(corpse.essence.color.lightened(0.5), quick), SIZE * 0.8)
+	for node in get_tree().get_nodes_in_group("landmarks"):
+		var landmark := node as Landmark
+		if not landmark.spent:
+			_arrow(landmark, center, inner, Color(landmark.color().lightened(0.3), pulse), SIZE * 0.9)
 	var main := owner as Node
 	for key in ["boss", "mini_boss"]:
 		if main and is_instance_valid(main.get(key)):

@@ -40,7 +40,7 @@ static func snapshot(main: Node) -> Dictionary:
 		"essences": essences, "seed": main.world.seed_value,
 		"flask_max": player.flask_max, "flask_heal": player.flask_heal, "covenant": main.covenant,
 		"damage": Enemy.damage_log.duplicate(), "best_rank": main.best_rank,
-		"rerolls": main.rerolls, "banishes": main.banishes,
+		"rerolls": main.rerolls, "banishes": main.banishes, "altar": main.altar_bonuses.duplicate(true),
 		"banished": main.banished.map(func(u: Resource) -> String:
 			return (u as BranchData).key() if u is BranchData else u.resource_path),
 		"branches": player.branches.keys().map(func(w: WeaponData) -> Array:
@@ -64,6 +64,8 @@ static func restore(main: Node, journey: Dictionary) -> int:
 	main.banishes = int(journey.get("banishes", main.START_BANISHES))
 	for path: String in journey.get("banished", []):
 		main.banished.append(Branches.from_key(path) if "#" in path else load(path))
+	for mod: Dictionary in journey.get("altar", []):
+		main.add_altar_bonus(mod)
 	player.level = int(journey.level)
 	player.xp = int(journey.xp)
 	var taken := {}

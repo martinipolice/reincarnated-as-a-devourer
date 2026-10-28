@@ -113,6 +113,9 @@ var mini_boss: Boss:
 
 var spawner: SpawnDirector
 var loot: LootDirector
+var landmarks: Landmarks
+## The cursed altars' lasting rewards, kept so a shrine save can rebuild them.
+var altar_bonuses: Array[Dictionary] = []
 var music: RunMusic
 var record := JourneyRecord.new()
 var style: StyleMeter
@@ -152,6 +155,8 @@ func _ready() -> void:
 	spawner.mini_boss_arrived.connect(_on_mini_boss_arrived)
 	loot = LootDirector.new(self)
 	add_child(loot)
+	landmarks = Landmarks.new(self)
+	add_child(landmarks)
 	music = RunMusic.new(self)
 	add_child(music)
 	Game.enemy_killed.connect(_on_enemy_killed)
@@ -262,6 +267,7 @@ func _process(delta: float) -> void:
 	if not boss_spawned:
 		spawner.update(delta)
 	loot.update(delta)
+	landmarks.update(delta)
 	_update_status()
 	music.update(delta)
 
@@ -597,6 +603,13 @@ func _zoom_for_level() -> float:
 
 func revive_cost() -> int:
 	return roundi(REVIVE_BASE_COST * (1 << revives) * Hunger.REVIVE[player.hunger_tier()])
+
+
+## A cursed altar's lasting reward (a stat modifier).
+func add_altar_bonus(mod: Dictionary) -> void:
+	altar_bonuses.append(mod)
+	player.modifiers.append(mod.duplicate())
+	player.stats_changed.emit()
 
 
 ## Training bought at a shrine: its modifiers last the rest of the journey.

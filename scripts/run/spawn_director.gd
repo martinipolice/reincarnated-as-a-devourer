@@ -179,6 +179,15 @@ func spawn_at(data: EnemyData, at: Vector2) -> Enemy:
 	return enemy
 
 
+## An elite of `data` with `affix` ("" for none) at `at` (a broken cage).
+func spawn_elite_at(data: EnemyData, at: Vector2, affix := "") -> Enemy:
+	var enemy := ENEMY_SCENE.instantiate() as Enemy
+	enemy.setup(data, _player, true, toughness(), affix)
+	enemy.position = at
+	_enemies.add_child(enemy)
+	return enemy
+
+
 ## A Splitting elite bursts into three of its kind.
 func split(enemy: Enemy) -> void:
 	for i in SPLIT_COUNT:

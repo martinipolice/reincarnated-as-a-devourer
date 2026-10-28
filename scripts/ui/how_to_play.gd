@@ -29,6 +29,7 @@ const GUIDE := [
 	"At a level-up you can Reroll, Banish a card for the journey, or Skip it for gold. The goddess sells more rerolls and banishes.",
 	"At Lv 3 each weapon offers two branches. Take one, and it grows to Lv 5.",
 	"Hold 2 or more of each of two certain essences and they resonate: a lasting bonus. The Codex lists the pairs you've found.",
+	"From Day 2, landmarks appear (follow their arrows): a cursed altar tests you for a reward, a bloody well trades HP for gold, a cage frees a strong elite, a grave leaves a gift.",
 	"On Days 10 and 15 a mini-boss stalks the ruins. Fell it for gold, a golden chest and an essence.",
 	"Going further unlocks new starting weapons, chosen when you begin a journey.",
 ]
