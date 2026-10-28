@@ -77,6 +77,7 @@ const UPGRADE_POOL := [
 	preload("res://data/items/vigor.tres"),
 ]
 const OFFERS_PER_LEVEL := 3
+const HUNGER := preload("res://data/items/hunger.tres")
 
 var elapsed := 0.0
 var kills := 0
@@ -506,12 +507,20 @@ func _offer_next_level_up() -> void:
 	if over or player.pending_level_ups == 0:
 		return
 	player.pending_level_ups -= 1
-	var offers := player.available_upgrades(UPGRADE_POOL)
+	var offers := player.available_upgrades(upgrade_pool())
 	offers.shuffle()
 	offers.resize(mini(OFFERS_PER_LEVEL, offers.size()))
 	if offers.is_empty():
 		offers = [FALLBACK_UPGRADE]
 	level_up.open(offers, player)
+
+
+## What level-ups and blessings can offer now. Hunger only speeds Devouring,
+## so it waits until the hero has Devoured once.
+func upgrade_pool() -> Array:
+	if player.devour_count() > 0:
+		return UPGRADE_POOL
+	return UPGRADE_POOL.filter(func(upgrade: Resource) -> bool: return upgrade != HUNGER)
 
 
 # More of the world comes into view as you grow.

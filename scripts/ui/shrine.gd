@@ -206,7 +206,7 @@ func _build_blessings() -> void:
 		_blessing_box.remove_child(child)
 		child.queue_free()
 	var player: Player = _main.player
-	var offers: Array = player.available_upgrades(_main.UPGRADE_POOL)
+	var offers: Array = player.available_upgrades(_main.upgrade_pool())
 	offers.shuffle()
 	offers.resize(mini(3, offers.size()))
 	if offers.is_empty():

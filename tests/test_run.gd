@@ -184,3 +184,11 @@ func test_a_busy_day_plays_without_errors() -> void:
 	check(main.kills > 0, "and is being killed")
 	check(not tree.get_nodes_in_group("chests").is_empty() or main.loot._revealing, "a chest appeared")
 	await end_run(main)
+
+
+func test_hunger_waits_for_the_first_devour() -> void:
+	var main: Node = await start_run()
+	check(not HUNGER in main.upgrade_pool(), "not offered before Devouring")
+	main.player.add_essence(VEXCLAW_ESSENCE)
+	check(HUNGER in main.upgrade_pool(), "offered after")
+	await end_run(main)

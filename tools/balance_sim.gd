@@ -85,6 +85,11 @@ func _process(_delta: float) -> bool:
 		for k in damage_by:
 			parts.append("%s %d" % [k, damage_by[k]])
 		print("    damage taken: ", ", ".join(parts))
+		var log: Dictionary = load("res://scripts/enemy.gd").damage_log
+		var dealt := []
+		for k in log:
+			dealt.append("%s %dk" % [k, roundi(log[k] / 1000.0)])
+		print("    damage dealt: ", ", ".join(dealt))
 		var ranks := []
 		for r in style_time.size():
 			ranks.append("%s %d%%" % [["D", "C", "B", "A", "S", "SS", "SSS"][r], roundi(100.0 * style_time[r] / maxf(t, 1.0))])

@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Balance: the Warden's shield is 120 (was 180), and Hunger is only offered once you've
+  Devoured. Bots: not Devouring wins about 4 runs in 8 again, Devouring about 7 in 8.
+- Under the hood: the run controller is split into smaller pieces, a headless test suite
+  covers saves, combat, the run and the menus, and GitHub Actions runs it on every push.
+
 ## 0.2.0
 
 New content and a full menu overhaul.
