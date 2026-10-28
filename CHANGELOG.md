@@ -4,6 +4,13 @@
 
 - Balance: the Warden's shield is 120 (was 180), and Hunger is only offered once you've
   Devoured. Bots: not Devouring wins about 4 runs in 8 again, Devouring about 7 in 8.
+- Title screen: the game's forest at night drifts behind a crest (the name with an ember
+  glow and a sweeping shine), with fireflies and fog.
+- Sound: warning cues when a Vexclaw crouches, a Hexeye aims, a Plaguewing lobs, and a
+  guardian winds up a charge; ambient beds under the music (forest night, ruins wind,
+  temple drone). All synthesized for this game.
+- Text is ready for translation (`locale/messages.pot`), and a trailer can be recorded with
+  `tools/trailer.gd`.
 - Under the hood: the run controller is split into smaller pieces, a headless test suite
   covers saves, combat, the run and the menus, and GitHub Actions runs it on every push.
 

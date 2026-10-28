@@ -338,6 +338,18 @@ godot --headless --path . -s res://tests/run_tests.gd
 Add `-- run` (or any part of a file name) to run only matching files. GitHub Actions runs
 the suite on every push and pull request (`.github/workflows/tests.yml`).
 
+## Trailer
+
+`tools/trailer.gd` records a ~47 s trailer with Godot's Movie Maker: the title, a forest
+swarm, a Devour, level-up cards, the goddess, the Ruin Guardian and the Demon King, with
+captions between. It never touches your save:
+
+```
+godot --path . --resolution 1280x720 --fixed-fps 30 --write-movie build/trailer/trailer.avi -s res://tools/trailer.gd
+```
+
+The AVI (MJPEG with sound) uploads to YouTube as is; itch.io embeds the YouTube link.
+
 ## Translating
 
 The text is ready for translation, though only English exists so far. Formatted lines go
