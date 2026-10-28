@@ -2,7 +2,8 @@ class_name RunMusic
 extends Node
 ## Which track the moment calls for, and how hard it should hit. Waves swell
 ## the music, a crowd around you pushes it to full, lulls muffle it, and in
-## the ruins a long peak brings in the faster track.
+## the ruins a long peak brings in the faster track. Under it all, the
+## area's ambient bed (Ambience).
 
 ## Enemies this close count as pressure; this many is full.
 const PRESSURE_RADIUS := 320.0
@@ -17,16 +18,23 @@ var _pressure := 0.0
 var _pressure_timer := 0.0
 var _peak_hold := 0.0
 var _main: Node
+var _ambience: Ambience
 
 
 func _init(main: Node) -> void:
 	_main = main
 
 
+func _ready() -> void:
+	_ambience = Ambience.new()
+	add_child(_ambience)
+
+
 func update(delta: float) -> void:
 	if _main.awaiting_revive:
 		return
 	var forest: bool = _main.world.biome == "forest"
+	_ambience.play("temple" if _main.boss_spawned else ("forest" if forest else "ruins"))
 	Game.footstep = "footstep_grass" if forest and not _main.boss_spawned else "footstep_stone"
 	if _main.boss_spawned:
 		Music.set_intensity(1.0)

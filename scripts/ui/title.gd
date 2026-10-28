@@ -41,6 +41,10 @@ func _ready() -> void:
 	Music.muffle(false)
 	Music.set_intensity(1.0)
 	Music.play("title", 2.0)
+	var ambience := Ambience.new()
+	ambience.offset_db = -6.0
+	add_child(ambience)
+	ambience.play("forest", 4.0)
 	_build()
 	_menu = PauseMenu.new()
 	add_child(_menu)

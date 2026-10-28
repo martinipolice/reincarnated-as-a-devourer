@@ -140,10 +140,11 @@ func _start_attack() -> void:
 		Attack.CHARGE:
 			_charge_windup = CHARGE_WINDUP
 			_charge_dir = global_position.direction_to(target.global_position)
-			Game.sfx("boss_warn", 0.0)
+			Game.sfx("warn_charge", 0.0)
 		Attack.BLINK:
 			_blink = BLINK_FADE * 2.0
 			Game.sfx("devour", 0.0, 1.4)
+			Game.sfx("warn_hex", 0.0, 0.6)
 
 
 func _update_charge(delta: float) -> void:

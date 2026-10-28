@@ -192,3 +192,19 @@ func test_hunger_waits_for_the_first_devour() -> void:
 	main.player.add_essence(VEXCLAW_ESSENCE)
 	check(HUNGER in main.upgrade_pool(), "offered after")
 	await end_run(main)
+
+
+func test_ambience_follows_the_area_and_loops() -> void:
+	var main: Node = await start_run()
+	main.music.update(0.1)
+	var ambience: Ambience = main.music._ambience
+	check_eq(ambience._bed, "forest", "forest bed on Day 1")
+	var player: AudioStreamPlayer = ambience._players[ambience._current]
+	check(player.playing, "playing")
+	check_eq((player.stream as AudioStreamWAV).loop_mode, AudioStreamWAV.LOOP_FORWARD, "loops")
+	main.world.biome = "ruins"
+	main.music.update(0.1)
+	check_eq(ambience._bed, "ruins", "ruins bed")
+	for sound: String in ["warn_pounce", "warn_hex", "warn_glob", "warn_charge"]:
+		check(not Game._streams.get(sound, []).is_empty(), "%s loaded" % sound)
+	await end_run(main)

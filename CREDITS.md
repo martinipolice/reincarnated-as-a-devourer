@@ -20,6 +20,12 @@ The fonts are under the SIL Open Font License. The license text for each pack si
 Art is copied and sliced into Godot animations by `tools/import_ninja.py`. Earlier
 versions used 0x72's 16x16 DungeonTileset II (CC0); it's no longer in the project.
 
+## Synthesized sounds
+
+The enemy warning cues (Vexclaw pounce, Hexeye aim, Plaguewing lob, guardian charge) and
+the ambient beds (forest night, ruins wind, temple drone) are made for this game from noise
+and sine waves by `tools/synth_audio.py`, so they're part of the project itself.
+
 ## Engine
 
 Made with [Godot Engine](https://godotengine.org) (MIT license).

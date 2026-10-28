@@ -108,6 +108,11 @@ var shield_hp := 0.0
 ## Damage dealt this run, by source (a weapon's name, "Bomb"): the results
 ## screen reads it, main.gd clears it when a run starts.
 static var damage_log := {}
+## Telegraph sounds play only for monsters this close, and each kind at
+## most once per WARN_GAP, so a crowd doesn't drown the mix.
+const WARN_RANGE := 560.0
+const WARN_GAP := 0.35
+static var _last_warn := {}
 var _slow := 1.0  # a Doom Bell's toll: movement multiplier...
 var _slow_time := 0.0  # ...for this long
 var _aim := Vector2.ZERO
@@ -315,6 +320,7 @@ func _pounce() -> Vector2:
 		var aim := target.global_position + lead
 		_dash_target = global_position + global_position.direction_to(aim) * POUNCE_RANGE * 1.3
 		_set_state(State.WINDUP)
+		_warn("warn_pounce")
 		return Vector2.ZERO
 	return to_player.normalized() * move_speed()
 
@@ -351,6 +357,7 @@ func _caster() -> Vector2:
 		return Vector2.ZERO
 	if _cooldown <= 0.0 and distance < CAST_RANGE:
 		_set_state(State.WINDUP)
+		_warn("warn_hex")
 		return Vector2.ZERO
 	var direction := to_player / maxf(distance, 0.01)
 	if distance < CAST_KEEP:
@@ -366,7 +373,16 @@ func _cast() -> void:
 	Game.sfx("boss_volley", 0.15, 1.6)
 
 
+func _warn(sound: String) -> void:
+	var now := Time.get_ticks_msec() / 1000.0
+	if now - float(_last_warn.get(sound, -9.0)) < WARN_GAP 			or global_position.distance_to(target.global_position) > WARN_RANGE:
+		return
+	_last_warn[sound] = now
+	Game.sfx(sound, 0.08)
+
+
 func _spit() -> void:
+	_warn("warn_glob")
 	var glob := GLOB_SCENE.instantiate() as PlagueGlob
 	glob.setup(target.global_position, atk * 0.4)
 	glob.position = global_position

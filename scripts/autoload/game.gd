@@ -69,6 +69,11 @@ const SFX := {
 	"covenant": [["kenney_digital/lowRandom.ogg"], -4.0, 0.7, false],
 	"rank_up": [["kenney_impact/impactMetal_heavy_00{0-4}.ogg"], -9.0, 1.3, false],
 	# The Demon King.
+	# Telegraph cues, synthesized by tools/synth_audio.py.
+	"warn_pounce": [["synth/warn_pounce.wav"], -10.0, 1.0, true],
+	"warn_hex": [["synth/warn_hex.wav"], -13.0, 1.0, true],
+	"warn_glob": [["synth/warn_glob.wav"], -12.0, 1.0, true],
+	"warn_charge": [["synth/warn_charge.wav"], -3.0, 1.0, false],
 	"boss_warn": [["kenney_digital/lowThreeTone.ogg"], -6.0, 1.0, false],
 	"boss_slam": [["kenney_impact/impactPunch_heavy_00{0-4}.ogg", "kenney_impact/impactMetal_heavy_00{0-4}.ogg"], -2.0, 0.7, false],
 	"boss_volley": [["kenney_digital/phaserUp{1-3}.ogg"], -8.0, 0.8, false],
