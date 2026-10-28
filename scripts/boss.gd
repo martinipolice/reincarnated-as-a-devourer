@@ -6,35 +6,49 @@ extends Enemy
 ##   (the terminal game's "charges every 5 turns").
 ## - Dark volley: stops, gathers power, then fires a ring of orbs to dodge.
 ## He also summons a few minions now and then (XP and a little chaos).
-## Below half HP he enrages: faster, bigger slams, denser volleys.
+## He fights in three phases (PHASE_AT): at two thirds of his HP he rises in
+## fury (faster, bigger slams, denser volleys, and charges); at one third he
+## wears your hunger: a mirror attack drawn from the essence you Devoured
+## most, and his strength grows with every Devour you took. His slams
+## crumble the arena's pillars, and pillars (and any obstacle) stop orbs.
 ## The mini-bosses (Days 10 and 15) are Bosses too, set up with configure():
-## their own attack cycle, with or without summons and an enrage. Two more
+## their own attack cycle, with or without summons and an enrage at half HP. Two more
 ## attacks are theirs:
 ## - Charge: a line marks the path, then it rushes along it.
 ## - Blink: it fades, reappears beside you, and fires a ring of orbs.
 
 signal slam_started
 signal enraged
+## The Demon King entered phase 1 (fury) or 2 (the mirror).
+signal phase_changed(phase: int)
+## A slam landed at `at`, `radius` wide (the arena's pillars crumble).
+signal slammed(at: Vector2, radius: float)
 ## Asks the run to spawn `count` minions around `at`; true in phase 2.
 signal summon(at: Vector2, count: int, phase_two: bool)
 
-enum Attack { SLAM, VOLLEY, CHARGE, BLINK }
+enum Attack { SLAM, VOLLEY, CHARGE, BLINK, MIRROR }
 
 const ORB_SCENE := preload("res://scenes/boss_orb.tscn")
 const FIRST_ATTACK := 4.0
-const ATTACK_GAP := [3.5, 2.9]  # seconds between attacks, by phase
+const ATTACK_GAP := [3.5, 2.9, 2.6]  # seconds between attacks, by phase
 const SLAM_WINDUP := 2.25  # 1.5 felt too fast in playtesting
-const SLAM_RADIUS := [150.0, 185.0]
+const SLAM_RADIUS := [150.0, 185.0, 200.0]
 const SLAM_DAMAGE_MULT := 1.6  # 2.0 felt too punishing in playtesting
 const SLAM_FLASH := 0.25
-const VOLLEY_WINDUP := [0.9, 0.7]
-const VOLLEY_ORBS := [12, 14]
-const VOLLEY_WAVES := [1, 2]  # phase 2 fires a second, offset ring
+const VOLLEY_WINDUP := [0.9, 0.7, 0.65]
+const VOLLEY_ORBS := [12, 14, 16]
+const VOLLEY_WAVES := [1, 2, 2]  # later phases fire a second, offset ring
 const VOLLEY_WAVE_GAP := 0.35
 const ORB_DAMAGE_MULT := 0.6
-const SUMMON_INTERVAL := [12.0, 9.0]
+const SUMMON_INTERVAL := [12.0, 9.0, 9.0]
 const SUMMON_COUNT := 4
-const ENRAGE_AT := 0.5  # fraction of max HP
+const ENRAGE_AT := 0.5  # fraction of max HP (mini-bosses)
+const PHASE_AT := [0.66, 0.33]  # the Demon King's phases begin below these
+## Phase 3: his attack grows by this much per essence you Devoured, up to the cap.
+const MIRROR_PER_DEVOUR := 0.03
+const MIRROR_CAP := 0.45
+const MIRROR_SHIELD := 0.15  # of max HP, when he mirrors a Warden
+const PILLAR_COLOR := Color(0.55, 0.5, 0.55)
 const ENRAGED_SPEED_MULT := 1.35
 const TELEGRAPH_COLOR := Color(1, 0.2, 0.2)
 const VOLLEY_COLOR := Color(0.75, 0.35, 1.0)
@@ -50,7 +64,12 @@ const BLINK_DISTANCE := 170.0
 var slam_at := Vector2.ZERO
 var slam_radius: float = SLAM_RADIUS[0]
 var windup := 0.0
-var phase := 0  # 0 = normal, 1 = enraged
+var phase := 0  # 0 = normal, 1 = enraged (or fury), 2 = the mirror
+## The Demon King's three phases; mini-bosses only enrage.
+var king := false
+## The essence the Demon King mirrors in phase 2 (null: none Devoured).
+var mirror: EssenceData
+var _devours := 0
 
 var _next_attack := FIRST_ATTACK
 var _next_summon: float = SUMMON_INTERVAL[0]
@@ -66,6 +85,17 @@ var _blink := 0.0
 var _volley_windup := 0.0
 var _flash := 0.0
 var _telegraph: Node2D
+
+
+## Makes this the Demon King, mirroring `player`'s most-Devoured essence.
+func crown(player: Player) -> void:
+	king = true
+	_devours = player.devour_count()
+	var most := 0
+	for essence: EssenceData in player.essences:
+		if int(player.essences[essence]) > most:
+			most = player.essences[essence]
+			mirror = essence
 
 
 ## Sets a mini-boss's attack cycle; call before add_child().
@@ -113,6 +143,10 @@ func _physics_process(delta: float) -> void:
 
 
 func _update_phase() -> void:
+	if king:
+		if phase < 2 and hp <= max_hp * PHASE_AT[phase]:
+			_enter_phase(phase + 1)
+		return
 	if can_enrage and phase == 0 and hp <= max_hp * ENRAGE_AT:
 		phase = 1
 		slam_radius = SLAM_RADIUS[1]
@@ -121,8 +155,23 @@ func _update_phase() -> void:
 		enraged.emit()
 
 
+func _enter_phase(next: int) -> void:
+	phase = next
+	slam_radius = SLAM_RADIUS[phase]
+	Game.shake(0.8)
+	Game.sfx("toll", 0.0)
+	Game.shockwave(global_position, TELEGRAPH_COLOR if phase == 1 else VOLLEY_COLOR, 280.0, 0.8)
+	if phase == 1:
+		attacks.append(Attack.CHARGE)
+		enraged.emit()
+	else:
+		attacks.append(Attack.MIRROR)
+		atk *= 1.0 + minf(MIRROR_PER_DEVOUR * _devours, MIRROR_CAP)
+	phase_changed.emit(phase)
+
+
 func move_speed() -> float:
-	return data.move_speed * (ENRAGED_SPEED_MULT if phase == 1 else 1.0)
+	return data.move_speed * (ENRAGED_SPEED_MULT if phase >= 1 else 1.0)
 
 
 func _start_attack() -> void:
@@ -145,6 +194,39 @@ func _start_attack() -> void:
 			_blink = BLINK_FADE * 2.0
 			Game.sfx("devour", 0.0, 1.4)
 			Game.sfx("warn_hex", 0.0, 0.6)
+		Attack.MIRROR:
+			_mirror_attack()
+
+
+# Phase 2: he turns your favorite essence against you.
+func _mirror_attack() -> void:
+	var kind := mirror.resource_path.get_file().get_basename().trim_suffix("_essence") if mirror else ""
+	Game.sfx("devour", 0.0, 0.7)
+	match kind:
+		"vexclaw":
+			_charge_windup = CHARGE_WINDUP * 0.7
+			_charge_dir = global_position.direction_to(target.global_position)
+			Game.sfx("warn_charge", 0.0)
+		"hexeye":
+			for i in 5:
+				var bolt := BOLT_SCENE.instantiate() as HexBolt
+				bolt.setup(global_position.direction_to(target.global_position).rotated((i - 2) * 0.22), atk * 0.5)
+				bolt.position = global_position
+				get_parent().get_parent().add_child(bolt)
+			Game.sfx("warn_hex", 0.0, 0.8)
+		"plaguewing":
+			for i in 4:
+				var glob := GLOB_SCENE.instantiate() as PlagueGlob
+				glob.setup(target.global_position + Vector2.from_angle(TAU * i / 4.0) * 70.0, atk * 0.5)
+				glob.position = global_position
+				get_parent().get_parent().add_child(glob)
+		"warden":
+			shield_hp = max_hp * MIRROR_SHIELD
+			queue_redraw()
+		"dreadling", "acolyte":
+			summon.emit(global_position, SUMMON_COUNT * 2, kind == "acolyte")
+		_:
+			_blink = BLINK_FADE * 2.0  # Burrower, or nothing Devoured: he vanishes and reappears
 
 
 func _update_charge(delta: float) -> void:
@@ -185,6 +267,7 @@ func _update_slam(delta: float) -> void:
 	var player := target as Player
 	if player and player.global_position.distance_to(slam_at) <= slam_radius:
 		player.take_damage(atk * SLAM_DAMAGE_MULT, true)
+	slammed.emit(slam_at, slam_radius)
 
 
 func _update_volley(delta: float) -> void:

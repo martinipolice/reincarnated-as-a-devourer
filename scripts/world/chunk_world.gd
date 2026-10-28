@@ -153,6 +153,23 @@ func make_arena(center: Vector2, radius: float) -> void:
 			_build(key)
 
 
+## The Demon King's slam breaks arena pillars within `radius` of `at`.
+## Returns how many fell.
+func crumble(at: Vector2, radius: float) -> int:
+	var fallen := 0
+	for key: Vector2i in _chunks:
+		var record: Dictionary = _chunks[key]
+		for handle: Dictionary in record.obstacles.duplicate():
+			if handle.get("pillar", false) and at.distance_to(handle.center) <= radius + handle.radius:
+				Obstacles.remove(handle)
+				record.obstacles.erase(handle)
+				if is_instance_valid(handle.body):
+					Game.burst(handle.center, Color(0.55, 0.5, 0.55), 18, 200.0)
+					handle.body.queue_free()
+				fallen += 1
+	return fallen
+
+
 func _biome_for(key: Vector2i) -> String:
 	if _arena_radius > 0.0 and _chunk_rect(key).grow(_arena_radius + 80.0).has_point(_arena_center):
 		return "arena"
@@ -219,6 +236,7 @@ func _add_arena_ring(record: Dictionary, key: Vector2i) -> void:
 		var spot := _arena_center + Vector2.RIGHT.rotated(TAU * turn) * _arena_radius
 		if rect.has_point(spot):
 			_add_blocker(record, PILLAR[0], PILLAR[1], spot)
+			record.obstacles.back()["pillar"] = true
 
 
 func _add_blocker(record: Dictionary, region: Rect2i, radius: float, spot: Vector2) -> void:
@@ -233,7 +251,9 @@ func _add_blocker(record: Dictionary, region: Rect2i, radius: float, spot: Vecto
 	body.add_child(shape)
 	body.add_child(_sprite(NATURE_TEX, region, Vector2(0, radius * 0.5), true))
 	record.node.add_child(body)
-	record.obstacles.append(Obstacles.add(spot, radius))
+	var handle := Obstacles.add(spot, radius)
+	handle["body"] = body
+	record.obstacles.append(handle)
 
 
 func _unload(key: Vector2i) -> void:

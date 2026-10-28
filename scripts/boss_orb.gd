@@ -2,6 +2,7 @@ class_name BossOrb
 extends Area2D
 ## One orb of the Demon King's dark volley. Flies straight, hurts the player
 ## on touch (respecting their post-hit invulnerability), fades out at the end.
+## Pillars, trees and rocks stop it: take cover.
 
 const SPEED := 170.0
 const LIFETIME := 4.5
@@ -32,6 +33,10 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	position += _dir * SPEED * delta
+	if Obstacles.blocked(global_position, RADIUS):
+		Game.fx("spark", global_position, 1.2, RIM)
+		queue_free()
+		return
 	_life -= delta
 	modulate.a = clampf(_life / 0.5, 0.0, 1.0)
 	if _life <= 0.0:

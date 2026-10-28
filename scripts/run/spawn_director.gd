@@ -207,6 +207,7 @@ func spring_mimic(at: Vector2) -> void:
 func spawn_boss() -> Boss:
 	boss = BOSS_SCENE.instantiate() as Boss
 	boss.setup(DEMON_KING, _player)
+	boss.crown(_player)
 	boss.position = _player.position + Vector2.RIGHT.rotated(randf() * TAU) * BOSS_SPAWN_DISTANCE
 	boss.summon.connect(_on_boss_summon)
 	return boss

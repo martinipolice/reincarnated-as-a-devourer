@@ -417,10 +417,11 @@ func _on_mini_boss_killed(enemy: Enemy) -> void:
 func _spawn_boss() -> void:
 	boss_spawned = true
 	var king := spawner.spawn_boss()
-	king.enraged.connect(func() -> void:
-		show_banner("The Demon King is enraged!", 2.0)
-		Game.sfx("toll", 0.0)
-		Music.play("boss_enraged", 1.0))
+	king.enraged.connect(func() -> void: Music.play("boss_enraged", 1.0))
+	king.phase_changed.connect(_on_king_phase)
+	king.slammed.connect(func(at: Vector2, radius: float) -> void:
+		if world.crumble(at, radius) > 0:
+			Game.sfx("bomb", 0.1, 0.7))
 	# His arrival: a doom hit and a toll under the boss track's own opening.
 	Game.sfx("doom", 0.0)
 	Game.sfx("toll", 0.0)
@@ -442,6 +443,19 @@ func _spawn_boss() -> void:
 	moments.area_card("Temple of the Demon King")
 	show_banner("The sky darkens... The Demon King descends.", 3.5)
 	Hints.show_hint("boss", "A red mark on the ground shows where he will slam: step out of it. Dodge his rings of dark orbs, and drink your Tears when low.")
+
+
+func _on_king_phase(phase: int) -> void:
+	var king: Boss = boss
+	if phase == 1:
+		show_banner(tr("The Demon King rises in fury!"), 2.5)
+		return
+	camera.punch(0.15, 1.2)
+	if king.mirror:
+		show_banner(tr("He wears your hunger: %s") % tr(king.mirror.display_name), 3.0)
+	else:
+		show_banner(tr("He finds no hunger in you, and grows cold."), 3.0)
+	Hints.show_hint("mirror", "In his last phase the Demon King mirrors the essence you Devoured most, and every Devour you took makes him stronger. Pillars stop his orbs, but his slams break them.")
 
 
 func _on_enemy_killed(enemy: Enemy) -> void:
