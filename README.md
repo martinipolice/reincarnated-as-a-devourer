@@ -7,13 +7,15 @@ you kill, at the cost of your own life.
 It started as a turn-based terminal RPG I wrote in Python for CMSC 12, and is being rebuilt
 as a real-time game.
 
-> **Status:** playable from the first day to both endings (release builds up to v0.2.0; main
-> has more since, listed under Unreleased in the [changelog](CHANGELOG.md)). CC0 pixel art
-> (Ninja Adventure) and sound. Next: playtesting, then the lore and story scenes.
+**[Play it on itch.io](https://martinipolice.itch.io/reincarnated-as-a-devourer)** (in the browser or for Windows, free).
+
+> **Status:** playable from the first day to both endings (v0.3.0, the first itch.io
+> release). CC0 pixel art (Ninja Adventure) and sound. Next: playtesting, then the lore and
+> story scenes.
 
 ## Play / run
 
-Version 0.2.0 ([changelog](CHANGELOG.md)). Builds for Windows and the web come from the
+Version 0.3.0 ([changelog](CHANGELOG.md)). Builds for Windows and the web come from the
 export presets (**Project → Export**); the itch.io page kit is in [docs/itch](docs/itch/README.md).
 
 To run from source:
@@ -263,7 +265,7 @@ decides the ending. Full pitch: [docs/DESIGN.md](docs/DESIGN.md).
 - [x] **M4** Devour (elites, Essences, evolution) and the Demon King boss
 - [x] **M5** CC0 art and sound, juice, procedural world, versioned save file
 - [x] **Progression** One-life journeys: goddess shrines on the lore days, gold revives, shrine checkpoints
-- [x] **M6** Day 20 dialogue, both endings, release builds (v0.1.0, v0.2.0) and an itch.io page kit
+- [x] **M6** Day 20 dialogue, both endings, release builds (v0.1.0-v0.3.0) and the itch.io release (v0.3.0)
 - [x] **Phase 5, Tiers 1-2** Mutations and the Hunger, branching weapons, reroll/banish/skip;
   two new monsters, landmarks, a three-phase Demon King
 - [ ] Lore beats and story scenes, Tier 3 (difficulty after a win, relics, daily runs)
