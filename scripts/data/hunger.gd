@@ -10,18 +10,20 @@ const COLORS := [Color(0.7, 0.85, 0.7), Color(0.95, 0.8, 0.45), Color(1.0, 0.5, 
 const AT := [0, 4, 8, 12]
 ## Per tier: damage bonus, share of the normal Devour heal, elite interval
 ## multiplier, blessings the goddess offers, share of her Tears' heal, and
-## what her revives cost.
+## what her revives cost; and how much harder monsters hit you (the hungry
+## draw predators).
 const MIGHT := [0.0, 0.04, 0.07, 0.1]
 const HEAL := [1.0, 0.7, 0.45, 0.2]
 const ELITES := [1.0, 0.92, 0.85, 0.75]
 const BLESSINGS := [3, 3, 2, 2]
 const TEARS := [1.0, 1.0, 0.85, 0.7]
 const REVIVE := [1.0, 1.0, 1.5, 2.0]
+const HURT := [1.0, 1.0, 1.15, 1.3]
 const WARNINGS := [
 	"",
 	"Your Devours heal less; elites come more often.",
-	"Your Devours heal little; the goddess offers less, and her revives cost more.",
-	"Your Devours barely heal; elites hunt you; her Tears and revives cost you dearly.",
+	"Your Devours heal little; monsters hit harder; the goddess offers less, and her revives cost more.",
+	"Your Devours barely heal; monsters hit much harder; elites hunt you; her Tears and revives cost you dearly.",
 ]
 
 

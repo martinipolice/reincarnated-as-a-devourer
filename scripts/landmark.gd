@@ -32,6 +32,8 @@ const FADE := 2.5
 
 var kind := "grave"
 var spent := false
+## Set by Landmarks while an area title is showing: the name stays hidden.
+var hushed := false
 var trial := -1.0  # seconds into the altar's trial; < 0 = not running
 var _outside := 0.0
 var _standing := 0.0
@@ -60,7 +62,7 @@ func _process(delta: float) -> void:
 	if spent or not is_instance_valid(_player):
 		return
 	var distance := global_position.distance_to(_player.global_position)
-	_show_name(distance < NAME_REACH and trial < 0.0)
+	_show_name(distance < NAME_REACH and trial < 0.0 and not hushed)
 	match kind:
 		"altar":
 			_altar(delta, distance)

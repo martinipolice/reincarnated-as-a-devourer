@@ -74,3 +74,31 @@ func test_cover_and_crumbling_pillars() -> void:
 	check(main.world.crumble(pillar.center, 40.0) >= 1, "a slam breaks it")
 	check(not Obstacles.blocked(pillar.center, 1.0), "and it no longer blocks")
 	await end_run(main)
+
+
+func test_no_skipping_his_phases() -> void:
+	var main: Node = await start_run()
+	var king: Boss = await _king(main)
+	king.take_damage(king.max_hp * 10.0)
+	check(king.alive(), "one huge hit can't kill him in phase 0")
+	check_near(king.hp, king.max_hp * Boss.PHASE_AT[0], 1.0, "it stops at the next phase")
+	for i in 4:
+		await tree.physics_frame
+	var hp := king.hp
+	king.take_damage(1000.0)
+	check_eq(king.hp, hp, "untouchable while he transforms")
+	await end_run(main)
+
+
+func test_he_grows_with_your_hunger() -> void:
+	var main: Node = await start_run()
+	var plain: float = (await _king(main)).max_hp
+	await end_run(main)
+	main = await start_run()
+	var dreadling: EssenceData = load("res://data/essences/dreadling_essence.tres")
+	for i in 6:
+		main.player.add_essence(dreadling)
+	var king: Boss = await _king(main)
+	check_near(king.max_hp, plain * 1.3, 1.0, "+5% max HP per Devour")
+	check_near(king.hp, king.max_hp, 1.0, "and he starts at full")
+	await end_run(main)

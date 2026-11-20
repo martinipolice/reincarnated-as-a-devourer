@@ -196,6 +196,11 @@ func test_hunger_tiers_cost_and_pay() -> void:
 	await tree.process_frame
 	check_eq(main.shrine.blessing_choices().size(), Hunger.BLESSINGS[3], "the goddess offers less")
 	check_eq(main.revive_cost(), main.REVIVE_BASE_COST * 2, "and her revives cost double")
+	player.set_invulnerable(0.0)
+	player.hp = player.stat("max_hp")
+	var hp_before := player.hp
+	player.take_damage(10.0)
+	check_near(hp_before - player.hp, Game.damage(10.0, player.stat("defense")) * 1.3, 0.01, "and enemies hit 30% harder")
 	main.shrine.skip()
 	await end_run(main)
 
@@ -224,4 +229,29 @@ func test_stacking_one_essence_weakens() -> void:
 		player.add_essence(vexclaw)
 		gains.append(snappedf(player.stat("might") - Hunger.MIGHT[player.hunger_tier()] - before, 0.001))
 	check_eq(gains, [0.22, 0.22, 0.154, 0.11, 0.088], "full, full, 70%, 50%, 40%")
+	await end_run(main)
+
+
+func test_one_card_screen_at_a_time() -> void:
+	var main: Node = await start_run()
+	var hexeye: EssenceData = load("res://data/essences/hexeye_essence.tres")
+	# A level-up lands while the Devour choice is open: it waits its turn.
+	main.player.essence_taken.emit(hexeye)
+	main.player.pending_level_ups = 1
+	main._on_player_leveled_up()
+	check(main.devour_choice.visible and not main.level_up.visible, "level-up waits for the Devour choice")
+	main.devour_choice.pick(0)
+	check(main.level_up.visible and tree.paused, "then opens, still paused")
+	main.level_up.pick(0)
+	check(not tree.paused, "and the run resumes")
+	# A Devour finishes while a level-up is open: it waits too.
+	main.player.pending_level_ups = 1
+	main._offer_next_level_up()
+	main.player.essence_taken.emit(hexeye)
+	check(main.level_up.visible and not main.devour_choice.visible, "the Devour choice waits for the level-up")
+	main.level_up.pick(0)
+	check(main.devour_choice.visible and tree.paused, "then opens")
+	main.devour_choice.pick(1)
+	check(not tree.paused, "and the run resumes")
+	check_eq(int(main.player.essences.get(hexeye, 0)), 2, "both Devours counted")
 	await end_run(main)

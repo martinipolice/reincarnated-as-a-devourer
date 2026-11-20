@@ -177,7 +177,7 @@ func _on_gold_changed(gold: int, revive_cost: int) -> void:
 func _apply_gold(gold: int, revive_cost: int) -> void:
 	_gold.text = str(gold)
 	_revive.text = tr("Revive  %d") % revive_cost
-	_revive.add_theme_color_override("font_color", UITheme.ASH if gold >= revive_cost else UITheme.BLOOD.lightened(0.3))
+	_revive.add_theme_color_override("font_color", UITheme.ASH if gold >= revive_cost else UITheme.BLOOD_TEXT)
 
 
 func _on_day_changed(day: int, final_day: int, next_shrine: int) -> void:

@@ -124,6 +124,8 @@ var shrine: CanvasLayer
 var pause_menu: CanvasLayer
 var ending: CanvasLayer
 var results: Results
+## Devours finished while a level-up was open, waiting for their choice.
+var _pending_devours: Array[EssenceData] = []
 var devour_choice: DevourChoice
 var _unlocked_at_start: Array[String] = []  # starting weapons, to spot new ones
 var _shrines_done := []
@@ -168,9 +170,7 @@ func _ready() -> void:
 	player.hunger_rose.connect(_on_hunger_rose)
 	devour_choice = DevourChoice.new()
 	add_child(devour_choice)
-	player.essence_taken.connect(func(essence: EssenceData) -> void:
-		devour_choice.chosen.connect(func(alt: bool) -> void: player.devour(essence, alt), CONNECT_ONE_SHOT)
-		devour_choice.open(essence, player))
+	player.essence_taken.connect(_on_essence_taken)
 	level_up.chosen.connect(_on_upgrade_chosen)
 	level_up.rerolled.connect(_on_rerolled)
 	level_up.banished.connect(_on_banished)
@@ -416,6 +416,7 @@ func _on_mini_boss_killed(enemy: Enemy) -> void:
 
 func _spawn_boss() -> void:
 	boss_spawned = true
+	landmarks.end_for_duel()
 	var king := spawner.spawn_boss()
 	king.enraged.connect(func() -> void: Music.play("boss_enraged", 1.0))
 	king.phase_changed.connect(_on_king_phase)
@@ -527,8 +528,18 @@ func _on_weapon_evolved(weapon: Weapon) -> void:
 func _on_player_leveled_up() -> void:
 	Game.shockwave(player.global_position, Color(1.0, 0.9, 0.5), 170.0)
 	camera.set_base_zoom(_zoom_for_level())
-	if not level_up.visible:
+	if not level_up.visible and not devour_choice.visible:
 		_offer_next_level_up()
+
+
+func _on_essence_taken(essence: EssenceData) -> void:
+	if level_up.visible or devour_choice.visible:
+		_pending_devours.append(essence)
+		return
+	devour_choice.chosen.connect(func(alt: bool) -> void:
+		player.devour(essence, alt)
+		_offer_next_level_up(), CONNECT_ONE_SHOT)
+	devour_choice.open(essence, player)
 
 
 func _on_upgrade_chosen(upgrade: Resource) -> void:
@@ -558,7 +569,11 @@ func _gather_gems() -> void:
 
 # Shows one level-up screen per pending level, one after another.
 func _offer_next_level_up() -> void:
-	if over or player.pending_level_ups == 0:
+	if over or devour_choice.visible:
+		return
+	if player.pending_level_ups == 0:
+		if not _pending_devours.is_empty():
+			_on_essence_taken(_pending_devours.pop_front())
 		return
 	player.pending_level_ups -= 1
 	level_up.open(_deal_offers(), player, rerolls, banishes)

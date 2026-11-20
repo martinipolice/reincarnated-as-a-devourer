@@ -45,13 +45,26 @@ func _ready() -> void:
 
 
 func update(delta: float) -> void:
-	if not is_instance_valid(_trial) or _trial.spent:
+	var hushed: bool = _main.moments.card_showing()
+	for node in get_tree().get_nodes_in_group("landmarks"):
+		(node as Landmark).hushed = hushed
+	if _main.boss_spawned or not is_instance_valid(_trial) or _trial.spent:
 		return
 	_surge_timer -= delta
 	if _surge_timer <= 0.0:
 		_surge_timer = SURGE_EVERY
 		var at: Vector2 = _trial.global_position + Vector2.from_angle(randf() * TAU) * SURGE_RING
 		_main.spawner.spawn_at(_main.spawner.pick_enemy(), at)
+
+
+## The Demon King's arrival: the duel is one on one, so every landmark
+## crumbles and any altar trial ends unrewarded.
+func end_for_duel() -> void:
+	_trial = null
+	for node in get_tree().get_nodes_in_group("landmarks"):
+		var landmark := node as Landmark
+		Game.burst(landmark.global_position, landmark.color(), 12, 160.0)
+		landmark.queue_free()
 
 
 ## Puts a `kind` landmark at `at` (also how tests place one).

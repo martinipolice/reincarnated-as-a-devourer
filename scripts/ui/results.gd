@@ -38,7 +38,7 @@ func open(main: Node, won: bool, title: String, subtitle: String, unlocked: Arra
 	column.add_theme_constant_override("separation", 8)
 	center.add_child(column)
 
-	column.add_child(UITheme.title_label(title, 72, UITheme.GOLD if won else UITheme.BLOOD))
+	column.add_child(UITheme.title_label(title, 72, UITheme.GOLD if won else UITheme.BLOOD_TEXT))
 	var sub := Label.new()
 	sub.text = subtitle
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

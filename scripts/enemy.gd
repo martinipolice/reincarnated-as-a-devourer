@@ -103,6 +103,10 @@ const BURROW_RADIUS := 50.0
 const BURROW_HIT := 1.4  # times its attack, if you're over the crack
 const SURFACE_TIME := 2.4
 const BURROW_COLOR := Color(0.55, 0.4, 0.25)
+## Underground it shows as its own sprite flattened into a dirt mound, not a
+## hand-drawn trail: a drawn trail breaks sprite batching for every Burrower.
+const MOUND_SQUASH := Vector2(1.15, 0.35)
+const MOUND_TINT := Color(0.45, 0.32, 0.2)
 # warden
 const SHIELD_SOAK := 0.75  # share of each hit the shield takes
 const SHIELD_COLOR := Color(0.75, 0.85, 1.0)
@@ -508,7 +512,6 @@ func _burrower() -> Vector2:
 			return to_player.normalized() * move_speed() * 0.35
 	if not _under:
 		_go_under()
-	queue_redraw()  # the trail
 	if _cooldown <= 0.0 and to_player.length() < BURROW_STRIKE:
 		_strike_at = target.global_position
 		_set_state(State.WINDUP)
@@ -522,7 +525,8 @@ func _go_under() -> void:
 	collision_layer = 0
 	remove_from_group("enemies")
 	if data.sprite_frames:
-		sprite.visible = false
+		sprite.scale *= MOUND_SQUASH
+		sprite.self_modulate = MOUND_TINT
 
 
 func _surface() -> void:
@@ -531,7 +535,8 @@ func _surface() -> void:
 	collision_layer = 2
 	add_to_group("enemies")
 	if data.sprite_frames:
-		sprite.visible = true
+		sprite.scale /= MOUND_SQUASH
+		sprite.self_modulate = _base_tint()
 	Game.burst(global_position, BURROW_COLOR, 16, 200.0)
 	Game.sfx("boss_slam", 0.1, 1.7)
 	Game.shake(0.15)
@@ -551,8 +556,18 @@ func alive() -> bool:
 	return hp > 0.0
 
 
+## Hooks for the Demon King's phases: while true, hits do nothing...
+func _untouchable() -> bool:
+	return false
+
+
+## ...and a hit never takes HP below this.
+func _hp_floor() -> float:
+	return -INF
+
+
 func take_damage(amount: float, knockback := Vector2.ZERO, hit_sfx := "enemy_hit", source := "") -> void:
-	if not alive():
+	if not alive() or _untouchable():
 		return
 	var hp_before := hp
 	var dealt := Game.damage(amount, data.defense) * (ARMORED_TAKEN if affix == "armored" else 1.0)
@@ -565,7 +580,7 @@ func take_damage(amount: float, knockback := Vector2.ZERO, hit_sfx := "enemy_hit
 			Game.sfx("aegis_hit", 0.0, 0.6)
 			Game.burst(global_position, SHIELD_COLOR, 14, 180.0)
 		queue_redraw()
-	hp -= dealt
+	hp = maxf(hp - dealt, _hp_floor())
 	if source != "":
 		damage_log[source] = float(damage_log.get(source, 0.0)) + minf(dealt, maxf(hp_before, 0.0))
 	damaged.emit(hp, max_hp)
@@ -601,7 +616,7 @@ func _die() -> void:
 		Game.fx("smoke", global_position, 2.5)
 		Game.burst(global_position, data.color.lightened(0.2), 18)
 		Game.shake(0.25)
-	if not risen and not elite and not data.boss and data.behavior != "raiser":
+	if not risen and not elite and not data.boss and data.behavior != "raiser" and not data.drops_golden_chest:
 		fallen.append([global_position, data, clock()])
 		if fallen.size() > 60:
 			fallen.pop_front()
@@ -646,11 +661,6 @@ func _draw() -> void:
 			for i in 6:
 				var a := TAU * i / 6.0 + 0.3
 				draw_line(at, at + Vector2.from_angle(a) * BURROW_RADIUS * t, Color(0.15, 0.08, 0.04, 0.9), 2.0)
-	if _under and state == State.MOVE:
-		# A mound of loose earth trailing behind it.
-		var back := -_velocity.normalized() if _velocity.length() > 1.0 else Vector2.DOWN
-		for i in 3:
-			draw_circle(back * (6.0 + i * 9.0), 7.0 - i * 1.8, Color(BURROW_COLOR, 0.8 - i * 0.2))
 	if shield_hp > 0.0:
 		# A plate of shield in front, fading as it cracks.
 		var facing := to_local(target.global_position).normalized() if is_instance_valid(target) else Vector2.DOWN

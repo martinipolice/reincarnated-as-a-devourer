@@ -15,6 +15,7 @@ const GOLD := Color(1.0, 0.82, 0.4)  # focus, value, titles
 const BONE := Color(0.92, 0.89, 0.82)  # text
 const ASH := Color(0.55, 0.53, 0.58)  # secondary and disabled text
 const BLOOD := Color(0.62, 0.08, 0.08)  # HP, death
+const BLOOD_TEXT := Color(0.9, 0.22, 0.2)  # red words: BLOOD is too dark to read (2.4:1)
 const BODY_SIZE := 20  # Jersey 10 is drawn on a 10 px grid: stay at 2x
 ## Card accents, by what a choice is (level-up, blessings, starting weapons).
 const NEW_WEAPON := Color(1.0, 0.78, 0.35)

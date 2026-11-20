@@ -99,3 +99,20 @@ func test_text_goes_through_translation() -> void:
 	TranslationServer.set_locale(locale)
 	TranslationServer.remove_translation(spanish)
 	await end_run(main)
+
+
+func _luminance(c: Color) -> float:
+	var channel := func(v: float) -> float: return v / 12.92 if v <= 0.03928 else pow((v + 0.055) / 1.055, 2.4)
+	return 0.2126 * channel.call(c.r) + 0.7152 * channel.call(c.g) + 0.0722 * channel.call(c.b)
+
+
+func _contrast(a: Color, b: Color) -> float:
+	var la := _luminance(a)
+	var lb := _luminance(b)
+	return (maxf(la, lb) + 0.05) / (minf(la, lb) + 0.05)
+
+
+func test_text_colors_meet_wcag_aa() -> void:
+	var panel := Color(UITheme.INK, 1.0)
+	for entry: Array in [["BONE", UITheme.BONE], ["GOLD", UITheme.GOLD], ["ASH", UITheme.ASH], ["BLOOD_TEXT", UITheme.BLOOD_TEXT]]:
+		check(_contrast(entry[1], panel) >= 4.5, "%s on panels: %.2f:1, needs 4.5" % [entry[0], _contrast(entry[1], panel)])

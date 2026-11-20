@@ -11,7 +11,7 @@ extends Weapon
 
 const BLADE_TEXTURE := preload("res://assets/ninja/images/katana.png")
 const SHIELDS := [1, 2, 3]
-const DAMAGE := [14.0, 20.0, 28.0]
+const DAMAGE := [24.0, 34.0, 46.0]
 const ORBIT_RADIUS := 60.0
 const SPRITE_SCALE := 2.5
 ## Capsule around the blade art (6x14 px at 2.5x).
@@ -20,7 +20,7 @@ const SPIN := 3.0  # radians per second, times the player's haste
 const HIT_COOLDOWN := 0.35  # per enemy
 const KNOCKBACK := 260.0
 const EVOLVED_SHIELDS := 5
-const EVOLVED_DAMAGE := 36.0
+const EVOLVED_DAMAGE := 60.0
 const EVOLVED_ORBIT := 72.0
 const EVOLVED_TINT := Color(1.4, 1.25, 0.8)
 ## Globs are cut down once they reach the ring, this far outside the orbit.

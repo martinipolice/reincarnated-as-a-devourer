@@ -143,7 +143,7 @@ func set_invulnerable(seconds: float) -> void:
 func take_damage(atk: float, ignore_invuln := false) -> void:
 	if hp <= 0.0 or (_invuln > 0.0 and not ignore_invuln):
 		return
-	hp -= Game.damage(atk, stat("defense"))
+	hp -= Game.damage(atk, stat("defense")) * Hunger.HURT[hunger_tier()]
 	_invuln = HIT_INVULN
 	hurt.emit()
 	Game.rumble(0.25, 0.45, 0.15)

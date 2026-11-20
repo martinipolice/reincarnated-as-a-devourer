@@ -2,27 +2,52 @@
 
 ## Unreleased
 
+### New
 - **Devouring is a decision:** each essence offers its classic boost or a mutation, and the
-  Hunger rises with every Devour, trading power for weaker heals, more elites and a
-  stingier goddess.
+  Hunger rises with every Devour (Sated, Hungry, Ravenous, Insatiable): more damage, but
+  Devours heal less, elites come more often, monsters hit harder, and the goddess gives less.
 - **Level-up control:** reroll, banish and skip, with more sold at the shrine.
 - **Branching weapons:** every weapon chooses one of two branches at Lv 3 and grows to Lv 5.
-- **Balance:** a third and later essence of the same kind are weaker (70%, 50%, 40%);
-  Vexclaw essence +22% might (was +30%), Plaguewing +20 defense (was +25); overlapping
-  plague puddles hurt once per tick and less. Bots: kite 5/8, light Devour 5/8, heavy
-  Devour about 5/8.
-
-- Balance: the Warden's shield is 120 (was 180), and Hunger is only offered once you've
-  Devoured. Bots: not Devouring wins about 4 runs in 8 again, Devouring about 7 in 8.
-- Title screen: the game's forest at night drifts behind a crest (the name with an ember
-  glow and a sweeping shine), with fireflies and fog.
-- Sound: warning cues when a Vexclaw crouches, a Hexeye aims, a Plaguewing lobs, and a
-  guardian winds up a charge; ambient beds under the music (forest night, ruins wind,
-  temple drone). All synthesized for this game.
+- **Two new monsters:** the Necro-acolyte raises the freshly fallen unless you kill it
+  first; the Burrower moves underground, cracks the ground under you and erupts.
+- **Landmarks:** cursed altars (survive a surge for a reward), bloody wells (HP for gold),
+  iron cages (a strong elite) and fallen heroes' graves (a gift), from Day 2.
+- **A three-phase Demon King:** fury at two thirds of his HP, then he wears your hunger,
+  turning the essence you Devoured most against you. His phases can't be skipped, he grows
+  tougher with every Devour you took, and pillars stop his orbs until his slams break them.
+- **Title screen:** the game's forest at night drifts behind a crest, with fireflies and fog.
+- **Sound:** warning cues for pounces, hexes, globs, charges, raising and burrowing, and
+  ambient beds under the music (forest night, ruins wind, temple drone), all synthesized
+  for this game.
 - Text is ready for translation (`locale/messages.pot`), and a trailer can be recorded with
   `tools/trailer.gd`.
-- Under the hood: the run controller is split into smaller pieces, a headless test suite
-  covers saves, combat, the run and the menus, and GitHub Actions runs it on every push.
+
+### Fixed
+- A risen Mimic no longer drops a second golden chest: Necro-acolytes can't raise Mimics.
+- Landmarks crumble when the Demon King arrives, so an altar can't start a surge in the duel.
+- A level-up and a Devour choice finishing at the same moment no longer open on top of each
+  other; the second waits its turn.
+- Underground Burrowers show as dirt mounds made from their own sprite, which keeps sprite
+  batching intact (the drawn trail cost about 1.5 ms a frame with 500 enemies).
+- "You Died", "Your Journey Ends" and the HUD's revive price use a brighter red that meets
+  WCAG AA contrast (was 2.4:1).
+- Landmark names stay hidden while an area title is on screen.
+
+### Balance
+- Essences: a third and later essence of one kind give 70%, 50%, then 40%; Vexclaw +22%
+  might (was +30%), Plaguewing +20 defense (was +25).
+- Warden shield 120 (was 180); Hunger (the passive) is only offered once you've Devoured.
+- Devourer's Maw: damage 48/68/92 (was 36/50/68), 1/2/3 bites (was 1/1/2), evolved 115
+  damage and 4 bites. Aegis: damage 24/34/46 (was 14/20/28), evolved 60 (was 36).
+- Monsters grow 23% tougher each day (was 20%).
+- Plague puddles dry up as they age and overlapping ones hurt once per tick.
+- Bot results (balance sim): never Devouring wins 5 in 8, Devouring up to 3 essences 6 in 8,
+  Devouring whenever safe 7 in 12; Demon King fights mostly last 40-110 s.
+
+### Under the hood
+- The run controller is split into smaller pieces; a headless test suite (63 tests) covers
+  saves, combat, choices, threats, landmarks, the Demon King and the menus, and GitHub
+  Actions runs it on every push.
 
 ## 0.2.0
 

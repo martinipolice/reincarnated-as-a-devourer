@@ -39,7 +39,7 @@ func _ready() -> void:
 	_veil.set_anchors_and_offsets_preset(Control.PRESET_HCENTER_WIDE)
 	_veil.offset_top = -200  # above the end panel
 	_veil.offset_bottom = -40
-	_big = UITheme.title_label("", 96, UITheme.BLOOD)
+	_big = UITheme.title_label("", 96, UITheme.BLOOD_TEXT)
 	_big.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_veil.add_child(_big)
 	_big.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -50,6 +50,11 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	# Menus (level-up, shrine) pause the run: don't let the card sit on top.
 	_card.visible = not get_tree().paused
+
+
+## True while an area title is on screen (landmark names keep out of its way).
+func card_showing() -> bool:
+	return _card.modulate.a > 0.05
 
 
 ## A place's name fades in under the HUD, holds, and fades away.
@@ -65,7 +70,7 @@ func area_card(title: String) -> void:
 
 ## "YOU DIED", slowly. Awaitable: returns once it has fully faded in.
 func you_died() -> void:
-	await _big_word("You Died", UITheme.BLOOD)
+	await _big_word("You Died", UITheme.BLOOD_TEXT)
 
 
 func felled(text: String) -> void:

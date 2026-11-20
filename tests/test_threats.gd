@@ -75,3 +75,12 @@ func test_puddles_dry_up() -> void:
 	puddle._life = 0.0
 	check_near(puddle.radius(), fresh * 0.55, 0.01, "shrinks to 55%")
 	puddle.free()
+
+
+func test_a_mimic_is_never_raised() -> void:
+	var main: Node = await start_run()
+	var mimic: Enemy = main.spawner.spawn_at(SpawnDirector.MIMIC, main.player.position + Vector2(300, 0))
+	Enemy.fallen.clear()
+	mimic.take_damage(1e9)
+	check(Enemy.fallen.is_empty(), "a Mimic's body can't be raised (it would drop a second golden chest)")
+	await end_run(main)

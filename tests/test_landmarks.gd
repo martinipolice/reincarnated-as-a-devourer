@@ -84,3 +84,29 @@ func test_altar_rewards_survive_a_save() -> void:
 	main = await start_run(true)
 	check_near(main.player.stat("defense"), defense, 0.001, "Altar's Ward restored")
 	await end_run(main)
+
+
+func test_landmarks_end_when_the_duel_begins() -> void:
+	var main: Node = await start_run()
+	var altar: Landmark = main.landmarks.place("altar", main.player.position + Vector2(200, 0))
+	main.elapsed = 19 * main.SECONDS_PER_DAY + 0.5
+	for i in 5:
+		await tree.process_frame
+	check(main.boss_spawned, "the Demon King arrived")
+	var before: int = main.enemies.get_child_count()
+	await _walk_to(main, main.player.position + Vector2(200, 0), 1.0)
+	check(not is_instance_valid(altar) or altar.spent, "the altar is gone or spent")
+	check_eq(main.enemies.get_child_count(), before, "no surge in the duel")
+	await end_run(main)
+
+
+func test_names_hide_under_an_area_title() -> void:
+	var main: Node = await start_run()
+	var grave: Landmark = main.landmarks.place("grave", main.player.position + Vector2(150, 0))
+	main.moments.area_card("The Fallen Ruins")
+	await _walk_to(main, main.player.position, main.moments.CARD_FADE + 0.2)
+	check(main.moments.card_showing(), "the area title is up")
+	check(grave._label == null or not grave._label.visible, "the landmark's name hides under it")
+	await _walk_to(main, main.player.position, main.moments.CARD_HOLD + main.moments.CARD_FADE + 0.4)
+	check(grave._label != null and grave._label.visible, "and shows once it fades")
+	await end_run(main)

@@ -2,15 +2,15 @@ extends Weapon
 ## Devourer's Maw: spectral jaws snap shut on the nearest enemies within
 ## reach, hard, and every kill they make feeds you a little HP.
 ## Evolves into the Abyssal Maw after Devouring 3 Dreadling essences at Lv 3:
-## three bites at once, and every bite heals, kill or not.
+## four bites at once, and every bite heals, kill or not.
 
-const DAMAGE := [36.0, 50.0, 68.0]
+const DAMAGE := [48.0, 68.0, 92.0]
 const REACH := [115.0, 130.0, 145.0]
 const COOLDOWN := [1.3, 1.15, 1.0]  # divided by the player's haste
-const BITES := [1, 1, 2]
+const BITES := [1, 2, 3]
 const KILL_HEAL := [1.0, 2.0, 3.0]  # HP per kill
-const EVOLVED_DAMAGE := 85.0
-const EVOLVED_BITES := 3
+const EVOLVED_DAMAGE := 115.0
+const EVOLVED_BITES := 4
 const EVOLVED_LIFESTEAL := 0.03  # of damage dealt, on every bite
 const SNAP_TIME := 0.22
 const JAW_SIZE := 22.0

@@ -7,8 +7,9 @@ you kill, at the cost of your own life.
 It started as a turn-based terminal RPG I wrote in Python for CMSC 12, and is being rebuilt
 as a real-time game.
 
-> **Status:** prototype (Milestone 5 of 6 done). CC0 pixel art (Ninja Adventure) and sound;
-> story and endings come next.
+> **Status:** playable from the first day to both endings (release builds up to v0.2.0; main
+> has more since, listed under Unreleased in the [changelog](CHANGELOG.md)). CC0 pixel art
+> (Ninja Adventure) and sound. Next: playtesting, then the lore and story scenes.
 
 ## Play / run
 
@@ -69,9 +70,17 @@ Every monster fights its own way, and every attack is telegraphed:
 | Mimic | Pounces like a Vexclaw |
 | Hexeye | Casts: keeps its distance and fires a hex along a line it shows first |
 | Warden | Guards: a shield soaks most of each hit until it breaks |
+| Necro-acolyte | Raises: keeps away and channels a purple beam into the freshly fallen, raising them as weaker risen copies unless you kill it first |
+| Burrower | Ambushes: moves underground as a dirt mound, cracks the ground under you, erupts, then stays up and hittable for a moment |
 
 Which monsters come, and how many, follows a spawn table by day: Dreadlings early, Hexeyes
-from Day 7, Wardens from Day 11, and a heavier mix in the ruins.
+from Day 7, Necro-acolytes from Day 7, Wardens and Burrowers from Day 11, and a heavier mix
+in the ruins.
+
+**Landmarks.** From Day 2 one or two appear each day, marked by an edge arrow: a **cursed
+altar** (survive a 15 s surge inside its circle, then pick a reward), a **bloody well** (a
+fifth of your HP for gold), an **iron cage** (frees a strong elite with a trait) and a
+**fallen hero's grave** (a one-time gift). They crumble when the Demon King arrives.
 
 **Mini-bosses.** On Day 10 the **Ruin Guardian** charges in a straight line after a wind-up
 and slams; on Day 15 the **Hollow Spirit** blinks beside you, slams and fires volleys. The
@@ -92,8 +101,11 @@ and it evolves into **Vexclaw Rend**.
 
 On **Day 20** the horde scatters and the Demon King descends for a duel. He alternates a
 red slam marked on the ground under you with a ring of dark orbs (watch for the purple
-glow), and summons a few minions now and then. Below half HP he enrages: faster, wider
-slams and double rings. Kill him to win the run.
+glow), and summons a few minions now and then. He fights in three phases, and a single hit
+can't skip one: at two thirds of his HP he rises in fury (faster, wider slams, double rings,
+charges); at one third he **wears your hunger**, turning the essence you Devoured most
+against you. Every Devour you took makes him tougher. Pillars, trees and rocks stop his orbs,
+but his slams break the arena's pillars. Kill him to win the run.
 
 ### The ending
 
@@ -251,7 +263,10 @@ decides the ending. Full pitch: [docs/DESIGN.md](docs/DESIGN.md).
 - [x] **M4** Devour (elites, Essences, evolution) and the Demon King boss
 - [x] **M5** CC0 art and sound, juice, procedural world, versioned save file
 - [x] **Progression** One-life journeys: goddess shrines on the lore days, gold revives, shrine checkpoints
-- [ ] **M6** Lore beats, Day 20 dialogue, endings, itch.io web release
+- [x] **M6** Day 20 dialogue, both endings, release builds (v0.1.0, v0.2.0) and an itch.io page kit
+- [x] **Phase 5, Tiers 1-2** Mutations and the Hunger, branching weapons, reroll/banish/skip;
+  two new monsters, landmarks, a three-phase Demon King
+- [ ] Lore beats and story scenes, Tier 3 (difficulty after a win, relics, daily runs)
 
 ## Project layout
 

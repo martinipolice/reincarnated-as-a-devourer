@@ -28,7 +28,7 @@ const EVENT_GAP := Vector2(40.0, 55.0)
 const EVENT_WARNING := 1.5
 ## Enemies get this much tougher each day after the first (HP fully, damage
 ## at 70%; see Enemy.setup). Day 20 is 1 + 19 * this.
-const TOUGHNESS_PER_DAY := 0.2
+const TOUGHNESS_PER_DAY := 0.23
 ## How far from a boss its summoned minions appear.
 const SUMMON_RING := 80.0
 ## Elites can carry a trait from this day: some of the time, then always.

@@ -48,6 +48,12 @@ const PHASE_AT := [0.66, 0.33]  # the Demon King's phases begin below these
 const MIRROR_PER_DEVOUR := 0.03
 const MIRROR_CAP := 0.45
 const MIRROR_SHIELD := 0.15  # of max HP, when he mirrors a Warden
+## No skipping his phases: a hit stops at the next threshold, and he is
+## untouchable this long while he transforms.
+const PHASE_GATE := 2.5
+## He grows with your hunger: max HP per Devour you took, up to the cap.
+const HUNGER_HP := 0.05
+const HUNGER_HP_CAP := 0.6
 const PILLAR_COLOR := Color(0.55, 0.5, 0.55)
 const ENRAGED_SPEED_MULT := 1.35
 const TELEGRAPH_COLOR := Color(1, 0.2, 0.2)
@@ -70,6 +76,7 @@ var king := false
 ## The essence the Demon King mirrors in phase 2 (null: none Devoured).
 var mirror: EssenceData
 var _devours := 0
+var _gate := 0.0
 
 var _next_attack := FIRST_ATTACK
 var _next_summon: float = SUMMON_INTERVAL[0]
@@ -91,6 +98,8 @@ var _telegraph: Node2D
 func crown(player: Player) -> void:
 	king = true
 	_devours = player.devour_count()
+	max_hp *= 1.0 + minf(HUNGER_HP * _devours, HUNGER_HP_CAP)
+	hp = max_hp
 	var most := 0
 	for essence: EssenceData in player.essences:
 		if int(player.essences[essence]) > most:
@@ -139,6 +148,7 @@ func _physics_process(delta: float) -> void:
 		_next_summon = SUMMON_INTERVAL[phase]
 		summon.emit(global_position, SUMMON_COUNT, phase == 1)
 	_flash = maxf(0.0, _flash - delta)
+	_gate = maxf(0.0, _gate - delta)
 	_telegraph.queue_redraw()
 
 
@@ -157,6 +167,7 @@ func _update_phase() -> void:
 
 func _enter_phase(next: int) -> void:
 	phase = next
+	_gate = PHASE_GATE
 	slam_radius = SLAM_RADIUS[phase]
 	Game.shake(0.8)
 	Game.sfx("toll", 0.0)
@@ -168,6 +179,14 @@ func _enter_phase(next: int) -> void:
 		attacks.append(Attack.MIRROR)
 		atk *= 1.0 + minf(MIRROR_PER_DEVOUR * _devours, MIRROR_CAP)
 	phase_changed.emit(phase)
+
+
+func _untouchable() -> bool:
+	return _gate > 0.0
+
+
+func _hp_floor() -> float:
+	return max_hp * PHASE_AT[phase] if king and phase < 2 else -INF
 
 
 func move_speed() -> float:
