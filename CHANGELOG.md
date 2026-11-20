@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.0 (2026-11-20)
 
 ### New
 - **Devouring is a decision:** each essence offers its classic boost or a mutation, and the
